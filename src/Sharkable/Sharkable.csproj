@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+		<Description>🌈Powerful tools for dotnet aot and more</Description>
+		<PackageProjectUrl>https://github.com/charleypeng/Sharkable</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/charleypeng/Sharkable</RepositoryUrl>
+		<PackageTags>dotnet,minimalapi,toolkit,framework</PackageTags>
+		<RepositoryType>git</RepositoryType>
+		<PackageLicenseExpression>Private Lisence</PackageLicenseExpression>
+		<Copyright>CharleyPeng</Copyright>
+		<Authors>CharleyPeng</Authors>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+<ItemGroup>
+	<FrameworkReference Include="Microsoft.AspNetCore.App" />
+</ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
+  </ItemGroup>
+</Project>

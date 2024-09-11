@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives>
+  <Application>
+    <Assembly Name="Sharkable.Sample" Dynamic="Required All">
+      <Type Name="Sharkable.Sample.App" Dynamic="Required All" />
+    </Assembly>
+	<Assembly Name="SqlSugar"  Dynamic="Required All">
+	</Assembly>
+  </Application>
+</Directives>
