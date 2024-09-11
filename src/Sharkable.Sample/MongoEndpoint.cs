@@ -1,4 +1,5 @@
 using System;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 //using MongoDB.Driver;
 
@@ -13,7 +14,7 @@ public static class TaskInfoEndpoint
         g.MapGet("/tryme", LetGo);
         g.MapGet("/fuckme", Showme);
     }
-    //[SharkMethod("tryme", SharkHttpMethod.GET)]
+    [SharkMethod("tryme", SharkHttpMethod.GET)]
     public static Task LetGo([FromServices]IMonitor monitor)
     {
         monitor.Show();

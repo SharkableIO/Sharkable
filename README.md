@@ -1,9 +1,11 @@
 # Sharkable
 a dotnet minimal api framework collection
 
-##Usage
+## Usage
+
+### automatic dependency injection
 create a new class
-```
+```csharp
 //first add extension
 using Sharkable
 builder.Services.AddShark();
@@ -26,4 +28,19 @@ app.MapGet("/monitor",([FromServices]IMonitor monitor) =>
 });
 ```
 
+### endpoint auto mapper
+```csharp
+[SharkEndpoint]
+public class TestEndpoint
+{
+    [SharkMethod("show", SharkHttpMethod.GET)]
+    public void Show()
+    {
+        ...
+    }
+}
+
+//will now generate a http post method with the url
+// api/test/show
+```
 for more use sample please see Sharkable.Sample project
