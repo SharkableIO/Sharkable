@@ -5,25 +5,25 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Sharkable.Sample;
 
-//[SharkEndpoint]
-public static class TaskInfoEndpoint
+[SharkEndpoint]
+public class TaskInfoEndpoint
 {
-    public static void MapTaskInfo(this WebApplication app)
+    public static void MapTaskInfo( WebApplication app)
     {
-        var g = app.MapGroup("/api/taskinfo");
-        g.MapGet("/tryme", LetGo);
-        g.MapGet("/fuckme", Showme);
+        // var g = app.MapGroup("/api/taskinfo");
+        // g.MapGet("/tryme", LetGo);
+        // g.MapGet("/fuckme", Showme);
     }
     [SharkMethod("tryme", SharkHttpMethod.GET)]
-    public static Task LetGo([FromServices]IMonitor monitor)
+    public  Task LetGo([FromServices]IMonitor monitor, [FromQuery]string jl)
     {
         monitor.Show();
-        Console.WriteLine("letmego");
+        Console.WriteLine(jl);
         return Task.CompletedTask;
     }
 
-    //[SharkMethod("fuckme", SharkHttpMethod.GET)]
-    public static async void Showme([FromServices]IMonitor monitor)
+    [SharkMethod("fuckme", SharkHttpMethod.GET)]
+    public async void Showme([FromServices]IMonitor monitor)
     {
         Console.WriteLine("fuckme");
         await monitor.InitUser();

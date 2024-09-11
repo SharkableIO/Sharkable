@@ -23,8 +23,7 @@ var sampleTodos = new Todo[] {
             new(5, "Clean the car", DateTime.Now)
         };
 app.AddMongoGroup();
-app.MapTaskInfo();
-app.UserShark([typeof(App).Assembly]);
+app.UseShark([typeof(App).Assembly]);
 var todosApi = app.MapGroup("/todos");
 todosApi.MapGet("/init", async ([FromServices] IMonitor monitor) =>
 {

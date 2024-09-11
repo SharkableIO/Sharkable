@@ -27,12 +27,12 @@ public static class SharkableExtension
     }
 
     [RequiresDynamicCode("Add Assembly[] instead")]
-    public static void UserShark(this WebApplication app)
+    public static void UseShark(this WebApplication app)
     {
         app.MapEndpoints();
     }
 
-    public static void UserShark(this WebApplication app, Assembly[] assemblies)
+    public static void UseShark(this WebApplication app, Assembly[] assemblies)
     {
         app.MapEndpoints(assemblies);
     }

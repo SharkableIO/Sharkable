@@ -4,7 +4,6 @@ a dotnet minimal api framework collection
 ## Usage
 
 ### automatic dependency injection
-create a new class
 ```csharp
 //first add extension
 using Sharkable
@@ -29,6 +28,7 @@ app.MapGet("/monitor",([FromServices]IMonitor monitor) =>
 ```
 
 ### endpoint auto mapper
+create a new class
 ```csharp
 [SharkEndpoint]
 public class TestEndpoint
