@@ -45,7 +45,7 @@ public class Monitor(ILogger<Monitor> logger, ISqlSugarClient sqlSugarClient) : 
         return find;
     }
 
-    private static List<TaskInfo> GetRandData(int size)
+    public static List<TaskInfo> GetRandData(int size)
     {
         return Enumerable.Range(0, size).Select(a => new TaskInfo
         {

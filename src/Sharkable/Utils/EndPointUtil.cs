@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Sharkable.Extensions;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -11,13 +13,13 @@ internal static class EndPointUtil
     public static void MapEndpoints(this WebApplication? app)
     {
         AddAttributeEndpoints(Shark.Assemblies,  app);
-        GetSharkEndpint(Shark.Assemblies);
+        //app.MapSharkEndpoints();
     }
 
     public static void MapEndpoints(this WebApplication? app, Assembly[] assemblies)
     {
         AddAttributeEndpoints(assemblies,  app);
-        GetSharkEndpint(assemblies);
+        //app.MapSharkEndpoints();
     }
 
     private static void AddAttributeEndpoints(Assembly[]? assemblies, WebApplication? app)
@@ -55,7 +57,39 @@ internal static class EndPointUtil
         });
     }
 
-    private static List<Tuple<string, ISharkEndpoint>>? GetSharkEndpint(Assembly[]? assemblies)
+    internal static WebApplication MapSharkEndpoints(this WebApplication? builder)
+    {
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+        ArgumentNullException.ThrowIfNull(builder);
+
+        var endpointServices = builder.Services.GetServices<ISharkEndpoint>();
+
+        stopwatch.Stop();
+        Console.WriteLine($"getting service used:{stopwatch.Elapsed.TotalMilliseconds}");
+
+        stopwatch.Reset();
+        stopwatch.Start();
+        endpointServices.MyForEach(e =>
+        {
+            e.AddRoutes(builder);
+        });
+        stopwatch.Stop();
+       Console.WriteLine($"wiring service used:{stopwatch.Elapsed.TotalMilliseconds}");
+
+        return builder;
+    }
+    internal static void WireSharkEndpoint(this IServiceCollection services)
+    {
+        var endpoints = GetSharkEndpint(Shark.Assemblies);
+
+        endpoints.MyForEach(e =>
+        {
+            Utils.WriteDebug($"wiring {e.FullName}");
+            services.AddSingleton(typeof(ISharkEndpoint), e);
+        });
+    }
+    private static List<Type>? GetSharkEndpint(Assembly[]? assemblies)
     {
         ArgumentNullException.ThrowIfNull(assemblies);
 
@@ -64,9 +98,18 @@ internal static class EndPointUtil
         if (alist.Count == 0)
             return null;
 
-        var endpoints = alist.Select(x => x.GetTypes().Where(i => i.GetInterfaces().Where(x => x == typeof(ISharkEndpoint)).Any()));
+        var endpoints = alist.Select(x => x.GetTypes()
+                .Where(i => i.GetInterfaces()
+                        .Where(x => x == typeof(ISharkEndpoint))
+                        .Any()).ToList()).ToList();
+        if (endpoints.Count == 0)
+            return null;
 
-        throw new NotImplementedException();
+        var lst = new List<Type>();
+
+        endpoints.MyForEach(lst.AddRange);
+
+        return lst;
     }
 
     [Obsolete("will not update above v0.0.5")]

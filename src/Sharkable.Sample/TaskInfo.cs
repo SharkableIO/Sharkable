@@ -5,8 +5,6 @@ public enum TaskStatus { Running, Paused, Completed }
 public enum TaskInterval { SEC = 1, RunOnDay = 11, RunOnWeek = 12, RunOnMonth = 13, Custom = 21 }
 public class TaskInfo
 {
-
-    [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
     public string? Id { get; set; }
     public string? Topic { get; set; }
     public string? Body { get; set; }

@@ -15,15 +15,25 @@ public class TaskInfoEndpoint : ISharkEndpoint
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        throw new NotImplementedException();
+        app.MapGet("/hello", async ([FromServices]IMonitor monitor) => 
+        {
+        
+            return Monitor.GetRandData(6);
+        });
+
+        app.MapGet("/init", async ([FromServices]IMonitor monitor) => 
+        {
+            await monitor.InitTask();
+            Console.WriteLine("ok");
+        });
     }
 
-    [SharkMethod("tryme", SharkHttpMethod.GET)]
-    public  Task LetGo([FromServices]IMonitor monitor, [FromQuery]string jl)
+    [SharkMethod("tryme/{jl}", SharkHttpMethod.GET)]
+    public  void LetGo([FromServices]IMonitor monitor, string jl)
     {
         monitor.Show();
         Console.WriteLine(jl);
-        return Task.CompletedTask;
+        
     }
 
     [SharkMethod("fuckme/{a}", SharkHttpMethod.GET)]
@@ -52,22 +62,18 @@ public static class MongoEndpoint
         taskapi.MapGet("/init", async ([FromServices]IMonitor monitor) =>
         {
             await monitor.InitTask();
-            return Results.Ok("init task");
         });
         taskapi.MapGet("/all", async ([FromServices]IMonitor monitor) =>
         {
             var data = await monitor.GetTasks();
-            return Results.Ok(data);
         });
     }
 
-    public static async Task<IResult> GetData()
+    public static async void GetData()
     {
         /*var mongoClient = new MongoClient("mongodb://root:123321@10.10.22.162:27017/");
         var mongoBase = mongoClient.GetDatabase("atcer");
         var repo = mongoBase.GetCollection<Notam>("Notam");
         var ds = await repo.Find(x => x.IsDeleted == false && x.Header.CodeA == "ZGHA").FirstOrDefaultAsync();*/
-
-        return Results.Ok("ok");
     }
 }

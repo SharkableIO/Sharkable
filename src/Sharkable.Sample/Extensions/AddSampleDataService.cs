@@ -9,8 +9,8 @@ public static  class AddSampleDataServiceExtension
         var conf = new ConnectionConfig
         {
             IsAutoCloseConnection = true,
-            DbType = DbType.Sqlite,
-            ConnectionString = $"Data Source={AppContext.BaseDirectory}/test1.db",
+            DbType = DbType.PostgreSQL,
+            ConnectionString = $"null",
             ConfigId = "cnf1"
         };
         SqlSugarScope sqlSugar = new(conf);
