@@ -22,9 +22,13 @@ public class TaskInfoEndpoint
         return Task.CompletedTask;
     }
 
-    [SharkMethod("fuckme", SharkHttpMethod.GET)]
-    public async void Showme([FromServices]IMonitor monitor)
+    [SharkMethod("fuckme/{a}", SharkHttpMethod.GET)]
+    public async void Showme([FromServices]IMonitor monitor, int a)
     {
+        if(a == 5)
+        {
+            Console.WriteLine(a);
+        }
         Console.WriteLine("fuckme");
         await monitor.InitUser();
     }

@@ -9,25 +9,22 @@ namespace Sharkable;
 
 internal static class EndPointUtil
 {
-    [RequiresDynamicCode("Add Assembly[] instead")]
     public static void MapEndpoints(this WebApplication? app)
     {
-        var assemblies = Utils.GetAssemblies(); 
-
-        AddEndpoints(assemblies,  app);
+        AddAttributeEndpoints(Shark.Assemblies,  app);
     }
 
     public static void MapEndpoints(this WebApplication? app, Assembly[] assemblies)
     {
-        AddEndpoints(assemblies,  app);
+        AddAttributeEndpoints(assemblies,  app);
     }
 
-    private static void AddEndpoints(Assembly[]? assemblies, WebApplication? app)
+    private static void AddAttributeEndpoints(Assembly[]? assemblies, WebApplication? app)
     {
         ArgumentNullException.ThrowIfNull(app);
         ArgumentNullException.ThrowIfNull(assemblies);
 
-        var lst = GetEndpoints(ref assemblies);
+        var lst = GetAttributeEndpoints(ref assemblies);
         lst.MyForEach(a =>
         {
             var group = app.MapGroup(a.Item1!);
@@ -57,7 +54,7 @@ internal static class EndPointUtil
         });
     }
 
-    public static List<Tuple<string?, List<Tuple<string?, SharkHttpMethod, Delegate>>>>? GetEndpoints(ref Assembly[]? assemblies)
+    public static List<Tuple<string?, List<Tuple<string?, SharkHttpMethod, Delegate>>>>? GetAttributeEndpoints(ref Assembly[]? assemblies)
     {
         ArgumentNullException.ThrowIfNull(assemblies);
         var lst = new List<Tuple<string?, List<Tuple<string?, SharkHttpMethod, Delegate>>>>();

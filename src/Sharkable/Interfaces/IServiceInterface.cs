@@ -1,5 +1,3 @@
-using System;
-
 namespace Sharkable;
 
 public interface ISingleton;

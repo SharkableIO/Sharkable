@@ -1,4 +1,6 @@
-﻿namespace Sharkable;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Sharkable;
 
 /// <summary>
 /// delegate of a http method
@@ -11,7 +13,7 @@ public sealed class SharkMethodAttribute : Attribute
         Method = method;
     }
 
-    public SharkMethodAttribute(string? addressName, SharkHttpMethod method = SharkHttpMethod.POST)
+    public SharkMethodAttribute([StringSyntax("Route")]string? addressName, SharkHttpMethod method = SharkHttpMethod.POST)
     {
         AddressName = addressName;
         Method = method;
