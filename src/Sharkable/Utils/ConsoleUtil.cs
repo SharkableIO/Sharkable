@@ -4,7 +4,7 @@ namespace Sharkable;
 
 public partial class Utils
 {
-    public static void WriteDebug(string? value)
+    internal static void WriteDebug(string? value)
     {
 #if DEBUG
         Console.WriteLine(value);

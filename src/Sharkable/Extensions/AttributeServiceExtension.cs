@@ -122,7 +122,7 @@ public static class AttributeBasedServiceCollectionExtensions
                     {
                         foreach (Type type in implementation.GetInterfaces())
                         {
-                            Console.WriteLine("injecting service:" + type.Name + "," + implementation.Name);
+                            Utils.WriteDebug("injecting service:" + type.Name + "," + implementation.Name);
                             serviceCollection.TryAdd(type, implementation, lifetime);
                         }
                     }
@@ -130,14 +130,12 @@ public static class AttributeBasedServiceCollectionExtensions
                     Type? baseType = implementation.BaseType;
                     if (baseType!=null && !baseType.Equals(typeof(Object)))
                     {
-                        Console.WriteLine("injecting service:" + baseType.Name + "," + implementation.Name);
+                        Utils.WriteDebug("injecting service:" + baseType.Name + "," + implementation.Name);
                         serviceCollection.TryAdd(baseType, implementation, lifetime);
                     }
                     else
                     {
-#if DEBUG
-                        Console.WriteLine("injecting service:" + implementation.Name + "," + implementation.Name);
-#endif
+                        Utils.WriteDebug("injecting service:" + implementation.Name + "," + implementation.Name);
                         serviceCollection.TryAdd(implementation, implementation, lifetime);
                     }
                 }

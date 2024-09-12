@@ -5,7 +5,7 @@ namespace Sharkable;
 
 public partial class Utils
 {
-    public static Assembly[]? GetAssemblies(params Assembly[] assembly)
+    internal static Assembly[]? GetAssemblies(params Assembly[] assembly)
     {
         if (assembly.Length > 0)
             return assembly;
@@ -24,7 +24,7 @@ public partial class Utils
         return [.. lst];
     }
 
-    public static Type[]? GetRequiredInterface<I>(this Assembly[]? assemblies)
+    internal static Type[]? GetRequiredInterface<I>(this Assembly[]? assemblies)
     {
         if (assemblies == null)
             return null;
@@ -42,7 +42,7 @@ public partial class Utils
         return [.. typeList];
     }
 
-    public static void SetupModules(Assembly[]? assemblies, ref IServiceCollection services)
+    internal static void SetupModules(Assembly[]? assemblies, ref IServiceCollection services)
     {
         if (assemblies == null)
             return;
