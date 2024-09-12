@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Sharkable</id>
-    <version>0.0.4</version>
+    <version>0.0.5</version>
     <title>Sharkable</title>
     <authors>charleypeng</authors>
     <readme>docs\README.md</readme>
@@ -11,7 +11,7 @@
     <!-- <icon>icon.png</icon> -->
     <projectUrl>https://github.com/charleypeng/sharkable</projectUrl>
     <description>a dotnet minimal api framework collection aimed to support aot</description>
-    <releaseNotes>fix typo</releaseNotes>
+    <releaseNotes>initial support for SharkEndpoint</releaseNotes>
     <copyright>CopyRight 2024 Penglei</copyright>
     <tags>minialapi aot framework toolkit</tags>
   </metadata>

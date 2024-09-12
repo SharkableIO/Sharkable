@@ -13,13 +13,13 @@ internal static class EndPointUtil
     public static void MapEndpoints(this WebApplication? app)
     {
         AddAttributeEndpoints(Shark.Assemblies,  app);
-        //app.MapSharkEndpoints();
+        app.MapSharkEndpoints();
     }
 
     public static void MapEndpoints(this WebApplication? app, Assembly[] assemblies)
     {
         AddAttributeEndpoints(assemblies,  app);
-        //app.MapSharkEndpoints();
+        app.MapSharkEndpoints();
     }
 
     private static void AddAttributeEndpoints(Assembly[]? assemblies, WebApplication? app)
@@ -59,24 +59,14 @@ internal static class EndPointUtil
 
     internal static WebApplication MapSharkEndpoints(this WebApplication? builder)
     {
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
         ArgumentNullException.ThrowIfNull(builder);
 
         var endpointServices = builder.Services.GetServices<ISharkEndpoint>();
 
-        stopwatch.Stop();
-        Console.WriteLine($"getting service used:{stopwatch.Elapsed.TotalMilliseconds}");
-
-        stopwatch.Reset();
-        stopwatch.Start();
         endpointServices.MyForEach(e =>
         {
             e.AddRoutes(builder);
         });
-        stopwatch.Stop();
-       Console.WriteLine($"wiring service used:{stopwatch.Elapsed.TotalMilliseconds}");
-
         return builder;
     }
     internal static void WireSharkEndpoint(this IServiceCollection services)
