@@ -1,19 +1,23 @@
-using System;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 //using MongoDB.Driver;
 
 namespace Sharkable.Sample;
 
 [SharkEndpoint]
-public class TaskInfoEndpoint
+public class TaskInfoEndpoint : ISharkEndpoint
 {
-    public static void MapTaskInfo( WebApplication app)
+    public static void MapTaskInfo( WebApplication app) 
     {
         // var g = app.MapGroup("/api/taskinfo");
         // g.MapGet("/tryme", LetGo);
         // g.MapGet("/fuckme", Showme);
     }
+
+    public void AddRoutes(IEndpointRouteBuilder app)
+    {
+        throw new NotImplementedException();
+    }
+
     [SharkMethod("tryme", SharkHttpMethod.GET)]
     public  Task LetGo([FromServices]IMonitor monitor, [FromQuery]string jl)
     {

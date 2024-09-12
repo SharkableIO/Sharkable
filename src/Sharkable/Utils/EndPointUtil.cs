@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Sharkable.Extensions;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -12,11 +11,13 @@ internal static class EndPointUtil
     public static void MapEndpoints(this WebApplication? app)
     {
         AddAttributeEndpoints(Shark.Assemblies,  app);
+        GetSharkEndpint(Shark.Assemblies);
     }
 
     public static void MapEndpoints(this WebApplication? app, Assembly[] assemblies)
     {
         AddAttributeEndpoints(assemblies,  app);
+        GetSharkEndpint(assemblies);
     }
 
     private static void AddAttributeEndpoints(Assembly[]? assemblies, WebApplication? app)
@@ -54,7 +55,22 @@ internal static class EndPointUtil
         });
     }
 
-    public static List<Tuple<string?, List<Tuple<string?, SharkHttpMethod, Delegate>>>>? GetAttributeEndpoints(ref Assembly[]? assemblies)
+    private static List<Tuple<string, ISharkEndpoint>>? GetSharkEndpint(Assembly[]? assemblies)
+    {
+        ArgumentNullException.ThrowIfNull(assemblies);
+
+        var alist = assemblies.ToList();
+
+        if (alist.Count == 0)
+            return null;
+
+        var endpoints = alist.Select(x => x.GetTypes().Where(i => i.GetInterfaces().Where(x => x == typeof(ISharkEndpoint)).Any()));
+
+        throw new NotImplementedException();
+    }
+
+    [Obsolete("will not update above v0.0.5")]
+    private static List<Tuple<string?, List<Tuple<string?, SharkHttpMethod, Delegate>>>>? GetAttributeEndpoints(ref Assembly[]? assemblies)
     {
         ArgumentNullException.ThrowIfNull(assemblies);
         var lst = new List<Tuple<string?, List<Tuple<string?, SharkHttpMethod, Delegate>>>>();

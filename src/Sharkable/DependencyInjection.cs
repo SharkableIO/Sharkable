@@ -7,26 +7,21 @@ namespace  Microsoft.Extensions.DependencyInjection;
 
 public static class SharkableExtension
 {
-    [RequiresDynamicCode("Add Assembly[] instead")]
+    [RequiresDynamicCode("use Assembly[] method instead")]
     public static void AddShark(this IServiceCollection services)
     {
-        var a = Utils.GetAssemblies();
-
-        Shark.Assemblies = a;
+        Shark.SetAssebly(Utils.GetAssemblies());
         services.AddServicesWithAttributeOfTypeFromAssembly(Shark.Assemblies);
         Shark.GetShark();
     }
 
     public static void AddShark(this IServiceCollection services, Assembly[] assembly)
     {
-        var a = Utils.GetAssemblies(assembly);
-        
-        Shark.Assemblies = a;
+        Shark.SetAssebly(Utils.GetAssemblies(assembly));
         services.AddServicesWithAttributeOfTypeFromAssembly(Shark.Assemblies);
         Shark.GetShark();
     }
 
-    [RequiresDynamicCode("Add Assembly[] instead")]
     public static void UseShark(this WebApplication app)
     {
         app.MapEndpoints();
