@@ -4,7 +4,7 @@ namespace Sharkable.Extensions;
 
 internal static class StringExtension
 {
-    public static string? FormatAsGroupName(this string? value)
+    internal static string? FormatAsGroupName(this string? value)
     {
         if (value == null)
             return "";

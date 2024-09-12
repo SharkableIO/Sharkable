@@ -1,30 +1,30 @@
+namespace Sharkable;
+
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Sharkable;
-
 /// <summary>
-/// 通过扫描特性注册服务
+/// scan for service extensions
 /// </summary>
-public static class AttributeBasedServiceCollectionExtensions
+internal static class AttributeBasedServiceCollectionExtensions
 {
     /// <summary>
-    /// 通过扫描特性注册服务
+    /// scan for service
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="serviceCollection"></param>
     /// <param name="assemblys"></param>
-    public static void AddServicesWithAttributeOfTypeFromAssembly(this IServiceCollection serviceCollection, Assembly[]? assemblys)
+    internal static void AddServicesWithAttributeOfTypeFromAssembly(this IServiceCollection serviceCollection, Assembly[]? assemblys)
     {
         serviceCollection.AddServicesWithAttributeOfType(Shark.Assemblies);
     }
     /// <summary>
-    /// 通过扫描特性注册服务
+    /// scan for service
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="serviceCollection"></param>
     /// <param name="assemblys"></param>
-    public static void AddServicesWithAttributeOfType(this IServiceCollection serviceCollection, params Assembly[]? assemblys)
+    internal static void AddServicesWithAttributeOfType(this IServiceCollection serviceCollection, params Assembly[]? assemblys)
     {
         ArgumentNullException.ThrowIfNull(serviceCollection);
 
@@ -35,12 +35,12 @@ public static class AttributeBasedServiceCollectionExtensions
         AddServicesWithAttributeOfType<SingletonServiceAttribute>(serviceCollection, assemblys.ToList());
     }
     /// <summary>
-    /// 通过扫描特性注册服务
+    ///scan for service
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="serviceCollection"></param>
     /// <param name="assemblys"></param>
-    public static void AddServicesWithAttributeOfType<T>(this IServiceCollection serviceCollection, params Assembly[]? assemblys)
+    internal static void AddServicesWithAttributeOfType<T>(this IServiceCollection serviceCollection, params Assembly[]? assemblys)
     {
         ArgumentNullException.ThrowIfNull(serviceCollection);
 
@@ -49,14 +49,14 @@ public static class AttributeBasedServiceCollectionExtensions
         AddServicesWithAttributeOfType<T>(serviceCollection, assemblys.ToList());
     }
     /// <summary>
-    /// 先判断是否注册过，没有注册时才注册
+    /// scan first，if not registered then register
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="serviceCollection"></param>
     /// <param name="serviceType"></param>
     /// <param name="implementationType"></param>
     /// <param name="lifetime"></param>
-    public static void TryAdd(this IServiceCollection serviceCollection, Type serviceType, Type implementationType, ServiceLifetime lifetime)
+    internal static void TryAdd(this IServiceCollection serviceCollection, Type serviceType, Type implementationType, ServiceLifetime lifetime)
     {
         bool isAlreadyRegistered = serviceCollection.Any(s => s.ServiceType == serviceType && s.ImplementationType == implementationType);
         if (!isAlreadyRegistered)
@@ -65,12 +65,12 @@ public static class AttributeBasedServiceCollectionExtensions
         }
     }
     /// <summary>
-    /// 通过扫描特性注册服务
+    /// scan for service
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="serviceCollection"></param>
     /// <param name="assembliesToBeScanned"></param>
-    public static void AddServicesWithAttributeOfType<T>(this IServiceCollection serviceCollection, IEnumerable<Assembly> assembliesToBeScanned)
+    internal static void AddServicesWithAttributeOfType<T>(this IServiceCollection serviceCollection, IEnumerable<Assembly> assembliesToBeScanned)
     {
         ArgumentNullException.ThrowIfNull(serviceCollection);
 

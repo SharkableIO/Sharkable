@@ -1,4 +1,5 @@
 using System;
+using Sharkable;
 namespace Sharkable.Sample;
 
 public class App
