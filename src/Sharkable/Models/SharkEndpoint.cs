@@ -8,9 +8,9 @@ namespace Sharkable;
 public abstract class SharkEndpoint : ISharkEndpoint
 {
     //internal string corsName;
-    internal string grouName;
-    internal string apiPrefix;
-    internal readonly string baseApiPath;
+    internal string? grouName;
+    internal string? apiPrefix;
+    internal string? baseApiPath;
     public abstract void AddRoutes(IEndpointRouteBuilder app);
 
     protected SharkEndpoint()
@@ -19,18 +19,18 @@ public abstract class SharkEndpoint : ISharkEndpoint
 
         grouName = name.FormatAsGroupName()!;
 
-        using var scope = Shark.ServiceScopeFactory.CreateScope();
-        var opt = scope.ServiceProvider.GetService<IOptions<SharkOption>>();
+        // using var scope = Shark.ServiceScopeFactory.CreateScope();
+        // var opt = scope.ServiceProvider.GetService<IOptions<SharkOption>>();
 
-        if(opt != null)
-        {
-            apiPrefix = opt.Value.ApiPrefix;
-        }
-        else
-        {
-            apiPrefix = "api";
-        }
-        baseApiPath = apiPrefix + "/" + grouName;
+        // if(opt != null)
+        // {
+        //     apiPrefix = opt.Value.ApiPrefix;
+        // }
+        // else
+        // {
+        //     apiPrefix = "api";
+        // }
+        // baseApiPath = apiPrefix + "/" + grouName;
     }
 
     protected SharkEndpoint(string? grouName, string apiPrefix = "api")
@@ -38,6 +38,6 @@ public abstract class SharkEndpoint : ISharkEndpoint
         ArgumentNullException.ThrowIfNullOrWhiteSpace(grouName);
         this.grouName = grouName;
         this.apiPrefix = apiPrefix;
-        baseApiPath = apiPrefix + "/" + grouName;
+        // baseApiPath = apiPrefix + "/" + grouName;
     }
 }

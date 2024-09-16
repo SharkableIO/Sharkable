@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Sharkable.Extensions;
 using System.Diagnostics;
 using System.Linq.Expressions;
@@ -62,11 +63,29 @@ internal static class EndPointUtil
         ArgumentNullException.ThrowIfNull(builder);
 
         var endpointServices = builder.Services.GetServices<ISharkEndpoint>();
-
+        var options = builder.Services.GetService<IOptions<SharkOption>>();
         endpointServices.MyForEach(e =>
         {
             if(e is SharkEndpoint sharkEndpoint)
             {
+                if (string.IsNullOrWhiteSpace(sharkEndpoint.apiPrefix))
+                    sharkEndpoint.apiPrefix = options.Value.ApiPrefix;
+
+                if(sharkEndpoint.grouName != null)
+                {
+                    switch(options.Value.Format)
+                    {
+                        case EndpointFormat.CamelCase:
+                            sharkEndpoint.grouName.ToCamelCase();
+                            break;
+                        case EndpointFormat.Tolower:
+                            sharkEndpoint.grouName.ToLower();
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                sharkEndpoint.baseApiPath = sharkEndpoint.apiPrefix + "/" + sharkEndpoint.grouName; 
                 var group = builder.MapGroup(sharkEndpoint.baseApiPath);
                 sharkEndpoint.AddRoutes(group);
             }
@@ -80,7 +99,7 @@ internal static class EndPointUtil
     internal static void WireSharkEndpoint(this IServiceCollection services)
     {
         var endpoints = GetSharkEndpint(Shark.Assemblies);
-
+        
         endpoints.MyForEach(e =>
         {
             Utils.WriteDebug($"wiring {e.FullName}");
