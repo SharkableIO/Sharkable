@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Sharkable.Extensions;
 
@@ -12,10 +13,19 @@ internal static class StringExtension
         if(value.StartsWith('/'))
             value = value.Remove(0, 1);
 
-        string pattern = @"(endpoint|service|services|controller|controllers)$";
+        string pattern = @"(endpoint|service|services|controller|controllers|apicontroller)$";
 
-        string result = Regex.Replace(value, pattern, "", RegexOptions.IgnoreCase);
-
-        return Shark.ApiPrefix + "/" + result;
+        return Regex.Replace(value, pattern, "", RegexOptions.IgnoreCase);
     }
+    internal static string? ToCamelCase(this string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return null;
+            
+        TextInfo _textInfo = CultureInfo.InvariantCulture.TextInfo;
+        char[] _camelCase = _textInfo.ToTitleCase(text).Replace(" ","").ToCharArray();
+
+        _camelCase[0] = char.ToLower(_camelCase[0]);
+        return new string(_camelCase);
+    }        
 }

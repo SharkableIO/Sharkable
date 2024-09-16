@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 //using MongoDB.Driver;
 
 namespace Sharkable.Sample;
@@ -17,7 +18,9 @@ public class TaskInfoEndpoint : ISharkEndpoint
     {
         app.MapGet("/hello", async ([FromServices]IMonitor monitor) => 
         {
-        
+            using var scope = Shark.ServiceScopeFactory.CreateScope();
+            var sw = scope.ServiceProvider.GetService<IOptions<SharkOption>>();
+            Console.WriteLine(sw?.Value.ApiPrefix);
             return Monitor.GetRandData(6);
         });
 

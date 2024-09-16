@@ -65,7 +65,15 @@ internal static class EndPointUtil
 
         endpointServices.MyForEach(e =>
         {
-            e.AddRoutes(builder);
+            if(e is SharkEndpoint sharkEndpoint)
+            {
+                var group = builder.MapGroup(sharkEndpoint.baseApiPath);
+                sharkEndpoint.AddRoutes(group);
+            }
+            else
+            {
+                e.AddRoutes(builder);
+            }
         });
         return builder;
     }

@@ -1,8 +1,9 @@
 using System.Text.Json.Serialization;
 using Sharkable.Sample;
 using Microsoft.AspNetCore.Mvc;
+using Sharkable;
 
-var builder = WebApplication.CreateSlimBuilder(args);
+var builder = WebApplication.CreateSlimBuilder(args);//.Sharkable([typeof(App).Assembly]);
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -10,9 +11,12 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.TypeInfoResolverChain.Insert(1, AppJsonSerializerContext2.Default);
 });
 
-builder.Services.AddShark([typeof(App).Assembly] );
+builder.Services.AddShark([typeof(App).Assembly], opt=>{
+    opt.Format = EndpointFormat.Tolower;
+});
 builder.Services.AddSampleDataService();
 builder.Services.AddSharkServices();
+
 var app = builder.Build();
 
 var sampleTodos = new Todo[] {
@@ -23,7 +27,7 @@ var sampleTodos = new Todo[] {
             new(5, "Clean the car", DateTime.Now)
         };
 app.AddMongoGroup();
-app.UseShark([typeof(App).Assembly]);
+app.UseShark();
 var todosApi = app.MapGroup("/todos");
 todosApi.MapGet("/init", async ([FromServices] IMonitor monitor) =>
 {
