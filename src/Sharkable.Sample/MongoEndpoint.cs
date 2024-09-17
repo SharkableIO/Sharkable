@@ -74,9 +74,6 @@ public static class MongoEndpoint
 
     public static async void GetData()
     {
-        /*var mongoClient = new MongoClient("mongodb://root:123321@10.10.22.162:27017/");
-        var mongoBase = mongoClient.GetDatabase("atcer");
-        var repo = mongoBase.GetCollection<Notam>("Notam");
-        var ds = await repo.Find(x => x.IsDeleted == false && x.Header.CodeA == "ZGHA").FirstOrDefaultAsync();*/
+        
     }
 }
