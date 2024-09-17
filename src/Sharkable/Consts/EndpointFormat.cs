@@ -5,4 +5,5 @@ public enum EndpointFormat
     Tolower,
     UnChanged,
     CamelCase,
+    SnakeCase,
 }

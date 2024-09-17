@@ -84,6 +84,7 @@ internal static class SharkEndPointExtension
                 {
                     EndpointFormat.CamelCase => sharkEndpoint.grouName.ToCamelCase(),
                     EndpointFormat.Tolower => sharkEndpoint.grouName.ToLower(),
+                    EndpointFormat.SnakeCase => sharkEndpoint.grouName.ToSnakeCase(),
                     _ => sharkEndpoint.grouName,
                 };
                 sharkEndpoint.baseApiPath = sharkEndpoint.apiPrefix + "/" + groupName; 

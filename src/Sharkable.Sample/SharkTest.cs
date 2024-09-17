@@ -2,7 +2,7 @@ using System;
 
 namespace Sharkable.Sample;
 
-public class Shark1Test : SharkEndpoint
+public class SharkTest : SharkEndpoint
 {
     public override void AddRoutes(IEndpointRouteBuilder app)
     {
