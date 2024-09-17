@@ -26,8 +26,22 @@ app.MapGet("/monitor",([FromServices]IMonitor monitor) =>
     monitor.Show();
 });
 ```
+### endpoint auto mapper (new style)
+create a new class
+```csharp
+public class TestEndpoint : ISharkEndpoint
+{
+    public void AddRoutes(IEndpointRouteBuilder app)
+    {
+        app.MapGet("show", ()=>"test result");
+    }
+}
 
-### endpoint auto mapper
+//will now generate a http post method with the url
+// api/test/show
+```
+
+### endpoint auto mapper (old style)
 create a new class
 ```csharp
 [SharkEndpoint]
