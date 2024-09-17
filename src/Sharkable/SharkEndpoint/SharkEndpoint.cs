@@ -1,15 +1,15 @@
 using Microsoft.AspNetCore.Routing;
-using Sharkable.Extensions;
+using Sharkable;
 
 namespace Sharkable;
 
-public abstract class SharkEndpoint : ISharkEndpoint
+public class SharkEndpoint : ISharkEndpoint
 {
     //internal string corsName;
     internal string? grouName;
     internal string? apiPrefix;
     internal string? baseApiPath;
-    public abstract void AddRoutes(IEndpointRouteBuilder app);
+    public virtual void AddRoutes(IEndpointRouteBuilder app) { }
 
     protected SharkEndpoint()
     {

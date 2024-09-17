@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace Sharkable.Extensions;
+namespace Sharkable;
 
 internal static class StringExtension
 {

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
-using Sharkable.Extensions;
+using Sharkable;
 using System.Linq.Expressions;
 
 namespace Sharkable;
@@ -62,33 +62,55 @@ internal static class SharkEndPointExtension
         var options = builder.Services.GetService<IOptions<SharkOption>>();
         endpointServices.MyForEach(e =>
         {
-            if(e is SharkEndpoint sharkEndpoint)
-            {
-                if (string.IsNullOrWhiteSpace(sharkEndpoint.apiPrefix))
-                    sharkEndpoint.apiPrefix = options.Value.ApiPrefix;
+            SharkEndpoint sharkEndpoint;
 
-                if(sharkEndpoint.grouName != null)
-                {
-                    switch(options.Value.Format)
-                    {
-                        case EndpointFormat.CamelCase:
-                            sharkEndpoint.grouName.ToCamelCase();
-                            break;
-                        case EndpointFormat.Tolower:
-                            sharkEndpoint.grouName.ToLower();
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                sharkEndpoint.baseApiPath = sharkEndpoint.apiPrefix + "/" + sharkEndpoint.grouName; 
-                var group = builder.MapGroup(sharkEndpoint.baseApiPath);
-                sharkEndpoint.AddRoutes(group);
+            if(e is SharkEndpoint endpoint)
+            {
+                sharkEndpoint = endpoint;
             }
             else
             {
-                e.AddRoutes(builder);
+                sharkEndpoint = CreateSharkEndpoint(e);
             }
+            
+            if (string.IsNullOrWhiteSpace(sharkEndpoint.apiPrefix))
+                sharkEndpoint.apiPrefix = options?.Value.ApiPrefix;
+
+            string? groupName = null;
+
+            if(sharkEndpoint.grouName != null)
+            {
+                groupName = (options?.Value.Format) switch
+                {
+                    EndpointFormat.CamelCase => sharkEndpoint.grouName.ToCamelCase(),
+                    EndpointFormat.Tolower => sharkEndpoint.grouName.ToLower(),
+                    _ => sharkEndpoint.grouName,
+                };
+                sharkEndpoint.baseApiPath = sharkEndpoint.apiPrefix + "/" + groupName; 
+            }
+            else
+            {
+                groupName = string.Empty;
+            }
+            
+            if(string.IsNullOrWhiteSpace(sharkEndpoint.apiPrefix))
+            {
+                sharkEndpoint.AddRoutes(builder);
+            }
+            else
+            {
+                if(string.IsNullOrWhiteSpace(groupName))
+                {
+                    sharkEndpoint.baseApiPath = sharkEndpoint.apiPrefix;
+                }
+                else
+                {
+                    sharkEndpoint.baseApiPath = $"{sharkEndpoint.apiPrefix}/{groupName}";
+                }
+                var group = builder.MapGroup(sharkEndpoint.baseApiPath);
+                sharkEndpoint.AddRoutes(group);
+            }
+            
         });
         return builder;
     }
@@ -187,5 +209,23 @@ internal static class SharkEndPointExtension
         });
 
         return lst;
+    }
+
+    public static SharkEndpoint CreateSharkEndpoint<T>(T shark, string? apiPrefix = "api") where T: ISharkEndpoint
+    {
+        var sharkEndpointType = typeof(SharkEndpoint);
+        var instance = (SharkEndpoint)Activator.CreateInstance(sharkEndpointType, nonPublic: true)!;
+
+        var grouNameField = sharkEndpointType.GetField("grouName", BindingFlags.Instance | BindingFlags.NonPublic);
+        var apiPrefixField = sharkEndpointType.GetField("apiPrefix", BindingFlags.Instance | BindingFlags.NonPublic);
+        var typeName = shark.GetType().Name;
+        grouNameField?.SetValue(instance, typeName.FormatAsGroupName());
+        apiPrefixField?.SetValue(instance, apiPrefix);
+        var addRoutesMethod = typeof(T).GetMethod("AddRoutes");
+        var addRoutesDelegate = (Action<IEndpointRouteBuilder>)Delegate.CreateDelegate(typeof(Action<IEndpointRouteBuilder>), shark, addRoutesMethod!);
+
+        var addRoutesField = sharkEndpointType.GetField("AddRoutes", BindingFlags.Instance | BindingFlags.Public);
+        addRoutesField?.SetValue(instance, addRoutesDelegate);
+        return instance;
     }
 }
