@@ -2,14 +2,14 @@
 <package >
   <metadata>
     <id>Sharkable</id>
-    <version>0.0.9</version>
+    <version>0.0.10</version>
     <title>Sharkable</title>
     <authors>charleypeng</authors>
     <readme>docs\README.md</readme>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="expression">MIT</license>
     <!-- <icon>icon.png</icon> -->
-    <projectUrl>https://github.com/charleypeng/sharkable</projectUrl>
+    <projectUrl>https://github.com/SharkableCommunity/Sharkable</projectUrl>
     <description>a dotnet minimal api framework collection aimed to support aot</description>
     <releaseNotes>add option configuration and assembly context</releaseNotes>
     <copyright>CopyRight 2024 Penglei</copyright>
