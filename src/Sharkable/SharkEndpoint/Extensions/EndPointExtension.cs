@@ -1,15 +1,11 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
 using Sharkable.Extensions;
-using System.Diagnostics;
 using System.Linq.Expressions;
-using System.Reflection;
 
 namespace Sharkable;
 
-internal static class EndPointUtil
+internal static class SharkEndPointExtension
 {
     public static void MapEndpoints(this WebApplication? app)
     {
