@@ -12,7 +12,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 builder.Services.AddShark([typeof(App).Assembly], opt=>{
-    opt.Format = EndpointFormat.Tolower;
+    opt.Format = EndpointFormat.CamelCase;
 });
 builder.Services.AddSampleDataService();
 builder.Services.AddSharkServices();

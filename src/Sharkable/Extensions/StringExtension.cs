@@ -17,15 +17,11 @@ internal static class StringExtension
 
         return Regex.Replace(value, pattern, "", RegexOptions.IgnoreCase);
     }
-    internal static string? ToCamelCase(this string? text)
+    internal static string? ToCamelCase(this string? str)
     {
-        if (string.IsNullOrWhiteSpace(text))
-            return null;
-            
-        TextInfo _textInfo = CultureInfo.InvariantCulture.TextInfo;
-        char[] _camelCase = _textInfo.ToTitleCase(text).Replace(" ","").ToCharArray();
+        if (string.IsNullOrEmpty(str))
+            return str;
 
-        _camelCase[0] = char.ToLower(_camelCase[0]);
-        return new string(_camelCase);
+        return char.ToLower(str[0]) + str[1..];
     }        
 }
