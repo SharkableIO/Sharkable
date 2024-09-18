@@ -6,7 +6,6 @@ namespace Sharkable.Sample;
 [ScopedService]
 public class Monitor(ILogger<Monitor> logger, ISqlSugarClient sqlSugarClient) : IMonitor, ISingleton
 {
-    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public void Show()
     {
         logger.LogInformation("{a}",DateTime.Now.ToLongTimeString());

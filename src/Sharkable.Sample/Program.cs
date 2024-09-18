@@ -15,7 +15,6 @@ builder.Services.AddShark([typeof(App).Assembly], opt=>{
     opt.Format = EndpointFormat.SnakeCase;
 });
 builder.Services.AddSampleDataService();
-builder.Services.AddSharkServices();
 
 var app = builder.Build();
 
