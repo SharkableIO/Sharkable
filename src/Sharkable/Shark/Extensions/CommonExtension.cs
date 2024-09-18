@@ -15,7 +15,11 @@ public static class CommonExtension
         {
             services.Configure<SharkOption>((opt)=> { opt = option; });
         }
+        //setup shark options
+        Shark.SharkOption = option;
+        //wire endpoints
         services.WireSharkEndpoint();
+        //wire service lifelime
         services.AddServicesWithAttributeOfTypeFromAssembly(Shark.Assemblies);
     }
     internal static void UseCommon(this WebApplication app)
