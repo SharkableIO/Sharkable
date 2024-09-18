@@ -1,8 +1,8 @@
-namespace Sharkable;
-
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+
+namespace Sharkable;
 
 /// <summary>
 /// internal shark class

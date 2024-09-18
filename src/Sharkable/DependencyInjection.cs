@@ -1,10 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Options;
-using Sharkable;
-
-namespace  Microsoft.Extensions.DependencyInjection;
+﻿namespace  Microsoft.Extensions.DependencyInjection;
 
 public static class SharkableExtension
 {

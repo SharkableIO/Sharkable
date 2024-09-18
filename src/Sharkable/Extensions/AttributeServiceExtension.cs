@@ -1,7 +1,5 @@
-namespace Sharkable;
 
-using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
+namespace Sharkable;
 
 /// <summary>
 /// scan for service extensions

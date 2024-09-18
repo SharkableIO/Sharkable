@@ -1,3 +1,4 @@
+
 namespace Sharkable;
 
 public static class CommonExtension

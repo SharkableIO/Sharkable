@@ -1,8 +1,9 @@
-using Microsoft.AspNetCore.Routing;
-using Sharkable;
 
 namespace Sharkable;
 
+/// <summary>
+/// Mininal api endpoint
+/// </summary>
 public class SharkEndpoint : ISharkEndpoint
 {
     //internal string corsName;
