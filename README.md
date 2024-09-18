@@ -1,9 +1,8 @@
 # Sharkable
-a dotnet minimal api framework collection
-<div align="center">
+a dotnet minimal api framework collection \
+\
 [![Sharkable](https://img.shields.io/nuget/v/Sharkable.svg?color=red&style=flat-square)](https://www.nuget.org/packages/Sharkable/)
 [![Sharkable](https://img.shields.io/nuget/dt/Sharkable.svg?style=flat-square)](https://www.nuget.org/packages/Sharkable/)
-</div>
 ## Usage
 
 ### automatic dependency injection
