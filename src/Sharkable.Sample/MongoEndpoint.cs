@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 namespace Sharkable.Sample;
 
 [SharkEndpoint]
-public class TaskInfoVlosiV2Endpoint : ISharkEndpoint
+public class TaskInfoVlosiEndpointV2 : ISharkEndpoint
 {
     public static void MapTaskInfo( WebApplication app) 
     {

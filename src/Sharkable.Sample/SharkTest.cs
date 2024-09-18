@@ -15,3 +15,29 @@ public class SharkTest : SharkEndpoint
         });
     }
 }
+
+public class LoveSellerServiceV2 : ISharkEndpoint
+{
+    public void AddRoutes(IEndpointRouteBuilder app)
+    {
+        app.MapGet("/lover", () =>
+        {
+            var s = Shark.ServiceScopeFactory.CreateScope().ServiceProvider.GetService<IMonitor>();
+            s?.Show();
+            return Results.Ok("lover");
+        }).AllowAnonymous();
+    }
+}
+
+public class LoveSellerServiceV1 : ISharkEndpoint
+{
+    public void AddRoutes(IEndpointRouteBuilder app)
+    {
+        app.MapGet("/lover", () =>
+        {
+            var s = Shark.ServiceScopeFactory.CreateScope().ServiceProvider.GetService<IMonitor>();
+            s?.Show();
+            return Results.Ok("lover");
+        }).AllowAnonymous();
+    }
+}
