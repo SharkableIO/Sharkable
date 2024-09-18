@@ -39,7 +39,7 @@ public class TestEndpoint : ISharkEndpoint
     }
 }
 
-//will now generate a http post method with the url
+//will now generate a http get method with the url
 // api/test/show
 ```
 
@@ -56,7 +56,7 @@ public class TestEndpoint
     }
 }
 
-//will now generate a http post method with the url
+//will now generate a http get method with the url
 // api/test/show
 ```
 for more use sample please see Sharkable.Sample project
