@@ -8,15 +8,15 @@ internal static class StringExtension
 {
     internal static string? FormatAsGroupName(this string? value)
     {
-        if (value == null)
-            return "";
+        if (string.IsNullOrWhiteSpace(value))
+            return value;
 
         if(value.StartsWith('/'))
             value = value.Remove(0, 1);
 
         string pattern = @"(endpoint|service|services|controller|controllers|apicontroller)$";
 
-        return Regex.Replace(value, pattern, "", RegexOptions.IgnoreCase);
+        return Regex.Replace(value, pattern, "", RegexOptions.IgnoreCase).GetVersionFormat();
     }
     internal static string? ToCamelCase(this string? str)
     {
@@ -26,12 +26,10 @@ internal static class StringExtension
         return char.ToLower(str[0]) + str[1..];
     }
 
-    internal static string ToSnakeCase(this string text)
+    internal static string? ToSnakeCase(this string? text)
     {
         if (string.IsNullOrEmpty(text))
-        {
             return text;
-        }
 
         var builder = new StringBuilder(text.Length + Math.Min(2, text.Length / 5));
         var previousCategory = default(UnicodeCategory?);
@@ -46,6 +44,12 @@ internal static class StringExtension
                 continue;
             }
 
+            if(currentChar == '@')
+            {
+                builder.Append('@');
+                previousCategory = null;
+                continue;
+            }
             var currentCategory = char.GetUnicodeCategory(currentChar);
             switch (currentCategory)
             {
@@ -79,5 +83,16 @@ internal static class StringExtension
         }
 
         return builder.ToString();
+    }
+
+    public static string? GetVersionFormat(this string? str)
+    {
+        if (string.IsNullOrWhiteSpace(str))
+            return str;
+        
+        string pattern = @"V(\d+)";
+        string replacement = @"@$1";
+
+        return Regex.Replace(str, pattern, replacement);
     }
 }

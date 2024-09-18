@@ -22,6 +22,7 @@ public partial class Shark
     public static HttpContext HttpContext { get; }
     public static AssemblyContext? Context => AssemblyContext.Instance;
     public static IServiceScopeFactory ServiceScopeFactory => InternalShark.ServiceScopeFactory;
+    public static SharkOption SharkOption { get; internal set; } = new SharkOption();
     //public properties
 
 
