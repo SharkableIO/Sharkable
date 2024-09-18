@@ -26,7 +26,7 @@ internal static class StringExtension
         return char.ToLower(str[0]) + str[1..];
     }
 
-    internal static string ToSnakeCase(this string text)
+    internal static string? ToSnakeCase(this string? text)
     {
         if (string.IsNullOrEmpty(text))
         {
