@@ -65,6 +65,7 @@ internal static class SharkEndPointExtension
             if(e is SharkEndpoint endpoint)
             {
                 sharkEndpoint = endpoint;
+                sharkEndpoint.BuildAction = endpoint.AddRoutes;
             }
             else
             {
@@ -94,7 +95,7 @@ internal static class SharkEndPointExtension
             
             if(string.IsNullOrWhiteSpace(sharkEndpoint.apiPrefix))
             {
-                sharkEndpoint.AddRoutes(builder);
+                sharkEndpoint.BuildAction?.Invoke(builder);
             }
             else
             {
@@ -107,7 +108,7 @@ internal static class SharkEndPointExtension
                     sharkEndpoint.baseApiPath = $"{sharkEndpoint.apiPrefix}/{groupName}";
                 }
                 var group = builder.MapGroup(sharkEndpoint.baseApiPath);
-                sharkEndpoint.AddRoutes(group);
+                sharkEndpoint.BuildAction?.Invoke(group);
             }
             
         });
@@ -210,7 +211,8 @@ internal static class SharkEndPointExtension
         return lst;
     }
 
-    public static SharkEndpoint CreateSharkEndpoint<T>(T shark, string? apiPrefix = "api") where T: ISharkEndpoint
+    [Obsolete("due to aot incompetable, this method is not supported")]
+    public static SharkEndpoint CreateSharkEndpointOld<T>(T shark, string? apiPrefix = "api") where T: ISharkEndpoint
     {
         var sharkEndpointType = typeof(SharkEndpoint);
         var instance = (SharkEndpoint)Activator.CreateInstance(sharkEndpointType, nonPublic: true)!;
@@ -225,6 +227,20 @@ internal static class SharkEndPointExtension
 
         var addRoutesField = sharkEndpointType.GetField("AddRoutes", BindingFlags.Instance | BindingFlags.Public);
         addRoutesField?.SetValue(instance, addRoutesDelegate);
+        return instance;
+    }
+    public static SharkEndpoint CreateSharkEndpoint<T>(T shark, string? apiPrefix = "api") where T : ISharkEndpoint
+    {
+        var sharkEndpointType = typeof(SharkEndpoint);
+        var instance = (SharkEndpoint)Activator.CreateInstance(sharkEndpointType, nonPublic: true)!;
+
+        // Directly set fields using known properties or methods
+        instance.grouName = shark.GetType().Name.FormatAsGroupName();
+        instance.apiPrefix = apiPrefix;
+
+        // Assign the delegate
+        instance.BuildAction = shark.AddRoutes;
+
         return instance;
     }
 }
