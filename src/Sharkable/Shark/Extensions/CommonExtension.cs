@@ -24,9 +24,9 @@ public static class CommonExtension
     }
     internal static void UseCommon(this WebApplication app)
     {
-        InternalShark.ServiceProvider = app.Services;
         InternalShark.Configuration = app.Configuration;
         InternalShark.HostEnvironment = app.Environment;
-        InternalShark.ServiceScopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();     
+        InternalShark.ServiceScopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
+        InternalShark.ServiceProvider = InternalShark.ServiceScopeFactory.CreateScope().ServiceProvider;
     }
 }
