@@ -8,9 +8,9 @@ namespace Sharkable;
 public partial class Shark
 {
     //private fields
-    private readonly IServiceScopeFactory _factory;
+
     //private|inernal statics
-    private static Shark? instance = null;
+
     internal static readonly object condition = new();
     //internal IServiceProvider services { get => GetApp(_factory); }
     //public statics
