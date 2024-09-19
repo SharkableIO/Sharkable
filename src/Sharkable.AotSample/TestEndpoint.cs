@@ -7,10 +7,10 @@ public class LoveSellerServiceV2 : ISharkEndpoint
 {
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        app.SharkMapGet("/ILoveYouV2{like}/{id}", ([FromServices]ILogger<LoveSellerServiceV2> logger, int id, int like) =>
+        app.MapGet("/ILoveYou{name}/{id}", ([FromServices]ILogger<LoveSellerServiceV2> logger, int id, string name) =>
         {
             logger.LogInformation(id.ToString());
-            logger.LogInformation(like.ToString());
+            logger.LogInformation(name);
             return Results.Ok("lover");
         }).AllowAnonymous();
     }
@@ -23,7 +23,13 @@ public class LoveSellerV1Service : ISharkEndpoint
         app.MapGet("/lover", () =>
         {
         
-            return Results.Ok("lover");
-        }).AllowAnonymous();
+            return TypedResults.Ok("lover");
+        })
+        .WithName("GetLover")
+        .WithOpenApi(op=>new(op)
+        {
+            Summary = "love is love",
+            Description = "i know this is hard to say"
+        });
     }
 }

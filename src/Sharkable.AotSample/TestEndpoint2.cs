@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Sharkable.AotSample;
 
-[SharkEndpoint]
+//[SharkEndpoint]
 public class TestEndpoint2
 {
     [SharkMethod("test", SharkHttpMethod.GET)]

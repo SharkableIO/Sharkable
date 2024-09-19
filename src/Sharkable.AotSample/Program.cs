@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Routing.Constraints;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -7,7 +8,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
 });
 builder.Services.AddShark([typeof(Program).Assembly], opt=>{
-    opt.Format = Sharkable.EndpointFormat.SnakeCase;
+    opt.Format = Sharkable.EndpointFormat.Tolower;
 });
 var app = builder.Build();
 app.UseShark();

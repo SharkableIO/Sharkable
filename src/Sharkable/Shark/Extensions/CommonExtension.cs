@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Routing.Constraints;
 
 namespace Sharkable;
 
@@ -15,12 +16,23 @@ public static class CommonExtension
         {
             services.Configure<SharkOption>((opt)=> { opt = option; });
         }
+        // Add services to the container.
+        services.Configure<RouteOptions>(options =>
+        {
+            options.SetParameterPolicy<RegexInlineRouteConstraint>("regex");
+        });
         //setup shark options
         Shark.SharkOption = option;
         //wire endpoints
         services.WireSharkEndpoint();
         //wire service lifelime
         services.AddServicesWithAttributeOfTypeFromAssembly(Shark.Assemblies);
+
+        if (option.UseOpenApi)
+        {
+            services.AddEndpointsApiExplorer();
+            services.AddSwaggerGen();
+        }
     }
     internal static void UseCommon(this WebApplication app)
     {
@@ -28,5 +40,11 @@ public static class CommonExtension
         InternalShark.HostEnvironment = app.Environment;
         InternalShark.ServiceScopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
         InternalShark.ServiceProvider = InternalShark.ServiceScopeFactory.CreateScope().ServiceProvider;
+
+        if(Shark.SharkOption.ShowSwaggerDoc)
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
     }
 }
