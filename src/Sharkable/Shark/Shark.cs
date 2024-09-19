@@ -25,22 +25,6 @@ public partial class Shark
     public static SharkOption SharkOption { get; internal set; } = new SharkOption();
     //public properties
 
-
-#region  internal
-    internal Shark()
-    {
-
-    }
-    internal static Shark GetShark(IServiceCollection services)
-    {
-        lock(condition)
-        {
-            instance ??= new Shark();
-            return instance;
-        }
-    }
-
-#endregion
     public static IServiceProvider GetServiceProvider(Type serviceType)
     {
         // console program
