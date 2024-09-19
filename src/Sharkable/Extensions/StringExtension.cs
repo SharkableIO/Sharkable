@@ -11,18 +11,7 @@ internal static class StringExtension
         if (string.IsNullOrWhiteSpace(str))
             return str;
         string pattern = "(endpoint|service|services|controller|controllers|apicontroller)(?=V?\\d*$)";
-        
-        // if (string.IsNullOrWhiteSpace(value))
-        //     return value;
-
-        // if(value.StartsWith('/'))
-        //     value = value.Remove(0, 1);
-
-        // string pattern = @"(endpoint|service|services|controller|controllers|apicontroller)$";
-
-        // return Regex.Replace(value, pattern, "", RegexOptions.IgnoreCase).GetVersionFormat();
-        var r = Regex.Replace(str, pattern, "", RegexOptions.IgnoreCase).GetVersionFormat();
-        return r;
+        return Regex.Replace(str, pattern, "", RegexOptions.IgnoreCase).GetVersionFormat();
     }
     static string? RemoveSuffix(this string? input)
     {
