@@ -1,4 +1,5 @@
-
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.Extensions.Hosting;
 namespace Sharkable;
 
 public static class CommonExtension
@@ -21,6 +22,12 @@ public static class CommonExtension
         services.WireSharkEndpoint();
         //wire service lifelime
         services.AddServicesWithAttributeOfTypeFromAssembly(Shark.Assemblies);
+
+        if (option.UseOpenApi)
+        {
+            services.AddEndpointsApiExplorer();
+            services.AddSwaggerGen();
+        }
     }
     internal static void UseCommon(this WebApplication app)
     {
@@ -28,5 +35,11 @@ public static class CommonExtension
         InternalShark.HostEnvironment = app.Environment;
         InternalShark.ServiceScopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
         InternalShark.ServiceProvider = InternalShark.ServiceScopeFactory.CreateScope().ServiceProvider;
+
+        if(Shark.SharkOption.ShowSwaggerDoc)
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
     }
 }
