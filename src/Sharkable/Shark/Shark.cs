@@ -8,9 +8,9 @@ namespace Sharkable;
 public partial class Shark
 {
     //private fields
-    private readonly IServiceScopeFactory _factory;
+
     //private|inernal statics
-    private static Shark? instance = null;
+
     internal static readonly object condition = new();
     //internal IServiceProvider services { get => GetApp(_factory); }
     //public statics
@@ -19,28 +19,12 @@ public partial class Shark
     public static IServiceProvider Services => InternalShark.ServiceProvider;
     public static IWebHostEnvironment WebHostEnvironment => InternalShark.WebHostEnvironment;
     public static IConfiguration Configuration => InternalShark.Configuration;
-    public static HttpContext HttpContext { get; }
+    //public static HttpContext HttpContext { get; }
     public static AssemblyContext? Context => AssemblyContext.Instance;
     public static IServiceScopeFactory ServiceScopeFactory => InternalShark.ServiceScopeFactory;
     public static SharkOption SharkOption { get; internal set; } = new SharkOption();
     //public properties
 
-
-#region  internal
-    internal Shark()
-    {
-
-    }
-    internal static Shark GetShark(IServiceCollection services)
-    {
-        lock(condition)
-        {
-            instance ??= new Shark();
-            return instance;
-        }
-    }
-
-#endregion
     public static IServiceProvider GetServiceProvider(Type serviceType)
     {
         // console program
