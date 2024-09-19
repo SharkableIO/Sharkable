@@ -58,6 +58,9 @@ internal static class SharkEndPointExtension
 
         var endpointServices = builder.Services.GetServices<ISharkEndpoint>();
         var options = builder.Services.GetService<IOptions<SharkOption>>();
+        
+        ArgumentNullException.ThrowIfNull(options);
+        
         endpointServices.MyForEach(e =>
         {
             SharkEndpoint sharkEndpoint;
@@ -73,20 +76,14 @@ internal static class SharkEndPointExtension
             }
             
             if (string.IsNullOrWhiteSpace(sharkEndpoint.apiPrefix))
-                sharkEndpoint.apiPrefix = options?.Value.ApiPrefix;
+                sharkEndpoint.apiPrefix = options.Value.ApiPrefix;
 
             string? groupName = null;
 
             if(sharkEndpoint.grouName != null)
             {
-                groupName = (options?.Value.Format) switch
-                {
-                    EndpointFormat.CamelCase => sharkEndpoint.grouName.ToCamelCase(),
-                    EndpointFormat.Tolower => sharkEndpoint.grouName.ToLower(),
-                    EndpointFormat.SnakeCase => sharkEndpoint.grouName.ToSnakeCase(),
-                    _ => sharkEndpoint.grouName,
-                };
-                sharkEndpoint.baseApiPath = sharkEndpoint.apiPrefix + "/" + groupName; 
+                groupName = sharkEndpoint.grouName.GetCaseFormat(options.Value.Format);
+                sharkEndpoint.baseApiPath = $"{sharkEndpoint.apiPrefix}/{groupName}";
             }
             else
             {
@@ -211,7 +208,7 @@ internal static class SharkEndPointExtension
         return lst;
     }
 
-    [Obsolete("due to aot incompetable, this method is not supported")]
+    [Obsolete("due to aot incompatible, this method is not supported")]
     public static SharkEndpoint CreateSharkEndpointOld<T>(T shark, string? apiPrefix = "api") where T: ISharkEndpoint
     {
         var sharkEndpointType = typeof(SharkEndpoint);
