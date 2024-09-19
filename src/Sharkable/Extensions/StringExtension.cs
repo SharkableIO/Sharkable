@@ -6,17 +6,38 @@ namespace Sharkable;
 
 internal static class StringExtension
 {
-    internal static string? FormatAsGroupName(this string? value)
+    internal static string? FormatAsGroupName(this string? str)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            return value;
+        if (string.IsNullOrWhiteSpace(str))
+            return str;
+        string pattern = "(endpoint|service|services|controller|controllers|apicontroller)(?=V?\\d*$)";
+        
+        // if (string.IsNullOrWhiteSpace(value))
+        //     return value;
 
-        if(value.StartsWith('/'))
-            value = value.Remove(0, 1);
+        // if(value.StartsWith('/'))
+        //     value = value.Remove(0, 1);
 
-        string pattern = @"(endpoint|service|services|controller|controllers|apicontroller)$";
+        // string pattern = @"(endpoint|service|services|controller|controllers|apicontroller)$";
 
-        return Regex.Replace(value, pattern, "", RegexOptions.IgnoreCase).GetVersionFormat();
+        // return Regex.Replace(value, pattern, "", RegexOptions.IgnoreCase).GetVersionFormat();
+        var r = Regex.Replace(str, pattern, "", RegexOptions.IgnoreCase).GetVersionFormat();
+        return r;
+    }
+    static string? RemoveSuffix(this string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return input;
+        string[] suffixes = ["Service", "Controller", "Endpoint"];
+        foreach (var suffix in suffixes)
+        {
+            int index = input.LastIndexOf(suffix, StringComparison.OrdinalIgnoreCase);
+            if (index != -1 && index + suffix.Length == input.Length)
+            {
+                return input[..index];
+            }
+        }
+        return input;
     }
     internal static string? ToCamelCase(this string? str)
     {

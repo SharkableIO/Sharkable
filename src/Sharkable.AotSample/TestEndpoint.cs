@@ -14,7 +14,7 @@ public class LoveSellerServiceV2 : ISharkEndpoint
     }
 }
 
-public class LoveSellerServiceV1 : ISharkEndpoint
+public class LoveSellerV1Service : ISharkEndpoint
 {
     public void AddRoutes(IEndpointRouteBuilder app)
     {

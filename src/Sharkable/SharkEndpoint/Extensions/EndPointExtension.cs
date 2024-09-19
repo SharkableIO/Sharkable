@@ -232,10 +232,11 @@ internal static class SharkEndPointExtension
     public static SharkEndpoint CreateSharkEndpoint<T>(T shark, string? apiPrefix = "api") where T : ISharkEndpoint
     {
         var sharkEndpointType = typeof(SharkEndpoint);
+        var groupName = shark.GetType().Name.FormatAsGroupName();
         var instance = (SharkEndpoint)Activator.CreateInstance(sharkEndpointType, nonPublic: true)!;
 
         // Directly set fields using known properties or methods
-        instance.grouName = shark.GetType().Name.FormatAsGroupName();
+        instance.grouName = groupName;
         instance.apiPrefix = apiPrefix;
 
         // Assign the delegate
