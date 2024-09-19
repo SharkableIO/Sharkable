@@ -95,7 +95,7 @@ internal static class StringExtension
         return builder.ToString();
     }
 
-    public static string? GetVersionFormat(this string? str)
+    internal static string? GetVersionFormat(this string? str)
     {
         if (string.IsNullOrWhiteSpace(str))
             return str;
@@ -104,5 +104,20 @@ internal static class StringExtension
         string replacement = @"@$1";
 
         return Regex.Replace(str, pattern, replacement);
+    }
+    internal static string? GetCaseFormat(this string? str, EndpointFormat format = EndpointFormat.UnChanged)
+    {
+        if (string.IsNullOrWhiteSpace(str))
+            return str;
+        
+        var _str = format switch 
+        {
+            EndpointFormat.CamelCase => str.ToCamelCase(),
+            EndpointFormat.Tolower => str.ToLower(),
+            EndpointFormat.SnakeCase => str.ToSnakeCase(),
+            _ => str,
+        };
+
+        return _str;
     }
 }
