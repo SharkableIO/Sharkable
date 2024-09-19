@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Sharkable</id>
-    <version>0.0.14</version>
+    <version>0.0.15</version>
     <title>Sharkable</title>
     <authors>charleypeng</authors>
     <readme>docs\README.md</readme>
@@ -14,6 +14,10 @@
     <releaseNotes>add openapi and swagger support</releaseNotes>
     <copyright>CopyRight 2024 Penglei</copyright>
     <tags>minialapi aot framework toolkit</tags>
+    <dependencies>
+      <dependency id="Microsoft.AspNetCore.OpenApi" version="8.0.8" />
+      <dependency id="Swashbuckle.AspNetCore" version="6.7.3" />
+    </dependencies>
   </metadata>
    <files>
     <file src="README.md" target="docs\" />
