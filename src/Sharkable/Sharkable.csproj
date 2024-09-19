@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
 		<Description>🌈Powerful tools for dotnet aot and more</Description>
-    <AssemblyVersion>0.0.14</AssemblyVersion>
+    <AssemblyVersion>0.0.15</AssemblyVersion>
 		<PackageProjectUrl>https://github.com/charleypeng/Sharkable</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/charleypeng/Sharkable</RepositoryUrl>
 		<PackageTags>dotnet,minimalapi,toolkit,framework</PackageTags>
