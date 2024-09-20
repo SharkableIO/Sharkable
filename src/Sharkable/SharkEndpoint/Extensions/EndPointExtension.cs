@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using System.Linq.Expressions;
 
@@ -119,7 +120,7 @@ internal static class SharkEndPointExtension
         endpoints.MyForEach(e =>
         {
             Utils.WriteDebug($"wiring {e.FullName}");
-            services.AddSingleton(typeof(ISharkEndpoint), e);
+            services.TryAddSingleton(typeof(ISharkEndpoint), e);
         });
     }
     private static List<Type>? GetSharkEndpint(Assembly[]? assemblies)
