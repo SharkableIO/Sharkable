@@ -14,7 +14,7 @@ public sealed class SharkOption : ISharkOption
     /// <summary>
     /// decide wheather to show the swargger document or not
     /// </summary>
-    public bool ShowSwaggerDoc { get; set; } = true;
+    public bool UseSwaggerDoc { get; set; } = true;
     /// <summary>
     /// endpoint path format, default is camel case
     /// </summary>
