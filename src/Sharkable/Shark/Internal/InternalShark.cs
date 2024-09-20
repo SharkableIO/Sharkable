@@ -7,7 +7,7 @@ namespace Sharkable;
 /// <summary>
 /// internal shark class
 /// </summary>
-internal class InternalShark
+internal sealed class InternalShark
 {
     internal static IServiceCollection InternalServices { get; private set;} = null!;
     public static IServiceProvider ServiceProvider { get; internal set; } = null!;
@@ -15,6 +15,7 @@ internal class InternalShark
     public static IWebHostEnvironment WebHostEnvironment { get; internal set; } = null!;
     public static IHostEnvironment HostEnvironment { get; internal set; } = null!;
     public static IServiceScopeFactory ServiceScopeFactory { get; internal set; } = null!;
+    
     internal static void ConfigureShark(IWebHostBuilder builder, Assembly[]? assemblies, IHostBuilder? hostBuilder = default)
     {
         if(hostBuilder == null || hostBuilder == default)
