@@ -4,13 +4,13 @@ namespace Sharkable;
 
 public static class CommonExtension
 {
-    internal static void AddCommom(this IServiceCollection services, Action<SharkOption>? configure = null)
+    internal static void AddCommom(this IServiceCollection services, Action<SharkOption>? setupOptions = null)
     {
         var option = new SharkOption();
-        if(configure != null)
+        if(setupOptions != null)
         {
-            configure(option);
-            services.Configure(configure);
+            setupOptions(option);
+            services.Configure(setupOptions);
         }
         else
         {
@@ -28,14 +28,18 @@ public static class CommonExtension
         //wire service lifelime
         services.AddServicesWithAttributeOfTypeFromAssembly(Shark.Assemblies);
 
-        if (option.UseOpenApi)
+        if (option.UseSwaggerDoc)
         {
             services.AddEndpointsApiExplorer();
-            services.AddSwaggerGen();
+            services.AddSwaggerGen(SharkOption.SwaggerGenConfigure);
         }
     }
-    internal static void UseCommon(this WebApplication app)
+    internal static void UseCommon(this WebApplication app, Action<UseSharkOptions>? setupOptions = null)
     {
+        var opt = new UseSharkOptions();
+
+        setupOptions?.Invoke(opt);
+
         InternalShark.Configuration = app.Configuration;
         InternalShark.HostEnvironment = app.Environment;
         InternalShark.ServiceScopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
@@ -43,7 +47,7 @@ public static class CommonExtension
 
         if(Shark.SharkOption.UseSwaggerDoc)
         {
-            app.UseSwagger();
+            app.UseSwagger(UseSharkOptions.UseSwaggerConfigure);
             app.UseSwaggerUI();
         }
     }

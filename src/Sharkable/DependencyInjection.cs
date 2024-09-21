@@ -16,9 +16,9 @@ public static class SharkableExtension
         services.AddCommom(setupOption);
     }
 
-    public static void UseShark(this WebApplication app)
+    public static void UseShark(this WebApplication app, Action<UseSharkOptions>? setupOption = null)
     {
-        app.UseCommon();
+        app.UseCommon(setupOption);
         app.MapEndpoints();
     }
 
