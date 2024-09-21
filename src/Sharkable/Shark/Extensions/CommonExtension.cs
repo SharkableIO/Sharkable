@@ -31,7 +31,7 @@ public static class CommonExtension
         if (option.UseSwaggerDoc)
         {
             services.AddEndpointsApiExplorer();
-            services.AddSwaggerGen();
+            services.AddSwaggerGen(SharkOption.SwaggerGenConfigure);
         }
     }
     internal static void UseCommon(this WebApplication app)
@@ -43,7 +43,7 @@ public static class CommonExtension
 
         if(Shark.SharkOption.UseSwaggerDoc)
         {
-            app.UseSwagger();
+            app.UseSwagger(UseSharkOptions.UseSwaggerConfigure);
             app.UseSwaggerUI();
         }
     }
