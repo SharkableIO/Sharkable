@@ -15,7 +15,12 @@ builder.Services.AddShark([typeof(Program).Assembly], opt=>{
     });
 });
 var app = builder.Build();
-app.UseShark();
+app.UseShark(opt=>{
+    opt.ConfigureSwaggerOptions(sw =>
+    {
+        
+    });
+});
 var sampleTodos = new Todo[] {
     new(1, "Walk the dog"),
     new(2, "Do the dishes", DateOnly.FromDateTime(DateTime.Now)),
