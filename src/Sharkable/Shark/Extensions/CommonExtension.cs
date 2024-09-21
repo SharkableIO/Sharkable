@@ -28,7 +28,7 @@ public static class CommonExtension
         //wire service lifelime
         services.AddServicesWithAttributeOfTypeFromAssembly(Shark.Assemblies);
 
-        if (option.UseOpenApi)
+        if (option.UseSwaggerDoc)
         {
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
