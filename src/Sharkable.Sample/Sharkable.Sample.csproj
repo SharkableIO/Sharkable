@@ -1,11 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
-    <ProjectReference Include="..\Sharkable\Sharkable.csproj" />
+    <Compile Remove="Attributes\**" />
+    <Content Remove="Attributes\**" />
+    <EmbeddedResource Remove="Attributes\**" />
+    <None Remove="Attributes\**" />
   </ItemGroup>
-  
+
   <ItemGroup>
-    <Folder Include="Attributes/" />
+    <ProjectReference Include="..\Sharkable\Sharkable.csproj" />
   </ItemGroup>
  <ItemGroup>
 		<RdXmlFile Include="rd.xml" />
