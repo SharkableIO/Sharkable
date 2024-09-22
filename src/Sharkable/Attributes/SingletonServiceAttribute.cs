@@ -1,7 +1,7 @@
 ﻿namespace Sharkable;
 
 /// <summary>
-/// Shark singleton service
+/// inject as singleton service
 /// </summary>
 [AttributeUsage(AttributeTargets.Interface | AttributeTargets.Class, AllowMultiple = false)]
 public sealed class SingletonServiceAttribute : Attribute
