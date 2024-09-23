@@ -5,19 +5,21 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E048E613-D35B-4F9F-A634-CC07D2265518}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sharkable", "src\Sharkable\Sharkable.csproj", "{BE7F819E-A863-4035-8BA8-3F2013123EAB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sharkable", "src\Sharkable\Sharkable.csproj", "{BE7F819E-A863-4035-8BA8-3F2013123EAB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sharkable.Sample", "src\Sharkable.Sample\Sharkable.Sample.csproj", "{4143F0A0-A3CE-4057-A2F4-4BB871F68FB4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sharkable.Sample", "src\Sharkable.Sample\Sharkable.Sample.csproj", "{4143F0A0-A3CE-4057-A2F4-4BB871F68FB4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sharkable.AotSample", "src\Sharkable.AotSample\Sharkable.AotSample.csproj", "{DC065E0E-EE8A-4686-88FC-A765ED61992F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sharkable.AotSample", "src\Sharkable.AotSample\Sharkable.AotSample.csproj", "{DC065E0E-EE8A-4686-88FC-A765ED61992F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{24376B7D-8162-4BB6-9283-6EA550141155}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{BE7F819E-A863-4035-8BA8-3F2013123EAB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -32,6 +34,9 @@ Global
 		{DC065E0E-EE8A-4686-88FC-A765ED61992F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC065E0E-EE8A-4686-88FC-A765ED61992F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DC065E0E-EE8A-4686-88FC-A765ED61992F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{BE7F819E-A863-4035-8BA8-3F2013123EAB} = {E048E613-D35B-4F9F-A634-CC07D2265518}
