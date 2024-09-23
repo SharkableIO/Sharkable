@@ -208,7 +208,7 @@ internal static class SharkEndPointExtension
         return lst;
     }
 
-    [Obsolete("due to aot incompatible, this method is not supported")]
+    [Obsolete("due to aot incompetable, this method is not supported")]
     public static SharkEndpoint CreateSharkEndpointOld<T>(T shark, string? apiPrefix = "api") where T: ISharkEndpoint
     {
         var sharkEndpointType = typeof(SharkEndpoint);
