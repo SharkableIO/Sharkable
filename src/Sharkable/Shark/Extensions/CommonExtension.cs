@@ -41,7 +41,7 @@ public static class CommonExtension
         InternalShark.ServiceScopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
         InternalShark.ServiceProvider = InternalShark.ServiceScopeFactory.CreateScope().ServiceProvider;
 
-        if(Shark.SharkOption.UseSwaggerDoc)
+        if(Shark.SharkOption.ShowSwaggerDoc)
         {
             app.UseSwagger();
             app.UseSwaggerUI();
