@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Routing.Constraints;
-
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.Extensions.Hosting;
 namespace Sharkable;
 
 public static class CommonExtension
@@ -16,11 +16,6 @@ public static class CommonExtension
         {
             services.Configure<SharkOption>((opt)=> { opt = option; });
         }
-        // Add services to the container.
-        services.Configure<RouteOptions>(options =>
-        {
-            options.SetParameterPolicy<RegexInlineRouteConstraint>("regex");
-        });
         //setup shark options
         Shark.SharkOption = option;
         //wire endpoints

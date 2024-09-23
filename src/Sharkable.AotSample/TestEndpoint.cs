@@ -3,18 +3,18 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Sharkable.AotSample;
 
-public class LoveSellerServiceV2 : ISharkEndpoint
-{
-    public void AddRoutes(IEndpointRouteBuilder app)
-    {
-        app.MapGet("/ILoveYou{name}/{id}", ([FromServices]ILogger<LoveSellerServiceV2> logger, int id, string name) =>
-        {
-            logger.LogInformation(id.ToString());
-            logger.LogInformation(name);
-            return Results.Ok("lover");
-        }).AllowAnonymous();
-    }
-}
+// public class LoveSellerServiceV2 : ISharkEndpoint
+// {
+//     public void AddRoutes(IEndpointRouteBuilder app)
+//     {
+//         app.MapGet("/ILoveYouV2/{id}", ([FromServices]ILogger<LoveSellerServiceV2> logger, int id) =>
+//         {
+//             logger.LogInformation(id.ToString());
+            
+//             return Results.Ok("lover");
+//         }).AllowAnonymous();
+//     }
+// }
 
 public class LoveSellerV1Service : ISharkEndpoint
 {
