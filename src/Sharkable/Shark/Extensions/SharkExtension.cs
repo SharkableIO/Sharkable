@@ -7,6 +7,9 @@ public static class SharkExtension
         var option = new SharkOption();
         //invoke options
         setupOptions?.Invoke(option);
+        //get the aot mode from internal shark
+        option.AotMode = InternalShark.AotMode;
+        //setup shark working mode
         services.Configure<SharkOption>((opt) => { opt = option; });
         //setup shark options
         Shark.SharkOption = option;
