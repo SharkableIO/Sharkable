@@ -1,10 +1,18 @@
 
+using Microsoft.AspNetCore.Routing.Constraints;
+
 namespace Sharkable;
 
 internal static class SwaggerExtension
 {
-    internal static IServiceCollection SharkSwagger(this IServiceCollection services, Action<SharkOption>? setupOptions = null)
+    internal static IServiceCollection SharkSwagger(this IServiceCollection services)
     {
+        // Add services to the container.
+        services.Configure<RouteOptions>(options =>
+        {
+            options.SetParameterPolicy<RegexInlineRouteConstraint>("regex");
+        });
+
         if (Shark.SharkOption.UseSwaggerDoc)
         {
             services.AddEndpointsApiExplorer();
@@ -13,7 +21,7 @@ internal static class SwaggerExtension
         return services;
     }
 
-    internal static void UseSharkSwagger(this WebApplication app, Action<UseSharkOptions>? setupOptions = null)
+    internal static void UseSharkSwagger(this WebApplication app)
     {
         if (Shark.SharkOption.UseSwaggerDoc)
         {
