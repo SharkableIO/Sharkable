@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Swashbuckle.AspNetCore.Swagger;
@@ -35,13 +34,11 @@ public partial class Shark
         if(HostEnvironment == default) 
             return Services;
 
-        if (Services != null &&
+        /*if (Services != null &&
             InternalShark.InternalServices
                 .Where(x => x.ServiceType == (serviceType.IsGenericType ? serviceType.GetGenericTypeDefinition() : serviceType))
-                .Any(x => x.Lifetime == ServiceLifetime.Singleton))
-            return Services;
-
-        return default!;
+                .Any(x => x.Lifetime == ServiceLifetime.Singleton))*/
+        return Services;
     }
 
     public static void SetAssebly(Assembly[]? assemblies)
