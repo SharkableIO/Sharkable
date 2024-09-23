@@ -10,7 +10,7 @@ public static class SharkableExtension
         //get asseblies
         Shark.SetAssebly(Utils.GetAssemblies());
         //set common extensions
-        services.AddCommom(setupOption);
+        services.AddCommon(setupOption);
     }
 
     public static void AddShark(this IServiceCollection services, Assembly[]? assembly, Action<SharkOption>? setupOption = null)
@@ -21,7 +21,7 @@ public static class SharkableExtension
         //get assemblies
         Shark.SetAssebly(Utils.GetAssemblies(assembly));
         //set common extensions
-        services.AddCommom(setupOption);
+        services.AddCommon(setupOption);
     }
 
     public static void UseShark(this WebApplication app, Action<UseSharkOptions>? setupOption = null)

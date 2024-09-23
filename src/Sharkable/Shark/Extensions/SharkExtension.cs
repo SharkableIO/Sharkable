@@ -2,7 +2,7 @@ namespace Sharkable;
 
 public static class SharkExtension
 {
-    internal static void AddCommom(this IServiceCollection services, Action<SharkOption>? setupOptions = null)
+    internal static void AddCommon(this IServiceCollection services, Action<SharkOption>? setupOptions = null)
     {
         var option = new SharkOption();
         //invoke options
