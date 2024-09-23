@@ -7,7 +7,6 @@ public static class CommonExtension
     internal static void AddCommom(this IServiceCollection services, Action<SharkOption>? setupOptions = null)
     {
         var option = new SharkOption();
-        //invoke options
         if(setupOptions != null)
         {
             setupOptions(option);
@@ -28,20 +27,28 @@ public static class CommonExtension
         services.WireSharkEndpoint();
         //wire service lifelime
         services.AddServicesWithAttributeOfTypeFromAssembly(Shark.Assemblies);
-        //setup swagger gen
-        services.SharkSwagger(setupOptions);
+
+        if (option.UseSwaggerDoc)
+        {
+            services.AddEndpointsApiExplorer();
+            services.AddSwaggerGen(SharkOption.SwaggerGenConfigure);
+        }
     }
     internal static void UseCommon(this WebApplication app, Action<UseSharkOptions>? setupOptions = null)
     {
         var opt = new UseSharkOptions();
-        //invoke options
+
         setupOptions?.Invoke(opt);
-        //configure internal shark 
+
         InternalShark.Configuration = app.Configuration;
         InternalShark.HostEnvironment = app.Environment;
         InternalShark.ServiceScopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
         InternalShark.ServiceProvider = InternalShark.ServiceScopeFactory.CreateScope().ServiceProvider;
-        //setup swagger
-        app.UseSharkSwagger(setupOptions);
+
+        if(Shark.SharkOption.UseSwaggerDoc)
+        {
+            app.UseSwagger(UseSharkOptions.UseSwaggerConfigure);
+            app.UseSwaggerUI();
+        }
     }
 }

@@ -7,7 +7,7 @@ namespace Sharkable.Sample;
 [SharkEndpoint]
 public class TaskInfoVlosiEndpointV2 : ISharkEndpoint
 {
-    public async void MapTaskInfo( WebApplication app) 
+    public static void MapTaskInfo( WebApplication app) 
     {
         // var g = app.MapGroup("/api/taskinfo");
         // g.MapGet("/tryme", LetGo);
@@ -16,9 +16,10 @@ public class TaskInfoVlosiEndpointV2 : ISharkEndpoint
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        app.MapGet("/hello", ([FromServices]IMonitor monitor) => 
+        app.MapGet("/hello", async ([FromServices]IMonitor monitor) => 
         {
-            var sw = Shark.GetService<IOptions<SharkOption>>();
+            using var scope = Shark.ServiceScopeFactory.CreateScope();
+            var sw = scope.ServiceProvider.GetService<IOptions<SharkOption>>();
             Console.WriteLine(sw?.Value.ApiPrefix);
             return Monitor.GetRandData(6);
         });
