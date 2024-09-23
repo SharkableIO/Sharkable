@@ -17,10 +17,20 @@ public sealed class SharkOption : ISharkOption
     /// endpoint path format, default is camel case
     /// </summary>
     public EndpointFormat Format { get; set; } = EndpointFormat.CamelCase;
-    public bool AotMode { get; internal set; } = false;
+    /// <summary>
+    /// a property indicates current environment is in aot mode or not
+    /// </summary>
+    public bool AotMode => InternalShark.AotMode;
+    /// <summary>
+    /// configure swagger gen
+    /// </summary>
+    /// <param name="options"></param>
     public void ConfigureSwaggerGen(Action<SwaggerGenOptions>? options)
     {
         SwaggerGenConfigure = options;
     }
+    /// <summary>
+    /// get the swagger gen configuration
+    /// </summary>
     internal static Action<SwaggerGenOptions>? SwaggerGenConfigure{ get; private set; }
 }
