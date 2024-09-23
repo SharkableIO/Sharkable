@@ -9,10 +9,6 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 builder.Services.AddShark([typeof(Program).Assembly], opt=>{
     opt.Format = Sharkable.EndpointFormat.Tolower;
-    opt.ConfigureSwaggerGen(sw =>
-    {
-        
-    });
 });
 var app = builder.Build();
 app.UseShark();

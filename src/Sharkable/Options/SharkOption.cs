@@ -1,5 +1,3 @@
-using Swashbuckle.AspNetCore.SwaggerGen;
-
 namespace Sharkable;
 
 public sealed class SharkOption : ISharkOption
@@ -17,10 +15,4 @@ public sealed class SharkOption : ISharkOption
     /// endpoint path format, default is camel case
     /// </summary>
     public EndpointFormat Format { get; set; } = EndpointFormat.CamelCase;
-
-    public void ConfigureSwaggerGen(Action<SwaggerGenOptions>? options)
-    {
-        SwaggerGenConfigure = options;
-    }
-    internal static Action<SwaggerGenOptions>? SwaggerGenConfigure{ get; private set; }
 }
