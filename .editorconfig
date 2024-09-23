@@ -1,7 +1,0 @@
-﻿[*.cs]
-
-# CA1822
-dotnet_diagnostic.CA1822.severity = silent
-
-# IDE0160
-dotnet_diagnostic.IDE0160.severity = silent
