@@ -1,6 +1,6 @@
 namespace Sharkable;
 
-public static class CommonExtension
+public static class SharkExtension
 {
     internal static void AddCommom(this IServiceCollection services, Action<SharkOption>? setupOptions = null)
     {
@@ -15,7 +15,7 @@ public static class CommonExtension
         //wire service lifelime
         services.AddServicesWithAttributeOfTypeFromAssembly(Shark.Assemblies);
         //setup swagger gen
-        services.SharkSwagger(setupOptions);
+        services.SharkSwagger();
     }
     internal static void UseCommon(this WebApplication app, Action<UseSharkOptions>? setupOptions = null)
     {
@@ -28,6 +28,6 @@ public static class CommonExtension
         InternalShark.ServiceScopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
         InternalShark.ServiceProvider = InternalShark.ServiceScopeFactory.CreateScope().ServiceProvider;
         //setup swagger
-        app.UseSharkSwagger(setupOptions);
+        app.UseSharkSwagger();
     }
 }
