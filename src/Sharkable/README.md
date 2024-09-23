@@ -9,7 +9,7 @@ a dotnet minimal api framework collection
 using Sharkable
 builder.Services.AddShark();
 //for aot users please specify assemblies by youself and avoid code trim
-build.Services.AddShark([typeof(Program).Assembly]);
+build.Services.AddShark(typeof(Program).Assembly);
 
 [ScopedService] //inject class as a scoped service by the given attribute
 public class Monitor : IMonitor
