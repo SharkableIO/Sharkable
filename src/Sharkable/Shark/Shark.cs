@@ -19,7 +19,7 @@ public partial class Shark
     public static IServiceProvider Services => InternalShark.ServiceProvider;
     public static IWebHostEnvironment WebHostEnvironment => InternalShark.WebHostEnvironment;
     public static IConfiguration Configuration => InternalShark.Configuration;
-    //public static HttpContext HttpContext { get; }
+    public static HttpContext HttpContext { get; }
     public static AssemblyContext? Context => AssemblyContext.Instance;
     public static IServiceScopeFactory ServiceScopeFactory => InternalShark.ServiceScopeFactory;
     public static SharkOption SharkOption { get; internal set; } = new SharkOption();
