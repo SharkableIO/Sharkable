@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Options;
-using Sharkable;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateSlimBuilder(args);
@@ -16,16 +14,12 @@ builder.Services.AddShark([typeof(Program).Assembly], opt=>{
     });
 });
 var app = builder.Build();
-
 app.UseShark(opt=>{
     opt.ConfigureSwaggerOptions(sw =>
     {
         
     });
 });
-
-var sopt = Shark.Services.GetService<IOptions<SharkOption>>();
-Console.WriteLine(sopt?.Value.AotMode);
 var sampleTodos = new Todo[] {
     new(1, "Walk the dog"),
     new(2, "Do the dishes", DateOnly.FromDateTime(DateTime.Now)),

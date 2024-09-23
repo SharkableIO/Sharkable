@@ -6,7 +6,7 @@ public static class SharkableExtension
     public static void AddShark(this IServiceCollection services, Action<SharkOption>? setupOption = null)
     {
         //set aot mode to false if use this method
-        InternalShark.AotMode = false;
+        InternalShark.AotMode = true;
         //get asseblies
         Shark.SetAssebly(Utils.GetAssemblies());
         //set common extensions
