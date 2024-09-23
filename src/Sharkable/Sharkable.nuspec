@@ -17,6 +17,5 @@
   </metadata>
    <files>
     <file src="README.md" target="docs\" />
-    <file src="sharkable.jpg" target="\" />
   </files>
 </package>
