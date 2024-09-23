@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Swashbuckle.AspNetCore.Swagger;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Sharkable;
 
@@ -23,6 +25,8 @@ public partial class Shark
     public static AssemblyContext? Context => AssemblyContext.Instance;
     public static IServiceScopeFactory ServiceScopeFactory => InternalShark.ServiceScopeFactory;
     public static SharkOption SharkOption { get; internal set; } = new SharkOption();
+    internal static SwaggerGenOptions? SwaggerGenOptions { get; private set; }
+    internal static SwaggerOptions? SwaggerOptions { get; private set; }
     //public properties
 
     public static IServiceProvider GetServiceProvider(Type serviceType)
