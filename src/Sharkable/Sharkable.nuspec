@@ -8,7 +8,7 @@
     <readme>docs\README.md</readme>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="expression">MIT</license>
-    <icon>sharkable.jpg</icon>
+    <icon>icon.png</icon>
     <projectUrl>https://github.com/SharkableCommunity/Sharkable</projectUrl>
     <description>a dotnet minimal api framework collection aimed to support aot</description>
     <releaseNotes>add openapi and swagger support</releaseNotes>
