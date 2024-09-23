@@ -21,7 +21,6 @@
 </ItemGroup>
 <ItemGroup>
    <PackageReference Include="Npgsql" Version="8.0.4" />
-   <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.8" />
    <PackageReference Include="SqlSugarCore" Version="5.1.4.168-preview20" />
  </ItemGroup>
   <PropertyGroup>

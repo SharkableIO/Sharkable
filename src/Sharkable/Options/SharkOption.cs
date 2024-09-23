@@ -10,11 +10,7 @@ public sealed class SharkOption : ISharkOption
     /// <summary>
     /// decide wheather to use open api document or not
     /// </summary>
-    public bool UseOpenApi { get; set; } = true;
-    /// <summary>
-    /// decide wheather to show the swargger document or not
-    /// </summary>
-    public bool ShowSwaggerDoc { get; set; } = true;
+    public bool UseOpenApi { get; set; } = false;
     /// <summary>
     /// endpoint path format, default is camel case
     /// </summary>
