@@ -9,6 +9,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
     options.SerializerOptions.TypeInfoResolverChain.Insert(1, AppJsonSerializerContext2.Default);
+    options.SerializerOptions.TypeInfoResolverChain.Insert(2, AppJsonSerializerContext3.Default);
 });
 
 builder.Services.AddShark([typeof(App).Assembly], opt=>{
@@ -56,6 +57,12 @@ internal partial class AppJsonSerializerContext : JsonSerializerContext
 
 [JsonSerializable(typeof(List<TaskInfo>))]
 internal partial class AppJsonSerializerContext2 : JsonSerializerContext
+{
+
+}
+
+[JsonSerializable(typeof(TaskInterval))]
+internal partial class AppJsonSerializerContext3 : JsonSerializerContext
 {
 
 }
