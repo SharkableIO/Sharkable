@@ -6,9 +6,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
 });
-builder.Services.AddShark([typeof(Program).Assembly], opt=>{
-    opt.Format = Sharkable.EndpointFormat.SnakeCase;
-});
+builder.Services.AddShark([typeof(Program).Assembly]);
 var app = builder.Build();
 app.UseShark();
 var sampleTodos = new Todo[] {

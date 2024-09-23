@@ -1,5 +1,4 @@
 using System;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Sharkable.AotSample;
 
@@ -7,10 +6,9 @@ public class LoveSellerServiceV2 : ISharkEndpoint
 {
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        app.SharkMapGet("/ILoveYouV2{like}/{id}", ([FromServices]ILogger<LoveSellerServiceV2> logger, int id, int like) =>
+        app.MapGet("/lover", () =>
         {
-            logger.LogInformation(id.ToString());
-            logger.LogInformation(like.ToString());
+        
             return Results.Ok("lover");
         }).AllowAnonymous();
     }
