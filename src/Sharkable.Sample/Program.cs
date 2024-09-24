@@ -5,14 +5,7 @@ using Sharkable;
 
 var builder = WebApplication.CreateSlimBuilder(args);//.Sharkable([typeof(App).Assembly]);
 
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
-    options.SerializerOptions.TypeInfoResolverChain.Insert(1, AppJsonSerializerContext2.Default);
-    options.SerializerOptions.TypeInfoResolverChain.Insert(2, AppJsonSerializerContext3.Default);
-});
-
-builder.Services.AddShark([typeof(App).Assembly], opt=>{
+builder.Services.AddShark( opt=>{
     opt.Format = EndpointFormat.SnakeCase;
 });
 builder.Services.AddSampleDataService();
@@ -46,23 +39,3 @@ todosApi.MapGet("/love", ([FromServices]IMonitor monitor)=>
 });
 
 app.Run();
-
-
-
-[JsonSerializable(typeof(Todo[]))]
-internal partial class AppJsonSerializerContext : JsonSerializerContext
-{
-    
-}
-
-[JsonSerializable(typeof(List<TaskInfo>))]
-internal partial class AppJsonSerializerContext2 : JsonSerializerContext
-{
-
-}
-
-[JsonSerializable(typeof(TaskInterval))]
-internal partial class AppJsonSerializerContext3 : JsonSerializerContext
-{
-
-}

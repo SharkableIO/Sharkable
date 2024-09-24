@@ -3,7 +3,9 @@
   <Application>
     <Assembly Name="Sharkable.AotSample" Dynamic="Required All">
     </Assembly>
-    <Assembly Name="Sharkable" Dynamic="Required All">
+    <Assembly Name="SqlSugar" Dynamic="Required All">
+    </Assembly>
+    <Assembly Name="Sharkable.AutoCrud.SqlSugar" Dynamic="Required All">
     </Assembly>
   </Application>
 </Directives>

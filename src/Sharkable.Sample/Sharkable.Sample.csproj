@@ -32,7 +32,6 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>false</InvariantGlobalization>
-	<PublishAot>true</PublishAot>
   </PropertyGroup>
 
 </Project>

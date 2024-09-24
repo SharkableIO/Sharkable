@@ -1,9 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <ItemGroup>
-    <ProjectReference Include="..\Sharkable\Sharkable.csproj" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -22,5 +18,9 @@
 	<Content Include="rd.xml">
 		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	</Content>
+</ItemGroup>
+
+<ItemGroup>
+  <PackageReference Include="Sharkable.AutoCrud.SqlSugar" Version="0.0.18" />
 </ItemGroup>
 </Project>
