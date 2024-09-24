@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using Sharkable;
+using Sharkable.AotSample;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateSlimBuilder(args);
@@ -7,6 +8,7 @@ var builder = WebApplication.CreateSlimBuilder(args);
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
+    options.SerializerOptions.TypeInfoResolverChain.Insert(1, AppJsonSerializerContext2.Default);
 });
 //builder.Services.AddDynamicShark();
 builder.Services.AddShark([typeof(Program).Assembly], opt=>{
@@ -50,6 +52,11 @@ public record Todo(int Id, string? Title, DateOnly? DueBy = null, bool IsComplet
 
 [JsonSerializable(typeof(Todo[]))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
+{
+
+}
+[JsonSerializable(typeof(List<TaskInfo>))]
+internal partial class AppJsonSerializerContext2 : JsonSerializerContext
 {
 
 }
