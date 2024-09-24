@@ -16,6 +16,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sharkable.AutoCrud.SqlSugar", "Sharkable.AutoCrud.SqlSugar\Sharkable.AutoCrud.SqlSugar.csproj", "{4320BF93-DC2D-43B3-B6AF-8776A9451117}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,6 +36,10 @@ Global
 		{DC065E0E-EE8A-4686-88FC-A765ED61992F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC065E0E-EE8A-4686-88FC-A765ED61992F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DC065E0E-EE8A-4686-88FC-A765ED61992F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4320BF93-DC2D-43B3-B6AF-8776A9451117}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4320BF93-DC2D-43B3-B6AF-8776A9451117}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4320BF93-DC2D-43B3-B6AF-8776A9451117}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4320BF93-DC2D-43B3-B6AF-8776A9451117}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

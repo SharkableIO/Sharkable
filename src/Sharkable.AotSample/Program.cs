@@ -8,17 +8,20 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
 });
-builder.Services.AddShark([typeof(Program).Assembly], opt=>{
+//builder.Services.AddDynamicShark();
+builder.Services.AddShark([typeof(Program).Assembly, typeof(Sharkable.AutoCrudSqlSugar).Assembly], opt=>{
     opt.Format = Sharkable.EndpointFormat.Tolower;
-    opt.ConfigureSwaggerGen(sw =>
+    opt.ConfigureAutoCrud(s =>
     {
-        
+        s.IsAutoCloseConnection = true;
+        s.DbType = DbType.Sqlite;
+        s.ConnectionString = "DataSource=testsample.db";
     });
 });
 var app = builder.Build();
 
 app.UseShark(opt=>{
-    opt.ConfigureSwaggerOptions(sw =>
+    opt.ConfigureSwaggerOptions(s =>
     {
         
     });
