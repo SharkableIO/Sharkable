@@ -9,7 +9,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
 });
 //builder.Services.AddDynamicShark();
-builder.Services.AddShark([typeof(Program).Assembly, typeof(Sharkable.AutoCrudSqlSugar).Assembly], opt=>{
+builder.Services.AddShark([typeof(Program).Assembly], opt=>{
     opt.Format = Sharkable.EndpointFormat.Tolower;
     opt.ConfigureAutoCrud(s =>
     {
