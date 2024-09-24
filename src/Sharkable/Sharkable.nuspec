@@ -11,7 +11,7 @@
     <icon>sharkable.jpg</icon>
     <projectUrl>https://github.com/SharkableCommunity/Sharkable</projectUrl>
     <description>a dotnet minimal api framework collection aimed to support aot</description>
-    <releaseNotes>add auto crud for api generation using sqlsugar client</releaseNotes>
+    <releaseNotes>fix endpoint wiring issue</releaseNotes>
     <copyright>CopyRight 2024 Penglei</copyright>
     <tags>minialapi aot framework toolkit</tags>
     <dependencies>
