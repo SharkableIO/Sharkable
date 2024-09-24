@@ -17,6 +17,8 @@ public static class SharkExtension
         services.AddServicesWithAttributeOfTypeFromAssembly(Shark.Assemblies);
         //setup swagger gen
         services.SharkSwagger();
+        //setup auto crud services
+        services.AddAutoCrud();
     }
     internal static void UseCommon(this WebApplication app, Action<UseSharkOptions>? setupOptions = null)
     {

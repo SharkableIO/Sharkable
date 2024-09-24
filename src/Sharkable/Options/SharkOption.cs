@@ -30,7 +30,19 @@ public sealed class SharkOption : ISharkOption
         SwaggerGenConfigure = options;
     }
     /// <summary>
+    /// configure swagger gen
+    /// </summary>
+    /// <param name="options"></param>
+    public void ConfigureAutoCrud(Action<SqlSugarOptions>? options)
+    {
+        SqlSugarOptionsConfigure = options;
+    }
+    /// <summary>
     /// get the swagger gen configuration
     /// </summary>
     internal static Action<SwaggerGenOptions>? SwaggerGenConfigure{ get; private set; }
+    /// <summary>
+    /// get the sqlsugar configuration
+    /// </summary>
+    internal static Action<SqlSugarOptions>? SqlSugarOptionsConfigure{ get; private set; }
 }

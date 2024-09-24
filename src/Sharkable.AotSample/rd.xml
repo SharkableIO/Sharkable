@@ -3,5 +3,8 @@
   <Application>
     <Assembly Name="Sharkable.AotSample" Dynamic="Required All">
     </Assembly>
+    <Assembly Name="Sharkable" Dynamic="Required All">
+    </Assembly>
+    <Assembly Name="SqlSugar"  Dynamic="Required All">
   </Application>
 </Directives>

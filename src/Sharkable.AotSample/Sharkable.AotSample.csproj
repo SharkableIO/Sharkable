@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Sharkable\Sharkable.csproj" />
+    <ProjectReference Include="..\..\Sharkable.AutoCrud.SqlSugar\Sharkable.AutoCrud.SqlSugar.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
