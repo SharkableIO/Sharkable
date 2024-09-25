@@ -1,7 +1,7 @@
-using System.Text.Json.Serialization;
 using Sharkable.Sample;
 using Microsoft.AspNetCore.Mvc;
 using Sharkable;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateSlimBuilder(args);//.Sharkable([typeof(App).Assembly]);
 
@@ -21,6 +21,9 @@ var sampleTodos = new Todo[] {
         };
 app.AddMongoGroup();
 app.UseShark();
+
+var sopt = Shark.Services.GetService<IOptions<SharkOption>>();
+Console.WriteLine(sopt?.Value.AotMode);
 var todosApi = app.MapGroup("/todos");
 todosApi.MapGet("/init", async ([FromServices] IMonitor monitor) =>
 {

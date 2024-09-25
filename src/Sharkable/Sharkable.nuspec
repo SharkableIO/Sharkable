@@ -13,7 +13,7 @@
     <description>a dotnet minimal api framework collection aimed to support aot</description>
     <releaseNotes>fix endpoint wiring issue</releaseNotes>
     <copyright>CopyRight 2024 Penglei</copyright>
-    <tags>minialapi aot framework toolkit</tags>
+    <tags>minimalapi aot framework toolkit</tags>
     <dependencies>
       <dependency id="Microsoft.AspNetCore.OpenApi" version="8.0.8" />
       <dependency id="Swashbuckle.AspNetCore" version="6.7.3" />
