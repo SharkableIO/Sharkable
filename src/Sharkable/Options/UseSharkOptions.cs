@@ -2,7 +2,7 @@ using Swashbuckle.AspNetCore.Swagger;
 
 namespace Sharkable;
 
-public class UseSharkOptions : ISharkOption
+public sealed class UseSharkOptions : ISharkOption
 {
     public void ConfigureSwaggerOptions(Action<SwaggerOptions>? options)
     {
