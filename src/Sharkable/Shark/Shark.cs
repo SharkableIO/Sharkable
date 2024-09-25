@@ -6,6 +6,9 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Sharkable;
 
+/// <summary>
+/// basic sharkable implements and properties
+/// </summary>
 public partial class Shark
 {
     //private fields
