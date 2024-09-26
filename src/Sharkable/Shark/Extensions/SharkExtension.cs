@@ -7,8 +7,7 @@ public static class SharkExtension
         var option = new SharkOption();
         //invoke options
         setupOptions?.Invoke(option);
-        //setup shark working mode
-        services.Configure<SharkOption>((opt) => { opt = option; });
+        services.Configure<SharkOption>((opt) => { setupOptions?.Invoke(opt); });
         //setup shark options
         Shark.SharkOption = option;
         //wire endpoints
@@ -25,6 +24,7 @@ public static class SharkExtension
         var opt = new UseSharkOptions();
         //invoke options
         setupOptions?.Invoke(opt);
+        Shark.UseSharkOptions = opt;
         //configure internal shark 
         InternalShark.Configuration = app.Configuration;
         InternalShark.HostEnvironment = app.Environment;
