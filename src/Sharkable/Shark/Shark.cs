@@ -29,6 +29,7 @@ public partial class Shark
     public static SharkOption SharkOption { get; internal set; } = new SharkOption();
     internal static SwaggerGenOptions? SwaggerGenOptions { get; private set; }
     internal static SwaggerOptions? SwaggerOptions { get; private set; }
+    public static UseSharkOptions? UseSharkOptions { get; internal set; }
     //public properties
 
     public static IServiceProvider GetServiceProvider(Type serviceType)

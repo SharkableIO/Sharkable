@@ -30,9 +30,9 @@ public static class SharkableExtension
         app.MapEndpoints();
     }
 
-    public static void UseShark(this WebApplication app, Assembly[] assemblies)
+    public static void UseShark(this WebApplication app, Assembly[] assemblies, Action<UseSharkOptions>? setupOption = null)
     {
-        app.UseCommon();
+        app.UseCommon(setupOption);
         app.MapEndpoints(assemblies);
     }
 }
