@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
 		<Description>🌈owerful tools for dotnet aot and more</Description>
-    <AssemblyVersion>0.0.21</AssemblyVersion>
+    <AssemblyVersion>0.0.22</AssemblyVersion>
 		<PackageProjectUrl>https://github.com/SharkableIO/Sharkable</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/SharkableIO/Sharkable.git</RepositoryUrl>
 		<PackageTags>dotnet,minimalapi,toolkit,framework</PackageTags>

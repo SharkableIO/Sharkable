@@ -20,7 +20,7 @@ var sampleTodos = new Todo[] {
             new(5, "Clean the car", DateTime.Now)
         };
 app.AddMongoGroup();
-app.UseShark();
+app.UseShark(u=>u.ConfigureSwaggerOptions(x=>x.SerializeAsV2 = true));
 
 var sopt = Shark.Services.GetService<IOptions<SharkOption>>();
 Console.WriteLine(sopt?.Value.AotMode);

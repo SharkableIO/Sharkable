@@ -1,4 +1,5 @@
 using Swashbuckle.AspNetCore.SwaggerGen;
+using Swashbuckle.AspNetCore.SwaggerUI;
 
 namespace Sharkable;
 
@@ -38,6 +39,14 @@ public sealed class SharkOption : ISharkOption
         SqlSugarOptionsConfigure = options;
     }
     /// <summary>
+    /// configure swagger ui options
+    /// </summary>
+    /// <param name="options"></param>
+    public void ConfigureSwaggerUi(Action<SwaggerUIOptions>? options)
+    {
+        SwaggerUIOptionsConfigure = options;
+    }
+    /// <summary>
     /// get the swagger gen configuration
     /// </summary>
     internal static Action<SwaggerGenOptions>? SwaggerGenConfigure{ get; private set; }
@@ -45,4 +54,8 @@ public sealed class SharkOption : ISharkOption
     /// get the sqlsugar configuration
     /// </summary>
     internal static Action<SqlSugarOptions>? SqlSugarOptionsConfigure{ get; private set; }
+    /// <summary>
+    /// get the swagger Ui configuration
+    /// </summary>
+    internal static Action<SwaggerUIOptions>? SwaggerUIOptionsConfigure { get; private set; }
 }
