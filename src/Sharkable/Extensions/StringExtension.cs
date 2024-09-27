@@ -13,21 +13,7 @@ internal static class StringExtension
         string pattern = "(endpoint|service|services|controller|controllers|apicontroller)(?=V?\\d*$)";
         return Regex.Replace(str, pattern, "", RegexOptions.IgnoreCase).GetVersionFormat();
     }
-    static string? RemoveSuffix(this string? input)
-    {
-        if (string.IsNullOrWhiteSpace(input))
-            return input;
-        string[] suffixes = ["Service", "Controller", "Endpoint"];
-        foreach (var suffix in suffixes)
-        {
-            int index = input.LastIndexOf(suffix, StringComparison.OrdinalIgnoreCase);
-            if (index != -1 && index + suffix.Length == input.Length)
-            {
-                return input[..index];
-            }
-        }
-        return input;
-    }
+   
     internal static string? ToCamelCase(this string? str)
     {
         if (string.IsNullOrEmpty(str))
