@@ -10,10 +10,10 @@ public static class SharkExtension
     internal static void AddCommon(this IServiceCollection services, Action<SharkOption>? setupOptions = null)
     {
         //invoke and setup options
+        setupOptions?.Invoke(Shark.SharkOption);
         services.Configure<SharkOption>((opt) => 
         { 
-            setupOptions?.Invoke(opt); 
-            Shark.SharkOption = opt; 
+            setupOptions?.Invoke(opt);
         });
         //wire endpoints
         services.WireSharkEndpoint();
