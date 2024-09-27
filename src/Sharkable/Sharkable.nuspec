@@ -11,7 +11,7 @@
     <icon>sharkable.jpg</icon>
     <projectUrl>https://github.com/SharkableIO/Sharkable</projectUrl>
     <description>a dotnet minimal api framework collection aimed to support aot</description>
-    <releaseNotes>add swagger ui options, add jwt support</releaseNotes>
+    <releaseNotes>add swagger ui options</releaseNotes>
     <copyright>CopyRight 2024 Penglei</copyright>
     <tags>minimalapi aot framework toolkit</tags>
     <dependencies>
