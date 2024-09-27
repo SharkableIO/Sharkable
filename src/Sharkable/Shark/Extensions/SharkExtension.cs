@@ -9,12 +9,11 @@ public static class SharkExtension
     /// <param name="setupOptions"></param>
     internal static void AddCommon(this IServiceCollection services, Action<SharkOption>? setupOptions = null)
     {
-        var option = new SharkOption();
         //invoke and setup options
         services.Configure<SharkOption>((opt) => 
         { 
             setupOptions?.Invoke(opt); 
-            Shark.SharkOption = option; 
+            Shark.SharkOption = opt; 
         });
         //wire endpoints
         services.WireSharkEndpoint();
