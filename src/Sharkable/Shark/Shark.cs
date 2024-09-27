@@ -18,14 +18,23 @@ public partial class Shark
     internal static readonly object condition = new();
     //internal IServiceProvider services { get => GetApp(_factory); }
     //public statics
+    /// <summary>
+    /// Sharkable asseblies list for the application entry
+    /// </summary>
     public static Assembly[]? Assemblies => AssemblyContext.Assemblies;
     public static IHostEnvironment HostEnvironment => InternalShark.HostEnvironment;
     public static IServiceProvider Services => InternalShark.ServiceProvider;
     public static IWebHostEnvironment WebHostEnvironment => InternalShark.WebHostEnvironment;
     public static IConfiguration Configuration => InternalShark.Configuration;
     //public static HttpContext HttpContext { get; }
+    /// <summary>
+    /// Assembly context of application entry
+    /// </summary>
     public static AssemblyContext? Context => AssemblyContext.Instance;
     public static IServiceScopeFactory ServiceScopeFactory => InternalShark.ServiceScopeFactory;
+    /// <summary>
+    /// Sharkable options
+    /// </summary>
     public static SharkOption SharkOption { get; internal set; } = new SharkOption();
     internal static SwaggerGenOptions? SwaggerGenOptions { get; private set; }
     internal static SwaggerOptions? SwaggerOptions { get; private set; }
