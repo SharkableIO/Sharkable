@@ -10,6 +10,8 @@ public class SharkEndpoint : ISharkEndpoint
     internal string? grouName;
     internal string? apiPrefix;
     internal string? baseApiPath;
+    internal bool addPrefix = true;
+    internal string? version;
     internal Action<IEndpointRouteBuilder>? BuildAction { get; set; }
     public virtual void AddRoutes(IEndpointRouteBuilder app)
     {
