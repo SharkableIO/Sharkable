@@ -16,6 +16,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sharkable.NativeTest", "src\Sharkable.NativeTest\Sharkable.NativeTest.csproj", "{DF89E5C3-2577-4903-BCC4-8BAC7D498855}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,6 +36,10 @@ Global
 		{DC065E0E-EE8A-4686-88FC-A765ED61992F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC065E0E-EE8A-4686-88FC-A765ED61992F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DC065E0E-EE8A-4686-88FC-A765ED61992F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF89E5C3-2577-4903-BCC4-8BAC7D498855}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF89E5C3-2577-4903-BCC4-8BAC7D498855}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF89E5C3-2577-4903-BCC4-8BAC7D498855}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF89E5C3-2577-4903-BCC4-8BAC7D498855}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -42,5 +48,6 @@ Global
 		{BE7F819E-A863-4035-8BA8-3F2013123EAB} = {E048E613-D35B-4F9F-A634-CC07D2265518}
 		{4143F0A0-A3CE-4057-A2F4-4BB871F68FB4} = {E048E613-D35B-4F9F-A634-CC07D2265518}
 		{DC065E0E-EE8A-4686-88FC-A765ED61992F} = {E048E613-D35B-4F9F-A634-CC07D2265518}
+		{DF89E5C3-2577-4903-BCC4-8BAC7D498855} = {E048E613-D35B-4F9F-A634-CC07D2265518}
 	EndGlobalSection
 EndGlobal

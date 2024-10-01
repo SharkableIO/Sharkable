@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <PublishAot>true</PublishAot>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Sharkable\Sharkable.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <RdXmlFile Include="rd.xml" />
+    </ItemGroup>
+    <ItemGroup>
+        <None Remove="rd.xml" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="rd.xml">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+</Project>
