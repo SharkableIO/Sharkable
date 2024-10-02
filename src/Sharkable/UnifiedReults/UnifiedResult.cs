@@ -24,7 +24,9 @@ public class MyUnifiedResult<T>
 
 [JsonSourceGenerationOptions(WriteIndented = true)]
 [JsonSerializable(typeof(MyUnifiedResult<>))]
-internal partial class MyUnifiedResultSourceContext : JsonSerializerContext
+[JsonSerializable(typeof(MyUnifiedResult<string>))]
+[JsonSerializable(typeof(MyUnifiedResult<int>))]
+public partial class MyUnifiedResultSourceContext : JsonSerializerContext
 {
     
 }
