@@ -4,7 +4,7 @@ using Sharkable;
 var builder = WebApplication.CreateSlimBuilder(args);
 
 
-builder.Services.AddShark([typeof(Program).Assembly], opt =>
+builder.Services.AddShark(opt =>
 {
     opt.Format = EndpointFormat.Tolower;
 });
@@ -12,6 +12,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.TypeInfoResolverChain.Insert(1, AppJsonSerializerContext.Default);
     options.SerializerOptions.TypeInfoResolverChain.Insert(2, AppJsonSerializerContext2.Default);
+    options.SerializerOptions.TypeInfoResolverChain.Insert(3, MyUnifiedResultContext.Default);
 });
 var app = builder.Build();
 app.UseShark();
@@ -33,13 +34,23 @@ todosApi.MapGet("/{id}", (int id) =>
 
 app.Run();
 
+
 public record Todo(int Id, string? Title, DateOnly? DueBy = null, bool IsComplete = false);
 
 [JsonSerializable(typeof(Todo[]))]
+[JsonSerializable(typeof(Task<Todo[]>))]
+[JsonSerializable(typeof(string))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
 }
 [JsonSerializable(typeof(Todo))]
 internal partial class AppJsonSerializerContext2 : JsonSerializerContext
 {
+}
+
+[JsonSerializable(typeof(UnifiedResult<Todo[]>))]
+[JsonSerializable(typeof(UnifiedResult<Todo>))]
+public partial class MyUnifiedResultContext : JsonSerializerContext
+{
+    
 }

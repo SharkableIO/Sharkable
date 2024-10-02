@@ -44,10 +44,9 @@ public class DependencyReflectorFactory : IDependencyReflectorFactory
     public object CreateInstance(Type type)
     {
         var p = GetConstructorParameters(type);
-        
         return Activator.CreateInstance(type, p) ?? throw new InvalidOperationException($"No constructor found for {type}");
     }
-    public T GetReflectedType<T>(Type typeToReflect, object[] constructorRequiredParamerters)
+    public T GetReflectedType<T>(Type typeToReflect, object[]? constructorRequiredParamerters)
         where T : class
     {
         var propertyTypeAssemblyQualifiedName = typeToReflect?.AssemblyQualifiedName;
@@ -87,9 +86,9 @@ public class DependencyReflectorFactory : IDependencyReflectorFactory
     /// <param name="constructorRequiredParamerters"></param>
     private void LogConstructorError(Type? typeToReflect, object[]? constructorRequiredParamerters)
     {
-        string constructorNames = string.Join(", ", constructorRequiredParamerters?.Select(item => item?.GetType()?.Name));
-        string message = $"Unable to create instance of {typeToReflect?.Name}. " +
-            $"Could not find a constructor with {constructorNames} as first argument(s)";
+        var constructorNames = string.Join(", ", constructorRequiredParamerters?.Select(item => item?.GetType()?.Name) ?? Array.Empty<string?>());
+        var message = $"Unable to create instance of {typeToReflect?.Name}. " +
+                      $"Could not find a constructor with {constructorNames} as first argument(s)";
         _logger.LogError(message);
     }
 
@@ -102,11 +101,7 @@ public class DependencyReflectorFactory : IDependencyReflectorFactory
     private ParameterInfo[]? TakeConstructorRequiredParamters(ConstructorInfo constructor, int constructorRequiredParamertersLength)
     {
         var parameters = constructor.GetParameters();
-        if (parameters.Length < constructorRequiredParamertersLength)
-        {
-            return parameters;
-        }
-        return parameters?.Take(constructorRequiredParamertersLength).ToArray();
+        return parameters.Length < constructorRequiredParamertersLength ? parameters : parameters?.Take(constructorRequiredParamertersLength).ToArray();
     }
 
     /// <summary>
@@ -115,7 +110,7 @@ public class DependencyReflectorFactory : IDependencyReflectorFactory
     /// <param name="constructor"></param>
     /// <param name="constructorRequiredParameters"></param>
     /// <returns></returns>
-    private bool ValidateConstructorRequiredParameters(ConstructorInfo constructor, object[] constructorRequiredParameters)
+    private bool ValidateConstructorRequiredParameters(ConstructorInfo constructor, object[]? constructorRequiredParameters)
     {
         if (constructorRequiredParameters == null)
         {
@@ -139,7 +134,7 @@ public class DependencyReflectorFactory : IDependencyReflectorFactory
     /// <param name="constructors"></param>
     /// <param name="constructorRequiredParameters"></param>
     /// <returns></returns>
-    private ConstructorInfo? GetConstructor(ConstructorInfo[]? constructors, object[] constructorRequiredParameters)
+    private ConstructorInfo? GetConstructor(ConstructorInfo[]? constructors, object[]? constructorRequiredParameters)
     {
         return constructors?.FirstOrDefault(constructor =>
           ValidateConstructorRequiredParameters(constructor, constructorRequiredParameters));

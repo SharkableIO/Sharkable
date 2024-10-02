@@ -6,7 +6,7 @@ internal static class JsonContextExtension
     {
         services.ConfigureHttpJsonOptions(options =>
         {
-            options.SerializerOptions.TypeInfoResolverChain.Insert(0, MyUnifiedResultSourceContext.Default);
+            options.SerializerOptions.TypeInfoResolverChain.Insert(0, UnifiedResultSourceContext.Default);
         });
         return services;
     }

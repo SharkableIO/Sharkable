@@ -13,7 +13,7 @@ public interface IDependencyReflectorFactory
     /// <param name="typeToReflect">The type to create</param>
     /// <param name="constructorRequiredParamerters">The required parameters on the constructor</param>
     /// <returns></returns>
-    T GetReflectedType<T>(Type typeToReflect, object[] constructorRequiredParamerters) where T : class;
+    T GetReflectedType<T>(Type typeToReflect, object[]? constructorRequiredParamerters) where T : class;
     object? CreateInstance(Type type);
     object?[]? GetConstructorParameters(Type type);
 }

@@ -1,13 +1,9 @@
-﻿using System.Data;
-using System.Linq.Expressions;
-using System.Text;
+﻿using System.Linq.Expressions;
 using System.Text.Json;
-using System.Text.Json.Serialization.Metadata;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.Options;
-using JsonOptions = Microsoft.AspNetCore.Http.Json.JsonOptions;
-
 
 namespace Sharkable;
 
@@ -52,9 +48,9 @@ internal static class SharkEndPointExtension
 
             string groupName = null!;
 
-            if (sharkEndpoint.grouName != null)
+            if (sharkEndpoint.groupName != null)
             {
-                groupName = sharkEndpoint.grouName.GetCaseFormat(options.Value.Format)!;
+                groupName = sharkEndpoint.groupName.GetCaseFormat(options.Value.Format)!;
                 sharkEndpoint.baseApiPath = $"{sharkEndpoint.apiPrefix}/{groupName}";
             }
             else
@@ -68,14 +64,7 @@ internal static class SharkEndPointExtension
             }
             else
             {
-                if (string.IsNullOrWhiteSpace(groupName))
-                {
-                    sharkEndpoint.baseApiPath = sharkEndpoint.apiPrefix;
-                }
-                else
-                {
-                    sharkEndpoint.baseApiPath = $"{sharkEndpoint.apiPrefix}/{groupName}";
-                }
+                sharkEndpoint.baseApiPath = string.IsNullOrWhiteSpace(groupName) ? sharkEndpoint.apiPrefix : $"{sharkEndpoint.apiPrefix}/{groupName}";
 
                 var group = app.MapGroup(sharkEndpoint.baseApiPath).WithDisplayName(groupName);
                 sharkEndpoint.BuildAction?.Invoke(group);
@@ -127,7 +116,7 @@ internal static class SharkEndPointExtension
 
         if (sharkAttribute != null)
         {
-            instance.grouName = sharkAttribute.Group;
+            instance.groupName = sharkAttribute.Group;
             instance.version = sharkAttribute.Version;
             if (string.IsNullOrWhiteSpace(sharkAttribute.ApiPrefix))
                 instance.addPrefix = false;
@@ -135,7 +124,7 @@ internal static class SharkEndPointExtension
         else
         {
             // Directly set fields using known properties or methods
-            instance.grouName = shark.GetType().Name.FormatAsGroupName();
+            instance.groupName = shark.GetType().Name.FormatAsGroupName();
             instance.addPrefix = !string.IsNullOrWhiteSpace(apiPrefix);
         }
 
@@ -150,6 +139,7 @@ internal static class SharkEndPointExtension
         // Attempt to resolve options from DI then fallback to default options
         return ctx.RequestServices.GetService<IOptions<Microsoft.AspNetCore.Http.Json.JsonOptions>>()?.Value?.SerializerOptions;
     }
+    [RequiresDynamicCode("https://github.com/SharkableIO/Sharkable/issues/53")]
     private static void MapAttributeEndpoints(
         Assembly[]? assemblies, WebApplication? app)
     {
@@ -197,100 +187,13 @@ internal static class SharkEndPointExtension
 
                     methodAttribute.Pattern = methodAttribute.Pattern
                         .GetCaseFormat(Shark.SharkOption.Format)
-                        .GetVersionFormat();
-                    
-                    var pattern = methodAttribute.Pattern?.GetType().GetCustomAttribute<StringSyntaxAttribute>();
-                    var parameters = methodInfo.GetParameters();
-                    var delegateType = Expression.GetDelegateType(parameters
-                        .Select(p => p.ParameterType).Concat(new[] { methodInfo.ReturnType }).ToArray());
-                    var methodDelegate = methodInfo.CreateDelegate(delegateType, instance);
-                    
-                    JsonSerializerOptions? jsonOptions;
+                        .GetVersionFormat()!;
 
-                    group.MapMethods(methodAttribute.Pattern!, [methodAttribute.Method.ToString()], async ctx =>
-                    {
-                        jsonOptions = ResolveSerializerOptions(ctx);
-                        var args = new object[parameters.Length];
-                        for (int i = 0; i < parameters.Length; i++)
-                        {
-                            var param = parameters[i];
-                            if (string.IsNullOrWhiteSpace(param.Name))
-                                continue;
-                            if (param.ParameterType == typeof(IFormFile))
-                            {
-                                args[i] = ctx.Request.Form.Files[param.Name]!;
-                            }
-                            else if (param.ParameterType == typeof(string) && ctx.Request.Headers.ContainsKey(param.Name))
-                            {
-                                args[i] = ctx.Request.Headers[param.Name].ToString();
-                            }
-                            else if (param.ParameterType == typeof(string) && ctx.Request.Query.ContainsKey(param.Name))
-                            {
-                                args[i] = ctx.Request.Query[param.Name].ToString();
-                            }
-                            else if (param.ParameterType == typeof(string))
-                            {
-                                using var reader = new StreamReader(ctx.Request.Body);
-                                args[i] = await reader.ReadToEndAsync();
-                            }
-                            else if (param.ParameterType.IsGenericType || param.ParameterType.IsArray )
-                            {
-                                using var reader = new StreamReader(ctx.Request.Body);
-                                var json = await reader.ReadToEndAsync();
-                                try
-                                {
-                                    var jsonResult = JsonSerializer.Deserialize(json, param.ParameterType, jsonOptions);
-                                    args[i] = jsonResult!;
-                                }
-                                catch (Exception e)
-                                {
-                                    throw new Exception($"error when parsing {param.Name}: {e.Message}", e);
-                                }
-                            }
-                            else
-                            {
-                                var queryValue = ctx.Request.Query[param.Name];
-                                if (queryValue.Count > 0)
-                                {
-                                    args[i] = Convert.ChangeType(queryValue[0], param.ParameterType)!;
-                                }
-                                else
-                                {
-                                    args[i] = param.HasDefaultValue ? param.DefaultValue! : Activator.CreateInstance(param.ParameterType)!;
-                                }
-                            }
-                        }
+                    var methodDelegate = instance.GetDelegate(methodInfo);
+                    if (methodDelegate == null)
+                        return;
 
-                        var result = methodDelegate.DynamicInvoke(args);
-                        if (result is Task task)
-                        {
-                            await task;
-                            if (task.GetType().IsGenericType)
-                            {
-                                var returnValue = task.GetType().GetProperty("Result")?.GetValue(task);
-                                if (returnValue != null)
-                                {
-                                    var str = JsonSerializer.Serialize(returnValue, returnValue.GetType(), jsonOptions);
-                                    await ctx.Response.WriteAsJsonAsync(returnValue);
-                                }
-                                else
-                                {
-                                    await ctx.Response.WriteAsync("value is null");
-                                }
-                            }
-                            else
-                            {
-                                //var str = JsonSerializer.Serialize(result, result.GetType(), jsonOptions);
-                                await ctx.Response.WriteAsJsonAsync(result);
-                            }
-                        }
-                        else if (result != null && result.GetType().IsGenericType)
-                        {
-                            //var str = JsonSerializer.Serialize(result, result.GetType(), jsonOptions);
-                            await ctx.Response.WriteAsJsonAsync(result);
-                        }
-                        
-                    });
+                    group.MapMethods(methodAttribute.Pattern!, [methodAttribute.Method.ToString()], methodDelegate);
                 });
             });
         });

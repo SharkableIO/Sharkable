@@ -19,6 +19,5 @@ public sealed class SharkMethodAttribute(
 
     [StringSyntax("Route")]
     public string? Pattern { get; internal set; } = pattern;
-
     public SharkHttpMethod Method { get; } = method;
 }

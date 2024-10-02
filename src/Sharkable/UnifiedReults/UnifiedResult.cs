@@ -3,7 +3,11 @@ using System.Text.Json.Serialization;
 
 namespace Sharkable;
 
-public class MyUnifiedResult<T>
+/// <summary>
+/// class generics for unified results
+/// </summary>
+/// <typeparam name="T"></typeparam>
+public record UnifiedResult<T>
 {
     public HttpStatusCode StatusCode { get; init; } = HttpStatusCode.OK;
     public T? Data { get; init; }
@@ -11,22 +15,21 @@ public class MyUnifiedResult<T>
     public string? Extra { get; init; }
     public long? TimeStamp { get; init; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-    public MyUnifiedResult()
+    public UnifiedResult()
     {
         
     }
-    public MyUnifiedResult(T? data,  string? errorMessage = null)
+    public UnifiedResult(T? data,  string? errorMessage = null, string? extra = null)
     {
         Data = data;
         ErrorMessage = errorMessage;
+        Extra = extra;
     }
-}
 
-[JsonSourceGenerationOptions(WriteIndented = true)]
-[JsonSerializable(typeof(MyUnifiedResult<>))]
-[JsonSerializable(typeof(MyUnifiedResult<string>))]
-[JsonSerializable(typeof(MyUnifiedResult<int>))]
-public partial class MyUnifiedResultSourceContext : JsonSerializerContext
-{
-    
+    public UnifiedResult(object data,Type type, string? errorMessage = null, string? extra = null)
+    {
+        Data = (T?)data;
+        ErrorMessage = errorMessage;
+        Extra = extra;
+    }
 }

@@ -1,6 +1,11 @@
-namespace Sharkable.Context;
+using System.Text.Json.Serialization;
 
-public class UnifiedResultSourceContext
+namespace Sharkable;
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(UnifiedResult<>))]
+[JsonSerializable(typeof(UnifiedResult<string>))]
+[JsonSerializable(typeof(UnifiedResult<int>))]
+public partial class UnifiedResultSourceContext : JsonSerializerContext
 {
-    
 }
