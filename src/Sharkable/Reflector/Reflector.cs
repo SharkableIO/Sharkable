@@ -30,30 +30,13 @@ public class Reflector
     internal static Delegate? GetMethodDelegate(MethodInfo methodInfo, object? instance)
     {
         if (instance == null)
-        {
             return null;
-        }
         
         var parameters = methodInfo.GetParameters()
             .Select(p => p.ParameterType)
             .ToArray();
-        
-        if (methodInfo.ReturnType == typeof(Task) || (methodInfo.ReturnType.IsGenericType && methodInfo.ReturnType.GetGenericTypeDefinition() == typeof(Task<>)))
-        {
-            var delegateType = Expression.GetDelegateType(parameters.Concat<Type>(new[] { methodInfo.ReturnType }).ToArray());
-            return methodInfo.CreateDelegate(delegateType, instance);
-        } 
-        if (methodInfo.ReturnType == typeof(void))
-        {
-            var delegateType = Expression.GetDelegateType(parameters.Concat(new[] { typeof(void) }).ToArray());
-            return  methodInfo.CreateDelegate(delegateType, instance);
-            
-        }
-
-        if (!methodInfo.ReturnType.IsGenericType) return null;
-        {
-            var delegateType = Expression.GetDelegateType(parameters.Concat(new[] { methodInfo.ReturnType }).ToArray());
-            return methodInfo.CreateDelegate(delegateType, instance);
-        }
+        return methodInfo.CreateDelegate(methodInfo.ReturnType == typeof(void) ? 
+            Expression.GetDelegateType(parameters.Concat([typeof(void)]).ToArray()) : 
+            Expression.GetDelegateType(parameters.Concat([methodInfo.ReturnType]).ToArray()), instance);
     }
 }
