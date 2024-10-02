@@ -7,32 +7,45 @@ namespace Sharkable;
 /// </summary>
 public class DependencyReflectorFactory : IDependencyReflectorFactory
 {
-    private readonly IServiceProvider serviceProvider;
-    private readonly ILogger<DependencyReflectorFactory> logger;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<DependencyReflectorFactory> _logger;
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="serviceProvider"></param>
+    /// <param name="logger"></param>
     public DependencyReflectorFactory(IServiceProvider serviceProvider, ILogger<DependencyReflectorFactory> logger)
     {
-        this.serviceProvider = serviceProvider;
-        this.logger = logger;
+        _serviceProvider = serviceProvider;
+        _logger = logger;
     }
-
-    public object?[]? GetConstructorParameters(Type type)
+    
+    /// <summary>
+    /// get constructor for dependency injection
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public object?[] GetConstructorParameters(Type type)
     {
         var constructor = type.GetConstructors().FirstOrDefault();
         if (constructor == null)
         {
-            throw new InvalidOperationException("no suitable constructor found");
+            _logger.LogDebug("No constructor found for {type}", type);
+            throw new InvalidOperationException("No constructor found for type" + type);
         }
-
-        var parameters = constructor.GetParameters().Select(p=>serviceProvider.GetService(p.ParameterType)).ToArray();
+        var parameters = constructor.GetParameters()
+            .Select(p=>_serviceProvider.GetService(p.ParameterType))
+            .ToArray();
         return parameters;
     }
 
-    public object? CreateInstance(Type type)
+    public object CreateInstance(Type type)
     {
         var p = GetConstructorParameters(type);
-
-        return Activator.CreateInstance(type, p);
+        
+        return Activator.CreateInstance(type, p) ?? throw new InvalidOperationException($"No constructor found for {type}");
     }
     public T GetReflectedType<T>(Type typeToReflect, object[] constructorRequiredParamerters)
         where T : class
@@ -53,12 +66,12 @@ public class DependencyReflectorFactory : IDependencyReflectorFactory
         object?[]? injectedParamerters = null;
         if (constructorRequiredParamerters == null)
         {
-            injectedParamerters = parameters?.Select(parameter => serviceProvider.GetService(parameter.ParameterType)).ToArray();
+            injectedParamerters = parameters?.Select(parameter => _serviceProvider.GetService(parameter.ParameterType)).ToArray();
         }
         else
         {
             injectedParamerters = constructorRequiredParamerters
-            .Concat(parameters.Skip(constructorRequiredParamerters.Length).Select(parameter => serviceProvider.GetService(parameter.ParameterType)))
+            .Concat(parameters.Skip(constructorRequiredParamerters.Length).Select(parameter => _serviceProvider.GetService(parameter.ParameterType)))
             .ToArray();
         }
         if (propertyTypeAssemblyQualifiedName == null)
@@ -77,7 +90,7 @@ public class DependencyReflectorFactory : IDependencyReflectorFactory
         string constructorNames = string.Join(", ", constructorRequiredParamerters?.Select(item => item?.GetType()?.Name));
         string message = $"Unable to create instance of {typeToReflect?.Name}. " +
             $"Could not find a constructor with {constructorNames} as first argument(s)";
-        logger.LogError(message);
+        _logger.LogError(message);
     }
 
     /// <summary>

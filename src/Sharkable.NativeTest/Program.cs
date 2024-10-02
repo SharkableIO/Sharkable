@@ -1,13 +1,18 @@
 using System.Text.Json.Serialization;
+using Sharkable;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
-builder.Services.AddShark([typeof(Program).Assembly]);
+
+builder.Services.AddShark([typeof(Program).Assembly], opt =>
+{
+    opt.Format = EndpointFormat.Tolower;
+});
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
-    options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
+    options.SerializerOptions.TypeInfoResolverChain.Insert(1, AppJsonSerializerContext.Default);
+    options.SerializerOptions.TypeInfoResolverChain.Insert(2, AppJsonSerializerContext2.Default);
 });
-
 var app = builder.Build();
 app.UseShark();
 var sampleTodos = new Todo[]
@@ -32,5 +37,9 @@ public record Todo(int Id, string? Title, DateOnly? DueBy = null, bool IsComplet
 
 [JsonSerializable(typeof(Todo[]))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
+{
+}
+[JsonSerializable(typeof(Todo))]
+internal partial class AppJsonSerializerContext2 : JsonSerializerContext
 {
 }
