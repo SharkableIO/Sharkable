@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System.Linq.Expressions;
+using System.Text.Json;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.Options;
-using System.Linq.Expressions;
 
 namespace Sharkable;
 
@@ -8,65 +11,29 @@ internal static class SharkEndPointExtension
 {
     public static void MapEndpoints(this WebApplication? app)
     {
-        AddAttributeEndpoints(Shark.Assemblies,  app);
         app.MapSharkEndpoints();
+        
+        //map shark endpoint attributes only when i non aot mode
+        if (!Shark.SharkOption.AotMode)
+        {
+            MapAttributeEndpoints(Shark.Assemblies, app);
+        }
     }
 
-    public static void MapEndpoints(this WebApplication? app, Assembly[] assemblies)
-    {
-        AddAttributeEndpoints(assemblies,  app);
-        app.MapSharkEndpoints();
-    }
-
-    private static void AddAttributeEndpoints(Assembly[]? assemblies, WebApplication? app)
+    internal static WebApplication MapSharkEndpoints(this WebApplication? app)
     {
         ArgumentNullException.ThrowIfNull(app);
-        ArgumentNullException.ThrowIfNull(assemblies);
 
-        var lst = GetAttributeEndpointsOld(assemblies);
-        lst.MyForEach(a =>
-        {
-            var group = app.MapGroup(a.Item1!);
-            a.Item2.MyForEach(e =>
-            {
-                switch(e.Item2)
-                {
-                    case SharkHttpMethod.GET:
-                        group.MapGet(e.Item1!,e.Item3);
-                        break;
-                    case SharkHttpMethod.POST:
-                        group.MapPost(e.Item1!,()=>e.Item3);
-                        break;
-                    case SharkHttpMethod.PUT:
-                        group.MapPut(e.Item1!, ()=>e.Item3);
-                        break;
-                    case SharkHttpMethod.DELETE:
-                        group.MapDelete(e.Item1!, ()=>e.Item3);
-                        break;
-                    case SharkHttpMethod.PATCH:
-                        group.MapPatch(e.Item1!, ()=>e.Item3);
-                        break;
-                    default:
-                        break;
-                }
-            });
-        });
-    }
+        var endpointServices = app.Services.GetServices<ISharkEndpoint>();
+        var options = app.Services.GetService<IOptions<SharkOption>>();
 
-    internal static WebApplication MapSharkEndpoints(this WebApplication? builder)
-    {
-        ArgumentNullException.ThrowIfNull(builder);
-
-        var endpointServices = builder.Services.GetServices<ISharkEndpoint>();
-        var options = builder.Services.GetService<IOptions<SharkOption>>();
-        
         ArgumentNullException.ThrowIfNull(options);
-        
+
         endpointServices.MyForEach(e =>
         {
             SharkEndpoint sharkEndpoint;
 
-            if(e is SharkEndpoint endpoint)
+            if (e is SharkEndpoint endpoint)
             {
                 sharkEndpoint = endpoint;
                 sharkEndpoint.BuildAction = endpoint.AddRoutes;
@@ -75,66 +42,62 @@ internal static class SharkEndPointExtension
             {
                 sharkEndpoint = CreateSharkEndpoint(e);
             }
-            
+
             if (string.IsNullOrWhiteSpace(sharkEndpoint.apiPrefix))
                 sharkEndpoint.apiPrefix = options.Value.ApiPrefix;
 
-            string? groupName = null;
+            string groupName = null!;
 
-            if(sharkEndpoint.grouName != null)
+            if (sharkEndpoint.groupName != null)
             {
-                groupName = sharkEndpoint.grouName.GetCaseFormat(options.Value.Format);
+                groupName = sharkEndpoint.groupName.GetCaseFormat(options.Value.Format)!;
                 sharkEndpoint.baseApiPath = $"{sharkEndpoint.apiPrefix}/{groupName}";
             }
             else
             {
                 groupName = string.Empty;
             }
-            
-            if(string.IsNullOrWhiteSpace(sharkEndpoint.apiPrefix))
+
+            if (string.IsNullOrWhiteSpace(sharkEndpoint.apiPrefix))
             {
-                sharkEndpoint.BuildAction?.Invoke(builder);
+                sharkEndpoint.BuildAction?.Invoke(app);
             }
             else
             {
-                if(string.IsNullOrWhiteSpace(groupName))
-                {
-                    sharkEndpoint.baseApiPath = sharkEndpoint.apiPrefix;
-                }
-                else
-                {
-                    sharkEndpoint.baseApiPath = $"{sharkEndpoint.apiPrefix}/{groupName}";
-                }
-                var group = builder.MapGroup(prefix: sharkEndpoint.baseApiPath);
+                sharkEndpoint.baseApiPath = string.IsNullOrWhiteSpace(groupName) ? sharkEndpoint.apiPrefix : $"{sharkEndpoint.apiPrefix}/{groupName}";
+
+                var group = app.MapGroup(sharkEndpoint.baseApiPath).WithDisplayName(groupName);
                 sharkEndpoint.BuildAction?.Invoke(group);
             }
-            
+
         });
-        return builder;
+        return app;
     }
+
     internal static void WireSharkEndpoint(this IServiceCollection services)
     {
         var endpoints = GetSharkEndpint(Shark.Assemblies);
-        
+
         endpoints.MyForEach(e =>
         {
             Utils.WriteDebug($"wiring {e.FullName}");
             services.AddSingleton(typeof(ISharkEndpoint), e);
         });
     }
+
     private static List<Type>? GetSharkEndpint(Assembly[]? assemblies)
     {
         ArgumentNullException.ThrowIfNull(assemblies);
 
-        var alist = assemblies.ToList();
+        var assemblyList = assemblies.ToList();
 
-        if (alist.Count == 0)
+        if (assemblyList.Count == 0)
             return null;
 
-        var endpoints = alist.Select(x => x.GetTypes()
-                .Where(i => i.GetInterfaces()
-                        .Where(x => x == typeof(ISharkEndpoint))
-                        .Any()).ToList()).ToList();
+        var endpoints = assemblyList.Select(x => x.GetTypes()
+            .Where(i => i
+                .GetInterfaces()
+                .Any(type => type == typeof(ISharkEndpoint))).ToList()).ToList();
         if (endpoints.Count == 0)
             return null;
 
@@ -145,201 +108,94 @@ internal static class SharkEndPointExtension
         return lst;
     }
 
-    private static List<Tuple<string?, List<Tuple<string?, SharkHttpMethod, Task>>>>? GetAttributeEndpoints(Assembly[]? assemblies)
-    {
-        ArgumentNullException.ThrowIfNull(assemblies);
-        var lst = new List<Tuple<string?, List<Tuple<string?, SharkHttpMethod, Task>>>>();
-        assemblies.MyForEach(a =>
-        {
-            a.GetTypes().MyForEach(t =>
-            {
-                var endpointAttrubute = t.GetCustomAttributes<SharkEndpointAttribute>()
-                    .FirstOrDefault();
-                var methods = new List<Tuple<string?, SharkHttpMethod, Task>>();
-
-                if (endpointAttrubute == null)
-                    return;
-
-                endpointAttrubute.Group ??= t.Name.FormatAsGroupName();
-
-                var taggedMethods = t.GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                   .Where(x => x.CustomAttributes
-                       .Any(x => x.AttributeType == typeof(SharkMethodAttribute)))
-                   .ToList();
-
-                if (taggedMethods.Count == 0)
-                    return;
-
-                var instance = Activator.CreateInstance(t) ?? throw new Exception($"error when creating an instance of {t.Name}");
-                
-                taggedMethods.MyForEach(methodInfo =>
-                {
-                    //methods.Add(new Tuple<string?, SharkHttpMethod, Delegate>(methodAttribute.AddressName, methodAttribute.Method, methodDelegate));
-                    var methodAttribute = methodInfo.GetCustomAttribute<SharkMethodAttribute>();
-
-                    if (methodAttribute == null)
-                        return;
-
-                    //setup route address
-                    if (string.IsNullOrWhiteSpace(methodAttribute.AddressName))
-                        methodAttribute.AddressName ??= methodInfo.Name;
-
-                    var parameters = methodInfo.GetParameters()
-                                   .Select(p => p.ParameterType)
-                                   .ToArray();
-
-                    if (methodInfo.ReturnType == typeof(Task) || (methodInfo.ReturnType.IsGenericType && methodInfo.ReturnType.GetGenericTypeDefinition() == typeof(Task<>)))
-                    {
-                        if (methodInfo.Invoke(instance, parameters) is not Task task)
-                            throw new Exception("failed when casting method into task");
-                        
-                        methods.Add(new Tuple<string?, SharkHttpMethod, Task>(methodAttribute.AddressName, methodAttribute.Method, task));
-                    }
-                    else if (methodInfo.ReturnType == typeof(void))
-                    {
-                        var task = Task.Run(()=>methodInfo.Invoke(instance, parameters));
-                        methods.Add(new Tuple<string?, SharkHttpMethod, Task>(methodAttribute.AddressName, methodAttribute.Method, task));
-                    }
-                });
-
-                lst.Add(new Tuple<string?, List<Tuple<string?, SharkHttpMethod, Task>>>(endpointAttrubute?.Group, methods));
-            });
-        });
-
-        return lst;
-    }
-    [Obsolete("will not update above v0.0.5")]
-    private static List<Tuple<string?, List<Tuple<string?, SharkHttpMethod, Delegate>>>>? GetAttributeEndpointsOld(Assembly[]? assemblies)
-    {
-        ArgumentNullException.ThrowIfNull(assemblies);
-        var lst = new List<Tuple<string?, List<Tuple<string?, SharkHttpMethod, Delegate>>>>();
-        assemblies.MyForEach(a =>
-        {
-            a.GetTypes().MyForEach(t =>
-            {
-                var endpointAttrubute = t.GetCustomAttributes<SharkEndpointAttribute>()
-                    .FirstOrDefault();
-                var methods = new List<Tuple<string?, SharkHttpMethod, Delegate>>();
-
-                if (endpointAttrubute == null)
-                    return;
-
-                endpointAttrubute.Group ??= t.Name.FormatAsGroupName();
-
-                var taggedMethods = t.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                   .Where(x => x.CustomAttributes
-                       .Any(x => x.AttributeType == typeof(SharkMethodAttribute)))
-                   .ToList();
-
-                if (taggedMethods.Count == 0)
-                    return;
-
-                var instance = Activator.CreateInstance(t) ?? throw new Exception($"error when creating an instance of {t.Name}");
-                
-                taggedMethods.MyForEach(methodInfo =>
-                {
-                    //methods.Add(new Tuple<string?, SharkHttpMethod, Delegate>(methodAttribute.AddressName, methodAttribute.Method, methodDelegate));
-                    var methodAttribute = methodInfo.GetCustomAttribute<SharkMethodAttribute>();
-
-                    if (methodAttribute == null)
-                        return;
-
-                    //setup route address
-                    if (string.IsNullOrWhiteSpace(methodAttribute.AddressName))
-                        methodAttribute.AddressName ??= methodInfo.Name;
-
-                    var parameters = methodInfo.GetParameters()
-                                   .Select(p => p.ParameterType)
-                                   .ToArray();
-
-                    if (methodInfo.ReturnType == typeof(Task) || (methodInfo.ReturnType.IsGenericType && methodInfo.ReturnType.GetGenericTypeDefinition() == typeof(Task<>)))
-                    {
-                        var delegateType = Expression.GetDelegateType(parameters.Concat(new[] { methodInfo.ReturnType }).ToArray());
-                        var del = methodInfo.CreateDelegate(delegateType, instance);
-                        methods.Add(new Tuple<string?, SharkHttpMethod, Delegate>(methodAttribute.AddressName, methodAttribute.Method, del));
-                    }
-                    else if (methodInfo.ReturnType == typeof(void))
-                    {
-                        var delegateType = Expression.GetDelegateType(parameters.Concat(new[] { typeof(void) }).ToArray());
-                        var del = methodInfo.CreateDelegate(delegateType, instance);
-                        methods.Add(new Tuple<string?, SharkHttpMethod, Delegate>(methodAttribute.AddressName, methodAttribute.Method, del));
-                    }
-                });
-
-                lst.Add(new Tuple<string?, List<Tuple<string?, SharkHttpMethod, Delegate>>>(endpointAttrubute?.Group, methods));
-            });
-        });
-
-        return lst;
-    }
-
-    [Obsolete("due to aot incompatible, this method is not supported")]
-    public static SharkEndpoint CreateSharkEndpointOld<T>(T shark, string? apiPrefix = "api") where T: ISharkEndpoint
+    private static SharkEndpoint CreateSharkEndpoint<T>(T shark, string? apiPrefix = "api") where T : ISharkEndpoint
     {
         var sharkEndpointType = typeof(SharkEndpoint);
+        var sharkAttribute = shark.GetType().GetCustomAttribute<SharkEndpointAttribute>();
         var instance = (SharkEndpoint)Activator.CreateInstance(sharkEndpointType, nonPublic: true)!;
 
-        var grouNameField = sharkEndpointType.GetField("grouName", BindingFlags.Instance | BindingFlags.NonPublic);
-        var apiPrefixField = sharkEndpointType.GetField("apiPrefix", BindingFlags.Instance | BindingFlags.NonPublic);
-        var typeName = shark.GetType().Name;
-        grouNameField?.SetValue(instance, typeName.FormatAsGroupName());
-        apiPrefixField?.SetValue(instance, apiPrefix);
-        var addRoutesMethod = typeof(T).GetMethod("AddRoutes");
-        var addRoutesDelegate = (Action<IEndpointRouteBuilder>)Delegate.CreateDelegate(typeof(Action<IEndpointRouteBuilder>), shark, addRoutesMethod!);
+        if (sharkAttribute != null)
+        {
+            instance.groupName = sharkAttribute.Group;
+            instance.version = sharkAttribute.Version;
+            if (string.IsNullOrWhiteSpace(sharkAttribute.ApiPrefix))
+                instance.addPrefix = false;
+        }
+        else
+        {
+            // Directly set fields using known properties or methods
+            instance.groupName = shark.GetType().Name.FormatAsGroupName();
+            instance.addPrefix = !string.IsNullOrWhiteSpace(apiPrefix);
+        }
 
-        var addRoutesField = sharkEndpointType.GetField("AddRoutes", BindingFlags.Instance | BindingFlags.Public);
-        addRoutesField?.SetValue(instance, addRoutesDelegate);
-        return instance;
-    }
-    public static SharkEndpoint CreateSharkEndpoint<T>(T shark, string? apiPrefix = "api") where T : ISharkEndpoint
-    {
-        var sharkEndpointType = typeof(SharkEndpoint);
-        var groupName = shark.GetType().Name.FormatAsGroupName();
-        var instance = (SharkEndpoint)Activator.CreateInstance(sharkEndpointType, nonPublic: true)!;
-
-        // Directly set fields using known properties or methods
-        instance.grouName = groupName;
         instance.apiPrefix = apiPrefix;
-
         // Assign the delegate
         instance.BuildAction = shark.AddRoutes;
 
         return instance;
     }
-
-    public delegate Task RequestDelegate(HttpContext context);
-    public static RequestDelegate CreateRequestDelegate(MethodInfo methodInfo)
+    private static JsonSerializerOptions? ResolveSerializerOptions(HttpContext ctx)
     {
-        return async context =>
-        {
-            var type = methodInfo.DeclaringType;
-            ArgumentNullException.ThrowIfNull(type);
-
-            var instance = Activator.CreateInstance(type);
-            var parameters = methodInfo.GetParameters().Select(p => GetParameterValue(p, context)).ToArray();
-            var result = methodInfo.Invoke(instance, parameters);
-
-            if (result is Task task)
-            {
-                await task;
-                if (task.GetType().IsGenericType)
-                {
-                    var returnValue = task.GetType().GetProperty("Result")?.GetValue(task);
-                    Console.WriteLine(returnValue?.GetType().Name);
-                    await context.Response.WriteAsync(returnValue?.ToString() ?? string.Empty);
-                }
-            }
-            else
-            {
-                await context.Response.WriteAsync(result?.ToString() ?? string.Empty);
-            }
-        };
+        // Attempt to resolve options from DI then fallback to default options
+        return ctx.RequestServices.GetService<IOptions<Microsoft.AspNetCore.Http.Json.JsonOptions>>()?.Value?.SerializerOptions;
     }
-
-    private static object? GetParameterValue(ParameterInfo parameterInfo, HttpContext context)
+    [RequiresDynamicCode("https://github.com/SharkableIO/Sharkable/issues/53")]
+    private static void MapAttributeEndpoints(
+        Assembly[]? assemblies, WebApplication? app)
     {
-        // Implement logic to get parameter values from HttpContext
-        // For example, you can get query parameters, route values, etc.
-        return parameterInfo.ParameterType == typeof(string) ? context.Request.Query[parameterInfo.Name!].ToString() : null;
+        ArgumentNullException.ThrowIfNull(assemblies);
+        ArgumentNullException.ThrowIfNull(app);
+
+        assemblies.MyForEach(a =>
+        {
+            a.GetTypes().MyForEach(t =>
+            {
+                var endpointAttribute = t.GetCustomAttributes<SharkEndpointAttribute>()
+                    .FirstOrDefault();
+                
+                if (endpointAttribute == null)
+                    return;
+
+                endpointAttribute.Group ??= t.Name;
+                endpointAttribute.Group = endpointAttribute.Group
+                    .FormatAsGroupName()
+                    .GetCaseFormat(Shark.SharkOption.Format)
+                    .GetVersionFormat();
+                
+                var taggedMethods = t
+                    .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                    .Where(x => !x.GetCustomAttributes<NonActionAttribute>().Any())
+                    .ToList();
+
+                if (taggedMethods.Count == 0)
+                    return;
+                var factory = app.Services.GetService<IDependencyReflectorFactory>();
+                var instance = factory?.CreateInstance(t) ??
+                               throw new Exception($"error when creating an instance of {t.Name}");
+                    
+                var group = app.MapGroup(endpointAttribute.Group!);
+
+                taggedMethods.MyForEach(methodInfo =>
+                {
+                    //methods.Add(new Tuple<string?, SharkHttpMethod, Delegate>(methodAttribute.AddressName, methodAttribute.Method, methodDelegate));
+                    var attribute = methodInfo.GetCustomAttribute<SharkMethodAttribute>();
+                    var methodAttribute = attribute ?? new SharkMethodAttribute();
+
+                    //setup route address
+                    if (string.IsNullOrWhiteSpace(methodAttribute.Pattern))
+                        methodAttribute.Pattern ??= methodInfo.Name;
+
+                    methodAttribute.Pattern = methodAttribute.Pattern
+                        .GetCaseFormat(Shark.SharkOption.Format)
+                        .GetVersionFormat()!;
+
+                    var methodDelegate = instance.GetDelegate(methodInfo);
+                    if (methodDelegate == null)
+                        return;
+
+                    group.MapMethods(methodAttribute.Pattern!, [methodAttribute.Method.ToString()], methodDelegate);
+                });
+            });
+        });
     }
 }

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
 		<Description>🌈owerful tools for dotnet aot and more</Description>
-    <AssemblyVersion>0.0.23</AssemblyVersion>
+    <AssemblyVersion>0.0.24</AssemblyVersion>
 		<PackageProjectUrl>https://github.com/SharkableIO/Sharkable</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/SharkableIO/Sharkable.git</RepositoryUrl>
 		<PackageTags>dotnet,minimalapi,toolkit,framework</PackageTags>
@@ -22,6 +22,6 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.8" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.7.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.8.1" />
   </ItemGroup>
 </Project>

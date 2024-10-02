@@ -9,6 +9,8 @@ public static class SharkExtension
     /// <param name="setupOptions"></param>
     internal static void AddCommon(this IServiceCollection services, Action<SharkOption>? setupOptions = null)
     {
+        services.AddJsonContext();
+        services.AddDIFactory();
         //invoke and setup options
         setupOptions?.Invoke(Shark.SharkOption);
         services.Configure<SharkOption>((opt) => 
@@ -42,5 +44,6 @@ public static class SharkExtension
         InternalShark.ServiceProvider = InternalShark.ServiceScopeFactory.CreateScope().ServiceProvider;
         //setup swagger
         app.UseSharkSwagger();
+       // app.MapSharkEndpointsWithAttributes();
     }
 }

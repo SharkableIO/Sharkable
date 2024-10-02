@@ -22,7 +22,6 @@ public class LoveSellerV1Service : ISharkEndpoint
     {
         app.MapGet("/lover", () =>
         {
-        
             return TypedResults.Ok("lover");
         })
         .WithName("GetLover")

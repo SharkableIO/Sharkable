@@ -106,4 +106,26 @@ internal static class StringExtension
 
         return _str;
     }
+    internal static Dictionary<string, string> UrlToDictionary(string urlPattern, string url)
+    { 
+        // Extract parameter names from the URL pattern
+        var keys = Regex.Matches(urlPattern, @"\{(\w+)\}");
+        var keyList = new List<string>();
+        foreach (Match match in keys)
+        {
+            keyList.Add(match.Groups[1].Value);
+        }
+
+        // Extract values from the URL
+        var values = url.Split('/');
+
+        // Ensure we only take the relevant segments
+        var result = new Dictionary<string, string>();
+        for (int i = 0; i < keyList.Count && i < values.Length; i++)
+        {
+            result[keyList[i]] = values[values.Length - keyList.Count + i];
+        }
+
+        return result;
+    }
 }

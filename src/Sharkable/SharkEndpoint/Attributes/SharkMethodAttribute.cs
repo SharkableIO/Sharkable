@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Microsoft.Extensions.Primitives;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Sharkable;
 
@@ -6,19 +7,17 @@ namespace Sharkable;
 /// delegate of a http method
 /// </summary>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-public sealed class SharkMethodAttribute : Attribute
+[RequiresDynamicCode("map SharkMethodAttribute only supported in aot mode")]
+public sealed class SharkMethodAttribute(
+    [StringSyntax("Route")] string? pattern,
+    SharkHttpMethod method = SharkHttpMethod.POST)
+    : Attribute
 {
-    public SharkMethodAttribute(SharkHttpMethod method = SharkHttpMethod.POST)
+    public SharkMethodAttribute(SharkHttpMethod method = SharkHttpMethod.POST) : this(null, method)
     {
-        Method = method;
     }
 
-    public SharkMethodAttribute([StringSyntax("Route")]string? addressName, SharkHttpMethod method = SharkHttpMethod.POST)
-    {
-        AddressName = addressName;
-        Method = method;
-    }
-
-    public string? AddressName { get; set; }
-    public SharkHttpMethod Method { get; }
+    [StringSyntax("Route")]
+    public string? Pattern { get; internal set; } = pattern;
+    public SharkHttpMethod Method { get; } = method;
 }
