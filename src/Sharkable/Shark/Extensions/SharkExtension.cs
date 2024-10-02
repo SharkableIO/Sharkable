@@ -12,10 +12,10 @@ public static class SharkExtension
         services.AddJsonContext();
         services.AddDIFactory();
         //invoke and setup options
+        setupOptions?.Invoke(Shark.SharkOption);
         services.Configure<SharkOption>((opt) => 
         { 
-            setupOptions?.Invoke(opt); 
-            Shark.SharkOption = opt; 
+            setupOptions?.Invoke(opt);
         });
         //wire endpoints
         services.WireSharkEndpoint();

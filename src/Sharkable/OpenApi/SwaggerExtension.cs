@@ -7,6 +7,9 @@ internal static class SwaggerExtension
 {
     internal static IServiceCollection SharkSwagger(this IServiceCollection services)
     {
+        //will not proceed if configure is null
+        if(SharkOption.SqlSugarOptionsConfigure != null)
+            return services;
         // Add services to the container.
         services.Configure<RouteOptions>(options =>
         {
