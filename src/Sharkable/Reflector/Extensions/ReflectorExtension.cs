@@ -1,6 +1,7 @@
+
 namespace Sharkable;
 
-internal static class ReflectorExtension
+public static class ReflectorExtension
 {
     internal static Delegate? GetDelegate(this object? instance, MethodInfo method)
     {
