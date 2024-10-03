@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -41,11 +42,11 @@ public partial class Shark
     public static UseSharkOptions? UseSharkOptions { get; internal set; }
     //public properties
 
-    public static IServiceProvider GetServiceProvider(Type serviceType)
+    public static IServiceProvider GetServiceProvider(Type? serviceType = null)
     {
         // console program
-        if(HostEnvironment == default) 
-            return Services;
+        // if(HostEnvironment == default) 
+        //     return Services;
 
         /*if (Services != null &&
             InternalShark.InternalServices
@@ -58,19 +59,47 @@ public partial class Shark
     {
         AssemblyContext.GetAssemblyContext(assemblies);
     }
-
-    public static T GetService<T>(IServiceProvider serviceProvider = default!) where T : class
+    /// <summary>
+    /// get services
+    /// </summary>
+    /// <param name="serviceProvider"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public static T? GetService<T>(IServiceProvider? serviceProvider = null) where T : class
     {
         var service = GetService(typeof(T), serviceProvider) as T;
-
-        ArgumentNullException.ThrowIfNull(service);
-
         return service;
     }
-
-    public static object? GetService(Type type, IServiceProvider serviceProvider = default!)
+    /// <summary>
+    /// get services
+    /// </summary>
+    /// <param name="type">service type</param>
+    /// <param name="serviceProvider">service provider</param>
+    /// <returns>object of instance</returns>
+    public static object? GetService(Type type, IServiceProvider? serviceProvider = null)
     {
         return (serviceProvider ?? GetServiceProvider(type)).GetService(type);
     }
-    public static string? ApiPrefix { get; set; } = "/api";
+    /// <summary>
+    /// get keyed services
+    /// </summary>
+    /// <param name="serviceProvider">service provider</param>
+    /// <param name="key">service key</param>
+    /// <typeparam name="T">service type</typeparam>
+    /// <returns>instance of service</returns>
+    public static T? GetKeyedService<T>(string? key = null, IServiceProvider? serviceProvider = null) where T : class
+    {
+        return string.IsNullOrWhiteSpace(key) ? 
+            null : (serviceProvider ?? GetServiceProvider(typeof(T))).GetKeyedService<T>(key);
+    }
+    /// <summary>
+    /// get options
+    /// </summary>
+    /// <param name="serviceProvider">service provider</param>
+    /// <typeparam name="TOptions">typed configuration options</typeparam>
+    /// <returns></returns>
+    public static TOptions? GetOptions<TOptions>(IServiceProvider? serviceProvider = null) where TOptions : class,new()
+    {
+        return GetService<IOptions<TOptions>>(serviceProvider)?.Value;
+    }
 }

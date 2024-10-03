@@ -4,7 +4,7 @@ using Sharkable;
 var builder = WebApplication.CreateSlimBuilder(args);
 
 
-builder.Services.AddShark(opt =>
+builder.Services.AddShark([typeof(Program).Assembly],opt =>
 {
     opt.Format = EndpointFormat.Tolower;
 });
