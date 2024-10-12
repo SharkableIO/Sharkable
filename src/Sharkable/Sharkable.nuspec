@@ -16,7 +16,7 @@
     <tags>minimalapi aot framework toolkit</tags>
     <dependencies>
       <dependency id="Microsoft.AspNetCore.OpenApi" version="8.0.8" />
-      <dependency id="Swashbuckle.AspNetCore" version="6.7.3" />
+      <dependency id="Swashbuckle.AspNetCore" version="6.8.1" />
     </dependencies>
   </metadata>
    <files>
