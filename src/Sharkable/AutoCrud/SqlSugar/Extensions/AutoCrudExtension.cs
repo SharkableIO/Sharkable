@@ -16,14 +16,11 @@ internal static class AutoCrudExtension
             var crudTypes = assembly.GetType("Sharkable.AutoCrud.SqlSugar.AutoCrudExtension");
             var method = crudTypes?.GetMethods(BindingFlags.Public | BindingFlags.Static)
                 .FirstOrDefault(x => x.Name == "AddSqlSugar");
-            
-            if(method != null)
+
+            if (method?.Invoke(null, [services, SharkOption.SqlSugarOptionsConfigure]) is IServiceCollection s)
             {
-                if (method.Invoke(null, [services, SharkOption.SqlSugarOptionsConfigure]) is IServiceCollection s) 
-                {
-                    Utils.WriteDebug("auto crud generation added.");
-                    return s;
-                }
+                Utils.WriteDebug("auto crud generation added.");
+                return s;
             }
         }
         Utils.WriteDebug("no auto crud generation service added.");
