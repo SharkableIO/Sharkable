@@ -1,6 +1,6 @@
-namespace Sharkable.Interfaces;
+namespace Sharkable;
 
-public class IUnifiedResult
+public interface IUnifiedResult<in TData, out TResult>
 {
-    
+    Func<TData, TResult> Result { get; }
 }

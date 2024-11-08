@@ -2,7 +2,7 @@ namespace Sharkable;
 
 public enum EndpointFormat
 {
-    Tolower,
+    ToLower,
     UnChanged,
     CamelCase,
     SnakeCase,

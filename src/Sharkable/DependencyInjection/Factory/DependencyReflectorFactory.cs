@@ -3,7 +3,7 @@
 namespace Sharkable;
 
 /// <summary>
-/// A factory that can create objects with DI
+/// A factory that can create objects with dependency injection
 /// </summary>
 public class DependencyReflectorFactory : IDependencyReflectorFactory
 {
@@ -62,21 +62,21 @@ public class DependencyReflectorFactory : IDependencyReflectorFactory
             LogConstructorError(typeToReflect, constructorRequiredParamerters);
             return null!;
         }
-        object?[]? injectedParamerters = null;
+        object?[]? injectedParameters = null;
         if (constructorRequiredParamerters == null)
         {
-            injectedParamerters = parameters?.Select(parameter => _serviceProvider.GetService(parameter.ParameterType)).ToArray();
+            injectedParameters = parameters?.Select(parameter => _serviceProvider.GetService(parameter.ParameterType)).ToArray();
         }
         else
         {
-            injectedParamerters = constructorRequiredParamerters
+            injectedParameters = constructorRequiredParamerters
             .Concat(parameters.Skip(constructorRequiredParamerters.Length).Select(parameter => _serviceProvider.GetService(parameter.ParameterType)))
             .ToArray();
         }
         if (propertyTypeAssemblyQualifiedName == null)
             return null!;
 
-        return (T)Activator.CreateInstance(Type.GetType(propertyTypeAssemblyQualifiedName)!, injectedParamerters)!;
+        return (T)Activator.CreateInstance(Type.GetType(propertyTypeAssemblyQualifiedName)!, injectedParameters)!;
     }
 
     /// <summary>

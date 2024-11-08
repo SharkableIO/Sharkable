@@ -99,7 +99,7 @@ internal static class StringExtension
         var _str = format switch 
         {
             EndpointFormat.CamelCase => str.ToCamelCase(),
-            EndpointFormat.Tolower => str.ToLower(),
+            EndpointFormat.ToLower => str.ToLower(),
             EndpointFormat.SnakeCase => str.ToSnakeCase(),
             _ => str,
         };
