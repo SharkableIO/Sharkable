@@ -6,10 +6,10 @@ namespace Sharkable;
 /// generic class for unified results
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class UnifiedResult<T>
+public class UnifiedResult<T> : IUnifiedResult<T, UnifiedResult<T>>
 {
     public HttpStatusCode StatusCode { get; init; } = HttpStatusCode.OK;
-    public T? Data { get; init; }
+    public T? Data { get; set; }
     public string? ErrorMessage { get; init; }
     public string? Extra { get; init; }
     public long? TimeStamp { get; init; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -56,6 +56,8 @@ public class UnifiedResult<T>
         StatusCode = statusCode;
         TimeStamp = timeStamp == null ? DateTimeOffset.Now.ToUnixTimeMilliseconds() : timeStamp;
     }
+
+    public Func<T, UnifiedResult<T>> Result { get; }
 }
 
 /// <summary>

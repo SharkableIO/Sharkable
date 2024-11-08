@@ -5,6 +5,18 @@ namespace Sharkable;
 
 public static class UnifiedResultExtension
 {
+    public static object? GetResultTest<T>(T? data)
+    {
+        var uni = new UnifiedResultFactory();
+        return uni.GetResultObject((o) =>
+        {
+            var r = new UnifiedResult<T>
+            {
+                Data = data
+            };
+            return r;
+        }, data);
+    }
     /// <summary>
     /// produce an unified result
     /// </summary>

@@ -64,7 +64,8 @@ internal static class SharkEndPointExtension
             }
             else
             {
-                sharkEndpoint.baseApiPath = string.IsNullOrWhiteSpace(groupName) ? sharkEndpoint.apiPrefix : $"{sharkEndpoint.apiPrefix}/{groupName}";
+                sharkEndpoint.baseApiPath = string.IsNullOrWhiteSpace(groupName) ? 
+                    sharkEndpoint.apiPrefix : $"{sharkEndpoint.apiPrefix}/{groupName}";
 
                 var group = app.MapGroup(sharkEndpoint.baseApiPath).WithDisplayName(groupName);
                 sharkEndpoint.BuildAction?.Invoke(group);

@@ -6,7 +6,7 @@ var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.Services.AddShark([typeof(Program).Assembly],opt =>
 {
-    opt.Format = EndpointFormat.Tolower;
+    opt.Format = EndpointFormat.ToLower;
 });
 builder.Services.ConfigureHttpJsonOptions(options =>
 {

@@ -10,7 +10,7 @@ public static class SharkExtension
     internal static void AddCommon(this IServiceCollection services, Action<SharkOption>? setupOptions = null)
     {
         services.AddJsonContext();
-        services.AddDIFactory();
+        services.AddDiFactory();
         //invoke and setup options
         setupOptions?.Invoke(Shark.SharkOption);
         services.Configure<SharkOption>((opt) => 
