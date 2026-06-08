@@ -1,44 +1,81 @@
 # DX Feature Brainstorm — Sharkable
 
-Date: 2026-06-08
-Context: Sharkable is a .NET 8 minimal API framework collection (NuGet). Current DX features include
-attribute-based DI, auto endpoint discovery/mapping, Swagger integration, and UnifiedResult response pattern.
+Date: 2026-06-08 (updated 2026-06-08)
+Context: Sharkable is a .NET 10 minimal API framework collection (NuGet).
 
-## Direction: Developer Experience (DX)
+## Status
 
-### Observed DX gaps
+| Feature | Status | Branch |
+|---------|--------|--------|
+| A. Exception handler + auto unified response | ✅ Done (merged) | — |
+| B. FluentValidation integration | ✅ Done (not merged) | `feat/fluent-validation` |
+| C. Endpoint grouping + OpenAPI tags | ❌ Not started | — |
+| XML doc comments + bug fixes | ✅ Done (not merged) | `fix/audit-comments-and-bugs` |
+| .NET 10 + Scalar upgrade | ✅ Done (merged) | — |
 
-- No global exception → unified response pipeline (bare 500 on unhandled exceptions)
-- No request validation abstraction (users hand-write if-checks in every handler)
-- Endpoint return values must be manually wrapped via `.AsOkResult()` — no auto-wrap
-- Endpoint registration is scan-only, no explicit grouping/tagging API
-- No endpoint filter / middleware hook at the framework level
+## Proposed feature directions
 
-### Proposed features
+### C. 端点分组 + OpenAPI 标签 (pending from v1 brainstorm)
 
-#### A. Exception handler + auto unified response (recommended as first step)
-
-- `UseSharkExceptionHandler()` middleware that catches unhandled exceptions → `UnifiedResult` JSON
-- Customizable error mapping via `SharkOption.ConfigureExceptionHandler(...)` (e.g. `ValidationException` → 400, `NotFoundException` → 404)
-- Optional `autoWrap` mode: endpoint return values auto-wrapped in `UnifiedResult<T>` when not already `IResult`
-- High value, small change surface, backward compatible
-
-#### B. Request validation integration (FluentValidation)
-
-- Scan and register `IValidator<T>` implementations alongside `[ScopedService]` etc.
-- `[Validate]` attribute on endpoint parameters
-- Auto-insert `IEndpointFilter` to run validation before handler; invalid → `UnifiedResult` error response
-- Dependency: FluentValidation (external, optional)
-
-#### C. Endpoint grouping + OpenAPI tag auto-generation
-
-- `[SharkTag("...")]` attribute or naming convention for Swagger tag grouping
+- `[SharkTag("...")]` attribute or naming convention for OpenAPI tag grouping
 - Allow multiple `ISharkEndpoint` to share a common URL prefix/group
 - Auto-generate OperationId from class + method name
-- Lower value relative to A and B
+- Group name already derived from class name (strips `Endpoint` suffix), but not exposed as OpenAPI tag
 
-### Priority suggestion
+### D. API 版本控制
 
-1. A (exception pipeline) — highest value, lowest risk
-2. B (validation) — moderate value, external dependency consideration
-3. C (tag/group) — nice-to-have, deferrable
+- URL prefix versioning: `api/v1/...` / `api/v2/...`
+- Header-based versioning as alternative
+- Existing `V{digits}` → `@{digits}` transform helper already exists but is unused in routing
+- `SharkEndpointAttribute.Version` field declared but not wired into `MapSharkEndpoints()`
+- Groups could map to different route builders per version
+
+### E. 内置中间件（限流/缓存/健康检查）
+
+- **RateLimiter**: wrap `builder.Services.AddRateLimiter()` with Sharkable options, apply per-endpoint or global
+- **OutputCache**: `[OutputCache]` policy configuration via SharkOption
+- **HealthChecks**: auto-register health endpoint (`/healthz`) with UnifiedResult response
+- All are built into ASP.NET Core — no new NuGet deps
+
+### F. 安全相关（CORS / API Key / JWT）
+
+- **CORS**: `opt.ConfigureCors(c => c.AllowOrigin(...))` — simple wrapper
+- **API Key auth**: lightweight middleware, validate against configured key(s)
+- **JWT hardening**: opinionated defaults + validation error → UnifiedResult
+
+### G. Auto wrap 完善
+
+- Current `UnifiedResultWrapFilter` wraps only on exception path
+- Goal: every endpoint return value auto-wrapped in `UnifiedResult<T>` unless already `IResult`
+- AOT-compatible approach needed (no runtime reflection on return types)
+- Could be an opt-in: `opt.AutoWrapResults = true`
+
+### H. 请求日志 / Audit Trail
+
+- Structured request/response logging middleware
+- Configurable: exclude paths, log levels, sensitive data redaction
+- Correlation ID generation/forwarding
+
+### I. Rate Limiting 集成
+
+```csharp
+// 1. 全局限流
+opt.ConfigureRateLimiter(r => r.GlobalPolicy = "...")
+
+// 2. 端点级限流 (new style ISharkEndpoint)
+app.MapGet("hello", () => "hi").SharkRateLimit("fixed")
+```
+
+### J. 响应缓存 (OutputCache)
+
+- OutputCache 策略自动注册
+- 端点级 `[OutputCache]` 等价物
+
+## Decision record
+
+| Date | Decision | Rationale |
+|------|----------|-----------|
+| 2026-06-08 | A first (exception handler) | High value, small change surface |
+| 2026-06-08 | B second (validation) | Most requested DX feature |
+| 2026-06-08 | .NET 10 + Scalar third | Platform dependency upgrade |
+| 2026-06-08 | Vault created | All directions recorded for future decision |

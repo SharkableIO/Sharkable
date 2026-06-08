@@ -1,8 +1,11 @@
-﻿using System.Linq.Expressions;
+﻿using System.Linq;
+using System.Linq.Expressions;
 using System.Text.Json;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing.Patterns;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
 
 namespace Sharkable;
@@ -26,9 +29,10 @@ internal static class SharkEndPointExtension
 
         var endpointServices = app.Services.GetServices<ISharkEndpoint>();
         var options = app.Services.GetService<IOptions<SharkOption>>();
-
         ArgumentNullException.ThrowIfNull(options);
 
+        // Phase 1: Collect all SharkEndpoint instances with metadata
+        var collected = new List<(SharkEndpoint endpoint, Type classType)>();
         endpointServices.MyForEach(e =>
         {
             SharkEndpoint sharkEndpoint;
@@ -43,47 +47,101 @@ internal static class SharkEndPointExtension
                 sharkEndpoint = CreateSharkEndpoint(e);
             }
 
+            var groupAttr = e.GetType().GetCustomAttribute<EndpointGroupAttribute>();
+            if (groupAttr != null)
+            {
+                sharkEndpoint.groupName = groupAttr.Name;
+            }
+
             if (string.IsNullOrWhiteSpace(sharkEndpoint.apiPrefix))
                 sharkEndpoint.apiPrefix = options.Value.ApiPrefix;
 
-            string groupName = null!;
-
-            if (sharkEndpoint.groupName != null)
-            {
-                groupName = sharkEndpoint.groupName.GetCaseFormat(options.Value.Format)!;
-                sharkEndpoint.baseApiPath = $"{sharkEndpoint.apiPrefix}/{groupName}";
-            }
-            else
-            {
-                groupName = string.Empty;
-            }
-
-            if (string.IsNullOrWhiteSpace(sharkEndpoint.apiPrefix))
-            {
-                sharkEndpoint.BuildAction?.Invoke(app);
-            }
-            else
-            {
-                sharkEndpoint.baseApiPath = string.IsNullOrWhiteSpace(groupName) ? 
-                    sharkEndpoint.apiPrefix : $"{sharkEndpoint.apiPrefix}/{groupName}";
-
-                var group = app.MapGroup(sharkEndpoint.baseApiPath).WithDisplayName(groupName);
-
-                if (Shark.UseSharkOptions?.EnableAutoWrap ?? false)
-                {
-                    group.AddEndpointFilter<UnifiedResultWrapFilter>();
-                }
-
-                if (Shark.SharkOption.EnableValidation)
-                {
-                    group.AddEndpointFilter<ValidationFilter>();
-                }
-
-                sharkEndpoint.BuildAction?.Invoke(group);
-            }
-
+            collected.Add((sharkEndpoint, e.GetType()));
         });
+
+        // Phase 2: Group by resolved group name
+        var grouped = new Dictionary<string, List<(SharkEndpoint, Type)>>();
+        collected.MyForEach(item =>
+        {
+            var groupName = item.endpoint.groupName?.GetCaseFormat(options.Value.Format) ?? string.Empty;
+            if (!grouped.ContainsKey(groupName))
+                grouped[groupName] = [];
+            grouped[groupName].Add(item);
+        });
+
+        // Phase 3: One MapGroup per unique group name
+        foreach (var (groupName, endpoints) in grouped)
+        {
+            var first = endpoints.First().Item1;
+
+            if (string.IsNullOrWhiteSpace(first.apiPrefix))
+            {
+                endpoints.MyForEach(ep => ep.Item1.BuildAction?.Invoke(app));
+                continue;
+            }
+
+            var basePath = string.IsNullOrWhiteSpace(groupName)
+                ? first.apiPrefix
+                : $"{first.apiPrefix}/{groupName}";
+
+            var group = app.MapGroup(basePath).WithDisplayName(groupName);
+
+            // Shared filters (once per group)
+            if (Shark.UseSharkOptions?.EnableAutoWrap ?? false)
+                group.AddEndpointFilter<UnifiedResultWrapFilter>();
+
+            if (Shark.SharkOption.EnableValidation)
+                group.AddEndpointFilter<ValidationFilter>();
+
+            // Resolve tags from all endpoints in this group
+            var tags = ResolveGroupTags(endpoints, groupName);
+            if (tags.Count != 0)
+                ((RouteGroupBuilder)group).WithTags([.. tags]);
+
+            // Auto-OperationId via Finally convention
+            var capturedGroupName = groupName;
+            var capturedBasePath = basePath;
+            ((IEndpointConventionBuilder)group).Finally(builder =>
+            {
+                if (builder.Metadata.Any(m => m is EndpointNameMetadata))
+                    return;
+
+                var routePattern = (builder as RouteEndpointBuilder)?.RoutePattern?.RawText ?? string.Empty;
+                var httpMethod = builder.Metadata
+                    .OfType<HttpMethodMetadata>()
+                    .FirstOrDefault()?.HttpMethods?.FirstOrDefault() ?? "Unknown";
+
+                // Strip the group prefix to get the relative path
+                var relativePath = routePattern;
+                if (!string.IsNullOrEmpty(capturedBasePath) && relativePath.StartsWith(capturedBasePath + "/"))
+                    relativePath = relativePath[(capturedBasePath.Length + 1)..];
+
+                var opId = $"{capturedGroupName}_{httpMethod}_{relativePath}"
+                    .Replace('/', '_')
+                    .Replace('-', '_')
+                    .Replace(' ', '_');
+                builder.Metadata.Add(new EndpointNameMetadata(opId));
+            });
+
+            // Call AddRoutes for each endpoint in this group
+            endpoints.MyForEach(ep => ep.Item1.BuildAction?.Invoke(group));
+        }
+
         return app;
+    }
+
+    private static List<string> ResolveGroupTags(List<(SharkEndpoint, Type)> endpoints, string defaultTag)
+    {
+        var tags = endpoints
+            .SelectMany(ep => ep.Item2.GetCustomAttributes<SharkTagAttribute>())
+            .Select(attr => attr.Tag)
+            .Distinct()
+            .ToList();
+
+        if (tags.Count == 0)
+            tags.Add(defaultTag);
+
+        return tags;
     }
 
     internal static void WireSharkEndpoint(this IServiceCollection services)
@@ -140,6 +198,13 @@ internal static class SharkEndPointExtension
             instance.addPrefix = !string.IsNullOrWhiteSpace(apiPrefix);
         }
 
+        var endpointGroupAttr = shark.GetType().GetCustomAttribute<EndpointGroupAttribute>();
+        if (endpointGroupAttr != null)
+        {
+            instance.groupName = endpointGroupAttr.Name;
+            instance.addPrefix = !string.IsNullOrWhiteSpace(apiPrefix);
+        }
+
         instance.apiPrefix = apiPrefix;
         // Assign the delegate
         instance.BuildAction = shark.AddRoutes;
@@ -187,6 +252,13 @@ internal static class SharkEndPointExtension
                     
                 var group = app.MapGroup(endpointAttribute.Group!);
 
+                // Resolve tags for this endpoint class
+                var tagAttrs = t.GetCustomAttributes<SharkTagAttribute>();
+                var tags = tagAttrs.Any()
+                    ? tagAttrs.Select(a => a.Tag).ToArray()
+                    : [endpointAttribute.Group!];
+                ((RouteGroupBuilder)group).WithTags(tags);
+
                 taggedMethods.MyForEach(methodInfo =>
                 {
                     //methods.Add(new Tuple<string?, SharkHttpMethod, Delegate>(methodAttribute.AddressName, methodAttribute.Method, methodDelegate));
@@ -205,7 +277,8 @@ internal static class SharkEndPointExtension
                     if (methodDelegate == null)
                         return;
 
-                    group.MapMethods(methodAttribute.Pattern!, [methodAttribute.Method.ToString()], methodDelegate);
+                    group.MapMethods(methodAttribute.Pattern!, [methodAttribute.Method.ToString()], methodDelegate)
+                         .WithMetadata(new EndpointNameMetadata($"{t.Name}_{methodInfo.Name}"));
                 });
             });
         });
