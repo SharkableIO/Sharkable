@@ -68,6 +68,12 @@ internal static class SharkEndPointExtension
                     sharkEndpoint.apiPrefix : $"{sharkEndpoint.apiPrefix}/{groupName}";
 
                 var group = app.MapGroup(sharkEndpoint.baseApiPath).WithDisplayName(groupName);
+
+                if (Shark.UseSharkOptions?.EnableAutoWrap ?? false)
+                {
+                    group.AddEndpointFilter<UnifiedResultWrapFilter>();
+                }
+
                 sharkEndpoint.BuildAction?.Invoke(group);
             }
 

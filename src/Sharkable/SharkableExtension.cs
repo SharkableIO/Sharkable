@@ -1,4 +1,6 @@
-﻿namespace  Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Hosting;
+
+namespace  Microsoft.Extensions.DependencyInjection;
 
 public static class SharkableExtension
 {
@@ -27,6 +29,13 @@ public static class SharkableExtension
     public static void UseShark(this WebApplication app, Action<UseSharkOptions>? setupOption = null)
     {
         app.UseCommon(setupOption);
+
+        if (Shark.UseSharkOptions?.EnableExceptionHandler ?? true)
+        {
+            Shark.SharkOption.ExceptionHandlerOptions.IsDevelopment = app.Environment.IsDevelopment();
+            app.UseSharkExceptionHandler();
+        }
+
         app.MapEndpoints();
     }
 
