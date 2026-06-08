@@ -74,6 +74,11 @@ internal static class SharkEndPointExtension
                     group.AddEndpointFilter<UnifiedResultWrapFilter>();
                 }
 
+                if (Shark.SharkOption.EnableValidation)
+                {
+                    group.AddEndpointFilter<ValidationFilter>();
+                }
+
                 sharkEndpoint.BuildAction?.Invoke(group);
             }
 

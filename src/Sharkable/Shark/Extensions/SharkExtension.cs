@@ -23,6 +23,8 @@ public static class SharkExtension
         services.AddServicesWithAttributeOfTypeFromAssembly(Shark.Assemblies);
         //setup swagger gen
         services.SharkSwagger();
+        //register fluent validation
+        services.AddValidators();
         //setup auto crud services
         services.AddAutoCrud();
     }
