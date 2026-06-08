@@ -95,32 +95,33 @@ internal static class SharkEndPointExtension
 
             // Resolve tags from all endpoints in this group
             var tags = ResolveGroupTags(endpoints, groupName);
-            if (tags.Count != 0)
-                ((RouteGroupBuilder)group).WithTags([.. tags]);
 
-            // Auto-OperationId via Finally convention
+            // Auto-Tags + OperationId via Add() convention (works in JIT and AOT)
             var capturedGroupName = groupName;
             var capturedBasePath = basePath;
-            ((IEndpointConventionBuilder)group).Finally(builder =>
+            var capturedTags = tags;
+            ((IEndpointConventionBuilder)group).Add(builder =>
             {
-                if (builder.Metadata.Any(m => m is EndpointNameMetadata))
-                    return;
+                if (!builder.Metadata.Any(m => m is ITagsMetadata) && capturedTags.Count != 0)
+                    builder.Metadata.Add(new TagsAttribute([.. capturedTags]));
 
-                var routePattern = (builder as RouteEndpointBuilder)?.RoutePattern?.RawText ?? string.Empty;
-                var httpMethod = builder.Metadata
-                    .OfType<HttpMethodMetadata>()
-                    .FirstOrDefault()?.HttpMethods?.FirstOrDefault() ?? "Unknown";
+                if (!builder.Metadata.Any(m => m is EndpointNameMetadata))
+                {
+                    var routePattern = (builder as RouteEndpointBuilder)?.RoutePattern?.RawText ?? string.Empty;
+                    var httpMethod = builder.Metadata
+                        .OfType<HttpMethodMetadata>()
+                        .FirstOrDefault()?.HttpMethods?.FirstOrDefault() ?? "Unknown";
 
-                // Strip the group prefix to get the relative path
-                var relativePath = routePattern;
-                if (!string.IsNullOrEmpty(capturedBasePath) && relativePath.StartsWith(capturedBasePath + "/"))
-                    relativePath = relativePath[(capturedBasePath.Length + 1)..];
+                    var relativePath = routePattern;
+                    if (!string.IsNullOrEmpty(capturedBasePath) && relativePath.StartsWith(capturedBasePath + "/"))
+                        relativePath = relativePath[(capturedBasePath.Length + 1)..];
 
-                var opId = $"{capturedGroupName}_{httpMethod}_{relativePath}"
-                    .Replace('/', '_')
-                    .Replace('-', '_')
-                    .Replace(' ', '_');
-                builder.Metadata.Add(new EndpointNameMetadata(opId));
+                    var opId = $"{capturedGroupName}_{httpMethod}_{relativePath}"
+                        .Replace('/', '_')
+                        .Replace('-', '_')
+                        .Replace(' ', '_');
+                    builder.Metadata.Add(new EndpointNameMetadata(opId));
+                }
             });
 
             // Call AddRoutes for each endpoint in this group
