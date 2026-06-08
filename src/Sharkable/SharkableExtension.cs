@@ -72,6 +72,10 @@ public static class SharkableExtension
             app.UseSharkExceptionHandler();
         }
 
+        // audit trail
+        if (Shark.SharkOption.AuditTrailOptions != null)
+            app.UseMiddleware<AuditTrailMiddleware>();
+
         app.MapEndpoints();
     }
 }
