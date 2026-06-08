@@ -2,6 +2,12 @@
 
 .NET 8 minimal API framework collection. NuGet package. Author: CharleyPeng.
 
+## Coding standards
+
+- All public API properties, methods, and classes **must** have XML doc comments (`/// <summary>`, `/// <param>`, `/// <returns>`)
+- Internal classes and methods should also have brief XML doc comments explaining purpose
+- `SuppressMessage` attributes require a comment explaining why
+
 ## Solution layout
 
 | Project | Path | Notes |
