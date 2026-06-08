@@ -1,5 +1,8 @@
 namespace Sharkable;
 
+/// <summary>
+/// Extension methods for wiring the Sharkable global exception handler.
+/// </summary>
 public static class ExceptionHandlerExtension
 {
     /// <summary>

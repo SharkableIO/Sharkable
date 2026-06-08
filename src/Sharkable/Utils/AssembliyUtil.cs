@@ -27,17 +27,16 @@ public partial class Utils
         if (assemblies == null)
             return null;
 
-        var lst = new List<I>();
         var type = typeof(I);
         var typeList = new List<Type>();
-        foreach(var a in assemblies)
+        foreach (var a in assemblies)
         {
-            var t = a.GetType();
-            var myT = t.GetInterfaces().Where(x => x == type);
-            typeList.Union(myT);
+            var matchingTypes = a.GetTypes()
+                .Where(t => !t.IsAbstract && !t.IsInterface && t.GetInterfaces().Any(x => x == type));
+            typeList.AddRange(matchingTypes);
         }
-        
-        return [.. typeList];
+
+        return typeList.Count == 0 ? null : [.. typeList];
     }
 
     internal static void SetupModules(Assembly[]? assemblies, ref IServiceCollection services)

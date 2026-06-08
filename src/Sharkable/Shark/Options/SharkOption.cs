@@ -3,15 +3,18 @@ using Swashbuckle.AspNetCore.SwaggerUI;
 
 namespace Sharkable;
 
+/// <summary>
+/// Configuration options for Sharkable. Passed via callback in <c>builder.Services.AddShark(opt => ...)</c>.
+/// </summary>
 public sealed class SharkOption : ISharkOption
 {
     public const string Default = "Sharkable";
     /// <summary>
-    /// set up the default api path,default is "api"
+    /// API prefix for all endpoint groups. Default is <c>"api"</c>.
     /// </summary>
     public string ApiPrefix { get; set; } = "api";
     /// <summary>
-    /// decide wheather to show the swargger document or not
+    /// Whether to enable Swagger/OpenAPI document generation. Default is true.
     /// </summary>
     public bool UseSwaggerDoc { get; set; } = true;
     /// <summary>
