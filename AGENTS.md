@@ -92,8 +92,9 @@ Mark classes with `[ScopedService]`, `[TransientService]`, `[SingletonService]` 
 
 ## Branch & PR
 
-- `main` branch requires PR — direct push is rejected by repo rule
-- Create a feature branch and push, then open PR on GitHub
+- `main` requires PR — direct push rejected by repo rule
+- After a PR is merged, sync local main: `git checkout main && git pull`
+- If a feature branch is behind, rebase: `git checkout <branch> && git rebase origin/main && git push --force-with-lease origin <branch>`
 
 ## Documentation site
 
