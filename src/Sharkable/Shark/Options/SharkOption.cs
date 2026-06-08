@@ -41,6 +41,46 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public IUnifiedResultFactory? UnifiedResultFactory { get; set; }
     /// <summary>
+    /// Configures rate limiting policies. Calls <c>services.AddRateLimiter()</c> when set.
+    /// Apply to endpoints via <c>.SharkRequireRateLimiting("policyName")</c>.
+    /// </summary>
+    public Action<RateLimiterOptions>? RateLimiterConfigure { get; set; }
+    /// <summary>
+    /// Configures output caching policies. Calls <c>services.AddOutputCache()</c> when set.
+    /// Apply to endpoints via <c>.SharkCacheOutput("policyName")</c>.
+    /// </summary>
+    public Action<OutputCacheOptions>? OutputCacheConfigure { get; set; }
+    /// <summary>
+    /// When <c>true</c>, registers health check services and maps <c>/healthz</c> endpoint.
+    /// Default is <c>false</c>.
+    /// </summary>
+    public bool EnableHealthChecks { get; set; } = false;
+    /// <summary>
+    /// Configures CORS policies. Calls <c>services.AddCors()</c> when set, and wires <c>app.UseCors()</c>.
+    /// </summary>
+    public Action<CorsOptions>? CorsConfigure { get; set; }
+    /// <summary>
+    /// Valid API keys for the API Key authentication middleware.
+    /// When set, requests must include a valid <c>X-Api-Key</c> header.
+    /// </summary>
+    public string[]? ApiKeys { get; set; }
+    /// <summary>
+    /// Configures JWT Bearer authentication with opinionated defaults.
+    /// Calls <c>services.AddAuthentication().AddJwtBearer()</c> with the given authority and audiences.
+    /// </summary>
+    /// <param name="authority">The trusted token authority (issuer) URL.</param>
+    /// <param name="audiences">Accepted audience values.</param>
+    /// <param name="configure">Optional additional <see cref="JwtBearerOptions"/> configuration.</param>
+    public void ConfigureJwt(string authority, string[] audiences, Action<JwtBearerOptions>? configure = null)
+    {
+        JwtAuthority = authority;
+        JwtAudiences = audiences;
+        JwtConfigure = configure;
+    }
+    internal string? JwtAuthority { get; set; }
+    internal string[]? JwtAudiences { get; set; }
+    internal Action<JwtBearerOptions>? JwtConfigure { get; set; }
+    /// <summary>
     /// Configures the OpenAPI document generation options.
     /// </summary>
     public void ConfigureOpenApi(Action<OpenApiOptions>? options)

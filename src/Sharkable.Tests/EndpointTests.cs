@@ -103,6 +103,13 @@ public class EndpointTests : IClassFixture<SharkTestFixture>
     }
 
     [Fact]
+    public async Task HealthCheck_NotEnabled_Returns_404()
+    {
+        var res = await _client.GetAsync("/healthz");
+        Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
+    }
+
+    [Fact]
     public async Task OpenApiDoc_Has_OperationId()
     {
         var res = await _client.GetAsync("/openapi/v1.json");

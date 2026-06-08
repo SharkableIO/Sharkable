@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Sharkable;
 
 namespace Sharkable.Tests;
@@ -93,6 +94,15 @@ public class DiTestEndpoint : ISharkEndpoint
     public void AddRoutes(IEndpointRouteBuilder app)
     {
         app.MapGet("di-service", (ITestService svc) => svc.GetMessage());
+    }
+}
+
+[AllowAnonymous]
+public class PublicEndpoint : ISharkEndpoint
+{
+    public void AddRoutes(IEndpointRouteBuilder app)
+    {
+        app.MapGet("public", () => "public-data");
     }
 }
 

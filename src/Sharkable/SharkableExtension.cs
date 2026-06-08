@@ -50,6 +50,22 @@ public static class SharkableExtension
     {
         app.UseCommon(setupOption);
 
+        // rate limiter
+        if (Shark.SharkOption.RateLimiterConfigure != null)
+            app.UseRateLimiter();
+        // output cache
+        if (Shark.SharkOption.OutputCacheConfigure != null)
+            app.UseOutputCache();
+        // CORS
+        if (Shark.SharkOption.CorsConfigure != null)
+            app.UseCors();
+        // JWT auth
+        if (Shark.SharkOption.JwtAuthority != null)
+        {
+            app.UseAuthentication();
+            app.UseAuthorization();
+        }
+
         if (Shark.UseSharkOptions?.EnableExceptionHandler ?? true)
         {
             Shark.SharkOption.ExceptionHandlerOptions.IsDevelopment = app.Environment.IsDevelopment();

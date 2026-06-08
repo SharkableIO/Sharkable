@@ -9,7 +9,10 @@ Context: Sharkable is a .NET 10 minimal API framework collection (NuGet).
 |---------|--------|--------|
 | A. Exception handler + auto unified response | ✅ Done (merged) | — |
 | B. FluentValidation integration | ✅ Done (not merged) | `feat/fluent-validation` |
-| C. Endpoint grouping + OpenAPI tags | ❌ Not started | — |
+| C. Endpoint grouping + OpenAPI tags | ✅ Done (merged) | — |
+| D. API versioning | ✅ Done (not merged) | `feat/tests-and-native-test-demo` |
+| E. Built-in middleware (RateLimiter/OutputCache/HealthChecks) | ✅ Done (not merged) | `feat/tests-and-native-test-demo` |
+| F. Security (CORS/API Key/JWT) | ✅ Done (not merged) | `feat/tests-and-native-test-demo` |
 | XML doc comments + bug fixes | ✅ Done (not merged) | `fix/audit-comments-and-bugs` |
 | .NET 10 + Scalar upgrade | ✅ Done (merged) | — |
 

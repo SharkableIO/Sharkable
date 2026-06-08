@@ -19,3 +19,7 @@ GET {{Sharkable.NativeTest_HostAddress}}/api/v2/versioned@2/info
 Accept: application/json
 
 ###
+
+GET {{Sharkable.NativeTest_HostAddress}}/healthz
+
+###
