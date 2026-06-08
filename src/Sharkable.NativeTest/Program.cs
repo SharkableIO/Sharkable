@@ -84,6 +84,7 @@ public partial class MyUnifiedResultContext : JsonSerializerContext
 [JsonSerializable(typeof(MyApiResult))]
 [JsonSerializable(typeof(PostBody))]
 [JsonSerializable(typeof(PostBody[]))]
+[JsonSerializable(typeof(VersionInfo))]
 public partial class NativeTestJsonContext : JsonSerializerContext
 {
     
