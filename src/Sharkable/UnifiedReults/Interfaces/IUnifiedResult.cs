@@ -1,6 +1,8 @@
 namespace Sharkable;
 
-public interface IUnifiedResult<in TData, out TResult>
+public interface IUnifiedResult
 {
-    Func<TData, TResult> Result { get; }
+    int StatusCode { get; }
+    object? Data { get; }
+    string? ErrorMessage { get; }
 }

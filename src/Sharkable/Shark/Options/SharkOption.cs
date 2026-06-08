@@ -27,6 +27,12 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public ExceptionHandlerOptions ExceptionHandlerOptions { get; set; } = new();
     /// <summary>
+    /// Factory for creating unified result responses.
+    /// Set this to use a custom result format.
+    /// Defaults to <see cref="DefaultUnifiedResultFactory"/> producing <see cref="UnifiedResult{T}"/>.
+    /// </summary>
+    public IUnifiedResultFactory? UnifiedResultFactory { get; set; }
+    /// <summary>
     /// configure swagger gen
     /// </summary>
     /// <param name="options"></param>

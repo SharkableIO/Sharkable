@@ -5,74 +5,40 @@ namespace Sharkable;
 
 public static class UnifiedResultExtension
 {
-    public static object? GetResultTest<T>(T? data)
-    {
-        var uni = new UnifiedResultFactory();
-        return uni.GetResultObject((o) =>
-        {
-            var r = new UnifiedResult<T>
-            {
-                Data = data
-            };
-            return r;
-        }, data);
-    }
-    /// <summary>
-    /// produce an unified result
-    /// </summary>
-    /// <typeparam name="TResult"></typeparam>
-    /// <param name="data"></param>
-    /// <param name="errors"></param>
-    /// <param name="statusCode"></param>
-    /// <param name="extra"></param>
-    /// <param name="timeStamp"></param>
-    /// <returns></returns>
     public static UnifiedResult<TResult>? AsUnifiedResult<TResult>(this TResult? data, 
         string? errors = null, 
         HttpStatusCode statusCode = HttpStatusCode.OK, 
-        string? extra = null, 
-        DateTimeOffset? timeStamp = null)
+        string? extra = null)
     {
-        return data == null ? null : new UnifiedResult<TResult>(data, errors, statusCode, extra, timeStamp);
+        return data == null ? null : new UnifiedResult<TResult>(data, errors, statusCode, extra);
     }
-    /// <summary>
-    /// produce as unified error
-    /// </summary>
-    /// <typeparam name="TResult"></typeparam>
-    /// <param name="data"></param>
-    /// <param name="errors"></param>
-    /// <param name="statusCode"></param>
-    /// <param name="extra"></param>
-    /// <param name="timeStamp"></param>
-    /// <returns></returns>
+
     public static UnifiedResult<string>? AsUnifiedError(this string? errors, 
         HttpStatusCode statusCode = HttpStatusCode.OK, 
-        string? extra = null, 
-        DateTimeOffset? timeStamp = null)
+        string? extra = null)
     {
-        return errors == null ? null : new UnifiedResult<string>(null, errors, statusCode, extra, timeStamp);
+        return errors == null ? null : new UnifiedResult<string>(null, errors, statusCode, extra);
     }
-    
+
     public static IResult AsOkResult<TResult>(this TResult? data, 
         string? errors = null, 
         HttpStatusCode statusCode = HttpStatusCode.OK, 
-        string? extra = null, 
-        DateTimeOffset? timeStamp = null)
+        string? extra = null)
     {
-        return data == null ? default! : Results.Ok(data.AsUnifiedResult(errors, statusCode, extra, timeStamp));
+        return data == null ? Results.Ok() : Results.Ok(data.AsUnifiedResult(errors, statusCode, extra));
     }
+
     public static IResult AsBadRequest(this string? errors, 
         HttpStatusCode statusCode = HttpStatusCode.BadRequest, 
-        string? extra = null, 
-        DateTimeOffset? timeStamp = null)
+        string? extra = null)
     {
-        return errors == null ? default! : Results.BadRequest(errors.AsUnifiedError(statusCode, extra, timeStamp));
+        return errors == null ? Results.BadRequest() : Results.BadRequest(errors.AsUnifiedError(statusCode, extra));
     }
+
     public static IResult AsUnauthorized(this string? errors, 
         HttpStatusCode statusCode = HttpStatusCode.Unauthorized, 
-        string? extra = null, 
-        DateTimeOffset? timeStamp = null)
+        string? extra = null)
     {
-        return errors == null ? default! : Results.BadRequest(errors.AsUnifiedError(statusCode, extra, timeStamp));
+        return errors == null ? Results.Unauthorized() : Results.Unauthorized();
     }
 }
