@@ -23,15 +23,20 @@ public partial class Shark
     /// Sharkable asseblies list for the application entry
     /// </summary>
     public static Assembly[]? Assemblies => AssemblyContext.Assemblies;
+    /// <summary>The current <see cref="IHostEnvironment"/> from the application.</summary>
     public static IHostEnvironment HostEnvironment => InternalShark.HostEnvironment;
+    /// <summary>The application-level <see cref="IServiceProvider"/>.</summary>
     public static IServiceProvider Services => InternalShark.ServiceProvider;
+    /// <summary>The current <see cref="IWebHostEnvironment"/> from the application.</summary>
     public static IWebHostEnvironment WebHostEnvironment => InternalShark.WebHostEnvironment;
+    /// <summary>The application <see cref="IConfiguration"/>.</summary>
     public static IConfiguration Configuration => InternalShark.Configuration;
     //public static HttpContext HttpContext { get; }
     /// <summary>
     /// Assembly context of application entry
     /// </summary>
     public static AssemblyContext? Context => AssemblyContext.Instance;
+    /// <summary>The application-level <see cref="IServiceScopeFactory"/>.</summary>
     public static IServiceScopeFactory ServiceScopeFactory => InternalShark.ServiceScopeFactory;
     /// <summary>
     /// Sharkable options
@@ -39,9 +44,11 @@ public partial class Shark
     public static SharkOption SharkOption { get; internal set; } = new SharkOption();
     internal static SwaggerGenOptions? SwaggerGenOptions { get; private set; }
     internal static SwaggerOptions? SwaggerOptions { get; private set; }
+    /// <summary>Runtime options configured via <c>app.UseShark(opt => ...)</c>.</summary>
     public static UseSharkOptions? UseSharkOptions { get; internal set; }
     //public properties
 
+    /// <summary>Gets the application service provider.</summary>
     public static IServiceProvider GetServiceProvider(Type? serviceType = null)
     {
         // console program
@@ -55,6 +62,7 @@ public partial class Shark
         return Services;
     }
 
+    /// <summary>Sets the assemblies registered with Sharkable. Called during <c>AddShark()</c>.</summary>
     public static void SetAssebly(Assembly[]? assemblies)
     {
         AssemblyContext.GetAssemblyContext(assemblies);

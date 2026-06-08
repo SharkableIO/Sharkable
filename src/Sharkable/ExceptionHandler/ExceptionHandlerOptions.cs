@@ -2,6 +2,10 @@ using System.Net;
 
 namespace Sharkable;
 
+/// <summary>
+/// Configuration for the global exception handler middleware.
+/// Controls status code mappings and error message verbosity.
+/// </summary>
 public sealed class ExceptionHandlerOptions
 {
     private readonly Dictionary<Type, HttpStatusCode> _exceptionMappings;

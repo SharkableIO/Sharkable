@@ -2,6 +2,10 @@ using System.Linq.Expressions;
 
 namespace Sharkable;
 
+/// <summary>
+/// Utilities for reflecting on types and creating delegates at runtime.
+/// Used internally by attribute-based endpoint mapping.
+/// </summary>
 public partial class Reflector
 {
     internal static IEnumerable<MethodInfo>? GetMethods<T>(T type, 

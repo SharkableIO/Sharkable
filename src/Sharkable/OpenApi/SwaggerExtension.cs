@@ -7,7 +7,7 @@ internal static class SwaggerExtension
 {
     internal static IServiceCollection SharkSwagger(this IServiceCollection services)
     {
-        //will not proceed if configure is null
+        //skip Swagger setup when AutoCrud (SqlSugar) is configured — autocrud manages its own OpenAPI
         if(SharkOption.SqlSugarOptionsConfigure != null)
             return services;
         // Add services to the container.

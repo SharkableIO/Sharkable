@@ -7,7 +7,7 @@ namespace Sharkable;
 /// delegate of a http method
 /// </summary>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-[RequiresDynamicCode("map SharkMethodAttribute only supported in aot mode")]
+[RequiresDynamicCode("SharkMethodAttribute uses reflection and is not supported in AOT mode; use ISharkEndpoint instead")]
 public sealed class SharkMethodAttribute(
     [StringSyntax("Route")] string? pattern,
     SharkHttpMethod method = SharkHttpMethod.POST)
