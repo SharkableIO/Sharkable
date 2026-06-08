@@ -4,26 +4,26 @@ public class ExceptionTestEndpoint : ISharkEndpoint
 {
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        app.MapGet("/throw/notfound", () =>
+        app.MapGet("throw/notfound", () =>
         {
             throw new KeyNotFoundException("user not found");
         });
 
-        app.MapGet("/throw/unauthorized", () =>
+        app.MapGet("throw/unauthorized", () =>
         {
             throw new UnauthorizedAccessException("token expired");
         });
 
-        app.MapGet("/throw/bad", () =>
+        app.MapGet("throw/bad", () =>
         {
             throw new ArgumentException("invalid input");
         });
 
-        app.MapGet("/throw/server", () =>
+        app.MapGet("throw/server", () =>
         {
             throw new InvalidOperationException("something went wrong");
         });
 
-        app.MapGet("/wrap", () => "hello from auto-wrap");
+        app.MapGet("wrap", () => "hello from auto-wrap");
     }
 }

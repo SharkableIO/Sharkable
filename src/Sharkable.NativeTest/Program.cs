@@ -1,14 +1,16 @@
 using System.Text.Json.Serialization;
 using FluentValidation;
 using Sharkable;
+using Sharkable.NativeTest;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
 
 builder.Services.AddShark([typeof(Program).Assembly],opt =>
 {
-    opt.Format = EndpointFormat.ToLower;
+    opt.Format = EndpointFormat.SnakeCase;
     opt.EnableValidation = true;
+    opt.UnifiedResultFactory = new MyApiResultFactory();
 });
 builder.Services.AddSingleton<IValidator<Todo>, TodoValidator>();
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -16,6 +18,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.TypeInfoResolverChain.Insert(1, AppJsonSerializerContext.Default);
     options.SerializerOptions.TypeInfoResolverChain.Insert(2, AppJsonSerializerContext2.Default);
     options.SerializerOptions.TypeInfoResolverChain.Insert(3, MyUnifiedResultContext.Default);
+    options.SerializerOptions.TypeInfoResolverChain.Insert(4, NativeTestJsonContext.Default);
 });
 var app = builder.Build();
 app.UseShark(opt =>
@@ -66,6 +69,22 @@ internal partial class AppJsonSerializerContext2 : JsonSerializerContext
 [JsonSerializable(typeof(UnifiedResult<Todo>))]
 [JsonSerializable(typeof(UnifiedResult<string>))]
 public partial class MyUnifiedResultContext : JsonSerializerContext
+{
+    
+}
+
+[JsonSerializable(typeof(UserInfo[]))]
+[JsonSerializable(typeof(UserInfo))]
+[JsonSerializable(typeof(ReportStats))]
+[JsonSerializable(typeof(int[]))]
+[JsonSerializable(typeof(UnifiedResult<UserInfo[]>))]
+[JsonSerializable(typeof(UnifiedResult<ReportStats>))]
+[JsonSerializable(typeof(UnifiedResult<UserInfo>))]
+[JsonSerializable(typeof(UnifiedResult<int[]>))]
+[JsonSerializable(typeof(MyApiResult))]
+[JsonSerializable(typeof(PostBody))]
+[JsonSerializable(typeof(PostBody[]))]
+public partial class NativeTestJsonContext : JsonSerializerContext
 {
     
 }
