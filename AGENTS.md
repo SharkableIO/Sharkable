@@ -1,6 +1,6 @@
 # Sharkable — AGENTS.md
 
-.NET 8 minimal API framework collection. NuGet package. Author: CharleyPeng.
+.NET 10 minimal API framework collection. NuGet package. Author: CharleyPeng.
 
 ## Coding standards
 
@@ -38,21 +38,28 @@ No test project exists. No linter/formatter beyond compiler warnings.
 ## Entry points (call order matters)
 
 ```csharp
-// 1. Register services + discover endpoints + wire DI + swagger
+// 1. Register services + discover endpoints + wire DI + OpenAPI
 builder.Services.AddShark();                              // auto-discover assemblies
 builder.Services.AddShark(opt => { ... });                 // with options
 builder.Services.AddShark([typeof(Program).Assembly]);     // AOT: explicit assemblies
 builder.Services.AddShark([typeof(Program).Assembly], opt => { ... });
 
 // 2. After builder.Build():
-app.UseShark();                                            // wire endpoints + swagger
-app.UseShark(opt => opt.ConfigureSwaggerOptions(s => { }));
+app.UseShark();                                            // wire endpoints + OpenAPI + Scalar UI
 
 // 3. Maps endpoints (called by UseShark internally)
 app.MapSharkEndpoints();                                   // ISharkEndpoint implementations
 ```
 
-`UseShark()` must be called before `app.Run()`.
+`UseShark()` must be called before `app.Run()`. OpenAPI/Scalar is served at `/openapi/v1.json` and `/scalar/v1` by default.
+
+Configure OpenAPI via `SharkOption.ConfigureOpenApi()`:
+```csharp
+builder.Services.AddShark(opt =>
+{
+    opt.ConfigureOpenApi(options => { /* configure OpenAPI options */ });
+});
+```
 
 ## Two endpoint styles
 

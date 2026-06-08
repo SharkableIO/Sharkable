@@ -1,5 +1,3 @@
-using Swashbuckle.AspNetCore.Swagger;
-
 namespace Sharkable;
 
 /// <summary>
@@ -17,15 +15,4 @@ public sealed class UseSharkOptions : ISharkOption
     /// Default is <c>false</c> (opt-in).
     /// </summary>
     public bool EnableAutoWrap { get; set; } = false;
-    /// <summary>
-    /// Configures Swagger UI options.
-    /// </summary>
-    public void ConfigureSwaggerOptions(Action<SwaggerOptions>? options)
-    {
-        UseSwaggerConfigure = options;
-    }
-    /// <summary>
-    /// Stores the Swagger UI configuration action provided via <see cref="ConfigureSwaggerOptions"/>.
-    /// </summary>
-    public static Action<SwaggerOptions>? UseSwaggerConfigure { get; private set; }
 }

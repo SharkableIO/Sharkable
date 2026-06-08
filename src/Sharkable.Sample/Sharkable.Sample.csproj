@@ -10,25 +10,28 @@
   <ItemGroup>
     <ProjectReference Include="..\Sharkable\Sharkable.csproj" />
   </ItemGroup>
- <ItemGroup>
-		<RdXmlFile Include="rd.xml" />
-	</ItemGroup>
-<ItemGroup>
-	<None Remove="rd.xml" />
-</ItemGroup>
 
-<ItemGroup>
-	<Content Include="rd.xml">
-		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	</Content>
-</ItemGroup>
-<ItemGroup>
-   <PackageReference Include="Npgsql" Version="8.0.4" />
-   <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.8" />
-   <PackageReference Include="SqlSugarCore" Version="5.1.4.168-preview20" />
- </ItemGroup>
+  <ItemGroup>
+    <RdXmlFile Include="rd.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="rd.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="rd.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql" Version="8.0.4" />
+    <PackageReference Include="SqlSugarCore" Version="5.1.4.168-preview20" />
+  </ItemGroup>
+
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>false</InvariantGlobalization>
