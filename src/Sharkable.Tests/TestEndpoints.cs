@@ -114,7 +114,6 @@ public class VersionedAdminEndpoint : ISharkEndpoint
         app.MapGet("status", () => "v2-admin-status");
     }
 }
-
 public class FormatTestEndpoint : ISharkEndpoint
 {
     public void AddRoutes(IEndpointRouteBuilder app)
