@@ -8,7 +8,7 @@
     <RepositoryUrl>https://github.com/SharkableIO/Sharkable.git</RepositoryUrl>
     <PackageTags>dotnet,minimalapi,toolkit,framework</PackageTags>
     <RepositoryType>git</RepositoryType>
-    <PackageLicenseExpression>MIT Lisence</PackageLicenseExpression>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Copyright>CharleyPeng</Copyright>
     <Authors>CharleyPeng</Authors>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -28,6 +28,11 @@
 
   <ItemGroup>
     <Folder Include="SharkEndpoint\Enums\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+    <None Include="sharkable.jpg" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>
