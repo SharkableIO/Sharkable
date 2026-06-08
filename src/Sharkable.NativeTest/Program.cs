@@ -15,7 +15,10 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.TypeInfoResolverChain.Insert(3, MyUnifiedResultContext.Default);
 });
 var app = builder.Build();
-app.UseShark();
+app.UseShark(opt =>
+{
+    opt.EnableAutoWrap = true;
+});
 var sampleTodos = new Todo[]
 {
     new(1, "Walk the dog"),
@@ -50,6 +53,7 @@ internal partial class AppJsonSerializerContext2 : JsonSerializerContext
 
 [JsonSerializable(typeof(UnifiedResult<Todo[]>))]
 [JsonSerializable(typeof(UnifiedResult<Todo>))]
+[JsonSerializable(typeof(UnifiedResult<string>))]
 public partial class MyUnifiedResultContext : JsonSerializerContext
 {
     

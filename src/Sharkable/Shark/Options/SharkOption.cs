@@ -23,6 +23,10 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public bool AotMode => InternalShark.AotMode;
     /// <summary>
+    /// Options for the global exception handler middleware.
+    /// </summary>
+    public ExceptionHandlerOptions ExceptionHandlerOptions { get; set; } = new();
+    /// <summary>
     /// configure swagger gen
     /// </summary>
     /// <param name="options"></param>
