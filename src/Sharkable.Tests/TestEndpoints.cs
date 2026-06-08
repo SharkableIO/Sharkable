@@ -96,6 +96,25 @@ public class DiTestEndpoint : ISharkEndpoint
     }
 }
 
+[SharkVersion("v1")]
+public class VersionedTestEndpoint : ISharkEndpoint
+{
+    public void AddRoutes(IEndpointRouteBuilder app)
+    {
+        app.MapGet("ping", () => "versioned-pong");
+    }
+}
+
+[SharkVersion("v2")]
+[EndpointGroup("admin")]
+public class VersionedAdminEndpoint : ISharkEndpoint
+{
+    public void AddRoutes(IEndpointRouteBuilder app)
+    {
+        app.MapGet("status", () => "v2-admin-status");
+    }
+}
+
 public class FormatTestEndpoint : ISharkEndpoint
 {
     public void AddRoutes(IEndpointRouteBuilder app)

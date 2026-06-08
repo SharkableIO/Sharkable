@@ -53,20 +53,28 @@ internal static class SharkEndPointExtension
                 sharkEndpoint.groupName = groupAttr.Name;
             }
 
+            var versionAttr = e.GetType().GetCustomAttribute<SharkVersionAttribute>();
+            if (versionAttr != null)
+            {
+                sharkEndpoint.version = versionAttr.Version;
+            }
+
             if (string.IsNullOrWhiteSpace(sharkEndpoint.apiPrefix))
                 sharkEndpoint.apiPrefix = options.Value.ApiPrefix;
 
             collected.Add((sharkEndpoint, e.GetType()));
         });
 
-        // Phase 2: Group by resolved group name
+        // Phase 2: Group by (version, groupName) tuple
         var grouped = new Dictionary<string, List<(SharkEndpoint, Type)>>();
         collected.MyForEach(item =>
         {
+            var version = item.endpoint.version?.GetCaseFormat(options.Value.Format);
             var groupName = item.endpoint.groupName?.GetCaseFormat(options.Value.Format) ?? string.Empty;
-            if (!grouped.ContainsKey(groupName))
-                grouped[groupName] = [];
-            grouped[groupName].Add(item);
+            var key = string.IsNullOrWhiteSpace(version) ? groupName : $"{version}_{groupName}";
+            if (!grouped.ContainsKey(key))
+                grouped[key] = [];
+            grouped[key].Add(item);
         });
 
         // Phase 3: One MapGroup per unique group name
@@ -80,9 +88,13 @@ internal static class SharkEndPointExtension
                 continue;
             }
 
-            var basePath = string.IsNullOrWhiteSpace(groupName)
-                ? first.apiPrefix
-                : $"{first.apiPrefix}/{groupName}";
+            var version = first.version?.GetCaseFormat(options.Value.Format);
+            var basePath = first.apiPrefix;
+            if (!string.IsNullOrWhiteSpace(version))
+                basePath = $"{basePath}/{version}";
+            var groupNameForUrl = first.groupName?.GetCaseFormat(options.Value.Format) ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(groupNameForUrl))
+                basePath = $"{basePath}/{groupNameForUrl}";
 
             var group = app.MapGroup(basePath).WithDisplayName(groupName);
 
@@ -97,7 +109,7 @@ internal static class SharkEndPointExtension
             var tags = ResolveGroupTags(endpoints, groupName);
 
             // Auto-Tags + OperationId via Add() convention (works in JIT and AOT)
-            var capturedGroupName = groupName;
+            var capturedGroupName = !string.IsNullOrWhiteSpace(version) ? $"{version}_{groupName}" : groupName;
             var capturedBasePath = basePath;
             var capturedTags = tags;
             ((IEndpointConventionBuilder)group).Add(builder =>
@@ -204,6 +216,12 @@ internal static class SharkEndPointExtension
         {
             instance.groupName = endpointGroupAttr.Name;
             instance.addPrefix = !string.IsNullOrWhiteSpace(apiPrefix);
+        }
+
+        var versionAttr = shark.GetType().GetCustomAttribute<SharkVersionAttribute>();
+        if (versionAttr != null)
+        {
+            instance.version = versionAttr.Version;
         }
 
         instance.apiPrefix = apiPrefix;

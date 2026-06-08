@@ -76,6 +76,33 @@ public class EndpointTests : IClassFixture<SharkTestFixture>
     }
 
     [Fact]
+    public async Task VersionedEndpoint_Uses_Version_In_Url()
+    {
+        var res = await _client.GetAsync("/api/v1/versionedtest/ping");
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var body = await res.Content.ReadAsStringAsync();
+        Assert.Equal("versioned-pong", body);
+    }
+
+    [Fact]
+    public async Task VersionedAdminEndpoint_Uses_Both_Version_And_Group()
+    {
+        var res = await _client.GetAsync("/api/v2/admin/status");
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var body = await res.Content.ReadAsStringAsync();
+        Assert.Equal("v2-admin-status", body);
+    }
+
+    [Fact]
+    public async Task OpenApiDoc_Contains_Versioned_Paths()
+    {
+        var res = await _client.GetAsync("/openapi/v1.json");
+        var doc = await res.Content.ReadAsStringAsync();
+        Assert.Contains("/api/v1/versionedTest/ping", doc);
+        Assert.Contains("/api/v2/admin/status", doc);
+    }
+
+    [Fact]
     public async Task OpenApiDoc_Has_OperationId()
     {
         var res = await _client.GetAsync("/openapi/v1.json");

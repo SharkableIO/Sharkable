@@ -9,3 +9,13 @@ GET {{Sharkable.NativeTest_HostAddress}}/todos/1
 Accept: application/json
 
 ###
+
+GET {{Sharkable.NativeTest_HostAddress}}/api/v1/versioned@1/info
+Accept: application/json
+
+###
+
+GET {{Sharkable.NativeTest_HostAddress}}/api/v2/versioned@2/info
+Accept: application/json
+
+###
