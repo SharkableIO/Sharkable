@@ -1,5 +1,3 @@
-using System.Net;
-using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 
 namespace Sharkable;
@@ -28,23 +26,14 @@ internal sealed class SharkExceptionHandlerMiddleware
     private static Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         var options = Shark.SharkOption.ExceptionHandlerOptions;
-        var statusCode = options.GetStatusCode(exception);
+        var statusCode = (int)options.GetStatusCode(exception);
         var errorMessage = options.GetErrorMessage(exception);
 
-        var result = new UnifiedResult<object?>
-        {
-            StatusCode = statusCode,
-            Data = null,
-            ErrorMessage = errorMessage,
-            TimeStamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-        };
+        var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
+        var result = factory.Create(null, errorMessage, statusCode);
 
         context.Response.ContentType = "application/json";
-        context.Response.StatusCode = (int)statusCode;
-        return JsonSerializer.SerializeAsync(
-            context.Response.Body,
-            result,
-            typeof(UnifiedResult<object?>),
-            UnifiedResultSourceContext.Default);
+        context.Response.StatusCode = statusCode;
+        return context.Response.WriteAsJsonAsync(result, result.GetType());
     }
 }

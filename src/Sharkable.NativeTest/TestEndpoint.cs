@@ -7,7 +7,7 @@ public class TestEndpoint : ISharkEndpoint
 {
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        app.MapGet("lost", () => Results.Ok(UnifiedResultExtension.GetResultTest("fuck it!")));
+        app.MapGet("lost", () => Results.Ok(new UnifiedResult<string>("hello")));
         app.MapPost("lost", ([FromBody]Todo[] todos, [FromServices]ILogger<TestEndpoint> logger) =>
         {
             var opt = Shark.GetOptions<SharkOption>();

@@ -90,6 +90,11 @@ Requires `IDependencyReflectorFactory` + reflection. Only works when `SharkOptio
 
 Mark classes with `[ScopedService]`, `[TransientService]`, `[SingletonService]` to auto-register.
 
+## Branch & PR
+
+- `main` branch requires PR — direct push is rejected by repo rule
+- Create a feature branch and push, then open PR on GitHub
+
 ## Documentation site
 
 - Docs repo: `~/dev/sharkableio.github.io/docs/` (docsify site)

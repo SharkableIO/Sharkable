@@ -1,4 +1,3 @@
-using System.Net;
 using Microsoft.AspNetCore.Http;
 
 namespace Sharkable;
@@ -14,18 +13,7 @@ internal sealed class UnifiedResultWrapFilter : IEndpointFilter
         if (result == null || result is IResult)
             return result;
 
-        var resultType = result.GetType();
-        var unifiedResultType = typeof(UnifiedResult<>).MakeGenericType(resultType);
-        var unifiedResult = Activator.CreateInstance(unifiedResultType);
-
-        if (unifiedResult is not null)
-        {
-            var dataProperty = unifiedResultType.GetProperty("Data");
-            dataProperty?.SetValue(unifiedResult, result);
-            var statusCodeProperty = unifiedResultType.GetProperty("StatusCode");
-            statusCodeProperty?.SetValue(unifiedResult, HttpStatusCode.OK);
-        }
-
-        return unifiedResult;
+        var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
+        return factory.Create(result, null, 200);
     }
 }
