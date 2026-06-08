@@ -16,5 +16,6 @@ public class TestEndpoint : ISharkEndpoint
             logger.LogError(opt?.ApiPrefix);
             return todos.AsOkResult();
         });
+        app.MapPost("create", ([FromBody] Todo todo) => todo.AsOkResult());
     }
 }

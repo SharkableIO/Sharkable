@@ -27,6 +27,12 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public ExceptionHandlerOptions ExceptionHandlerOptions { get; set; } = new();
     /// <summary>
+    /// When true, scan and register FluentValidation validators, and auto-validate
+    /// endpoint parameters that have a registered <see cref="IValidator{T}"/>.
+    /// Default is false (opt-in).
+    /// </summary>
+    public bool EnableValidation { get; set; } = false;
+    /// <summary>
     /// Factory for creating unified result responses.
     /// Set this to use a custom result format.
     /// Defaults to <see cref="DefaultUnifiedResultFactory"/> producing <see cref="UnifiedResult{T}"/>.

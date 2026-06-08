@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using FluentValidation;
 using Sharkable;
 
 var builder = WebApplication.CreateSlimBuilder(args);
@@ -7,7 +8,9 @@ var builder = WebApplication.CreateSlimBuilder(args);
 builder.Services.AddShark([typeof(Program).Assembly],opt =>
 {
     opt.Format = EndpointFormat.ToLower;
+    opt.EnableValidation = true;
 });
+builder.Services.AddSingleton<IValidator<Todo>, TodoValidator>();
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.TypeInfoResolverChain.Insert(1, AppJsonSerializerContext.Default);
@@ -39,6 +42,14 @@ app.Run();
 
 
 public record Todo(int Id, string? Title, DateOnly? DueBy = null, bool IsComplete = false);
+
+public class TodoValidator : AbstractValidator<Todo>
+{
+    public TodoValidator()
+    {
+        RuleFor(x => x.Title).NotEmpty().MaximumLength(100);
+    }
+}
 
 [JsonSerializable(typeof(Todo[]))]
 [JsonSerializable(typeof(Task<Todo[]>))]
