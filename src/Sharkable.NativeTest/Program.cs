@@ -10,6 +10,7 @@ builder.Services.AddShark([typeof(Program).Assembly],opt =>
 {
     opt.Format = EndpointFormat.SnakeCase;
     opt.EnableValidation = true;
+    opt.EnableHealthChecks = true;
     opt.UnifiedResultFactory = new MyApiResultFactory();
 });
 builder.Services.AddSingleton<IValidator<Todo>, TodoValidator>();

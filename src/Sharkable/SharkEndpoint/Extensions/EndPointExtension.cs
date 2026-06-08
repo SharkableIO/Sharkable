@@ -105,6 +105,9 @@ internal static class SharkEndPointExtension
             if (Shark.SharkOption.EnableValidation)
                 group.AddEndpointFilter<ValidationFilter>();
 
+            if (Shark.SharkOption.ApiKeys?.Length > 0)
+                group.AddEndpointFilter<ApiKeyFilter>();
+
             // Resolve tags from all endpoints in this group
             var tags = ResolveGroupTags(endpoints, groupName);
 
@@ -138,6 +141,12 @@ internal static class SharkEndPointExtension
 
             // Call AddRoutes for each endpoint in this group
             endpoints.MyForEach(ep => ep.Item1.BuildAction?.Invoke(group));
+        }
+
+        // health check endpoint
+        if (Shark.SharkOption.EnableHealthChecks)
+        {
+            HealthCheckEndpoint.Map(app);
         }
 
         return app;
