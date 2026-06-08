@@ -21,8 +21,8 @@ public static class SharkExtension
         services.WireSharkEndpoint();
         //wire service lifetime
         services.AddServicesWithAttributeOfTypeFromAssembly(Shark.Assemblies);
-        //setup swagger gen
-        services.SharkSwagger();
+        //setup OpenAPI document generation
+        services.AddSharkOpenApi();
         //register fluent validation
         services.AddValidators();
         //setup auto crud services
@@ -44,8 +44,8 @@ public static class SharkExtension
         InternalShark.HostEnvironment = app.Environment;
         InternalShark.ServiceScopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
         InternalShark.ServiceProvider = app.Services;//InternalShark.ServiceScopeFactory.CreateScope().ServiceProvider;
-        //setup swagger
-        app.UseSharkSwagger();
+        //setup OpenAPI endpoint + Scalar UI
+        app.UseSharkOpenApi();
        // app.MapSharkEndpointsWithAttributes();
     }
 }

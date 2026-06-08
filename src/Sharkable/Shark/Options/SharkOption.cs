@@ -1,5 +1,4 @@
-using Swashbuckle.AspNetCore.SwaggerGen;
-using Swashbuckle.AspNetCore.SwaggerUI;
+using Microsoft.AspNetCore.OpenApi;
 
 namespace Sharkable;
 
@@ -14,15 +13,15 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public string ApiPrefix { get; set; } = "api";
     /// <summary>
-    /// Whether to enable Swagger/OpenAPI document generation. Default is true.
+    /// Whether to enable OpenAPI document generation and Scalar UI. Default is true.
     /// </summary>
-    public bool UseSwaggerDoc { get; set; } = true;
+    public bool UseOpenApi { get; set; } = true;
     /// <summary>
-    /// endpoint path format, default is camel case
+    /// Endpoint path format, default is camel case.
     /// </summary>
     public EndpointFormat Format { get; set; } = EndpointFormat.CamelCase;
     /// <summary>
-    /// a property indicates current environment is in aot mode or not
+    /// Indicates whether the current environment is in AOT mode.
     /// </summary>
     public bool AotMode => InternalShark.AotMode;
     /// <summary>
@@ -42,39 +41,25 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public IUnifiedResultFactory? UnifiedResultFactory { get; set; }
     /// <summary>
-    /// configure swagger gen
+    /// Configures the OpenAPI document generation options.
     /// </summary>
-    /// <param name="options"></param>
-    public void ConfigureSwaggerGen(Action<SwaggerGenOptions>? options)
+    public void ConfigureOpenApi(Action<OpenApiOptions>? options)
     {
-        SwaggerGenConfigure = options;
+        OpenApiConfigure = options;
     }
     /// <summary>
-    /// configure swagger gen
+    /// Configures AutoCrud (SqlSugar) options.
     /// </summary>
-    /// <param name="options"></param>
     public void ConfigureAutoCrud(Action<SqlSugarOptions>? options)
     {
         SqlSugarOptionsConfigure = options;
     }
     /// <summary>
-    /// configure swagger ui options
+    /// Stores the OpenAPI configuration action provided via <see cref="ConfigureOpenApi"/>.
     /// </summary>
-    /// <param name="options"></param>
-    public void ConfigureSwaggerUi(Action<SwaggerUIOptions>? options)
-    {
-        SwaggerUIOptionsConfigure = options;
-    }
+    internal static Action<OpenApiOptions>? OpenApiConfigure { get; private set; }
     /// <summary>
-    /// get the swagger gen configuration
-    /// </summary>
-    internal static Action<SwaggerGenOptions>? SwaggerGenConfigure{ get; private set; }
-    /// <summary>
-    /// get the sqlsugar configuration
+    /// Stores the SqlSugar configuration action provided via <see cref="ConfigureAutoCrud"/>.
     /// </summary>
     internal static Action<SqlSugarOptions>? SqlSugarOptionsConfigure{ get; private set; }
-    /// <summary>
-    /// get the swagger Ui configuration
-    /// </summary>
-    internal static Action<SwaggerUIOptions>? SwaggerUIOptionsConfigure { get; private set; }
 }

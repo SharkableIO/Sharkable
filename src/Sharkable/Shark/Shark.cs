@@ -2,8 +2,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using Swashbuckle.AspNetCore.Swagger;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Sharkable;
 
@@ -42,8 +40,6 @@ public partial class Shark
     /// Sharkable options
     /// </summary>
     public static SharkOption SharkOption { get; internal set; } = new SharkOption();
-    internal static SwaggerGenOptions? SwaggerGenOptions { get; private set; }
-    internal static SwaggerOptions? SwaggerOptions { get; private set; }
     /// <summary>Runtime options configured via <c>app.UseShark(opt => ...)</c>.</summary>
     public static UseSharkOptions? UseSharkOptions { get; internal set; }
     //public properties

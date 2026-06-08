@@ -5,8 +5,8 @@ internal static class AutoCrudExtension
 {
     internal static IServiceCollection AddAutoCrud(this IServiceCollection services)
     {
-        //will not proceed
-        if(SharkOption.SwaggerGenConfigure == null)
+        //only proceed when AutoCrud is configured
+        if (SharkOption.SqlSugarOptionsConfigure == null)
             return services;
         //get auto crud sqlsugar extensions
         //todo: will use regex extension to get all Sharkable.AutoCrud.* if more aot supported orms are comming out;

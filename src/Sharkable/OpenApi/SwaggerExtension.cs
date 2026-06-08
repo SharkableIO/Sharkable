@@ -1,35 +1,30 @@
 
-using Microsoft.AspNetCore.Routing.Constraints;
+using Scalar.AspNetCore;
 
 namespace Sharkable;
 
-internal static class SwaggerExtension
+internal static class OpenApiExtension
 {
-    internal static IServiceCollection SharkSwagger(this IServiceCollection services)
+    internal static IServiceCollection AddSharkOpenApi(this IServiceCollection services)
     {
-        //skip Swagger setup when AutoCrud (SqlSugar) is configured — autocrud manages its own OpenAPI
-        if(SharkOption.SqlSugarOptionsConfigure != null)
-            return services;
-        // Add services to the container.
-        services.Configure<RouteOptions>(options =>
+        if (Shark.SharkOption.UseOpenApi)
         {
-            options.SetParameterPolicy<RegexInlineRouteConstraint>("regex");
-        });
-
-        if (Shark.SharkOption.UseSwaggerDoc)
-        {
-            services.AddEndpointsApiExplorer();
-            services.AddSwaggerGen(SharkOption.SwaggerGenConfigure);
+            var configure = SharkOption.OpenApiConfigure;
+            if (configure != null)
+                services.AddOpenApi(configure);
+            else
+                services.AddOpenApi();
         }
         return services;
     }
 
-    internal static void UseSharkSwagger(this WebApplication app)
+    internal static WebApplication UseSharkOpenApi(this WebApplication app)
     {
-        if (Shark.SharkOption.UseSwaggerDoc)
+        if (Shark.SharkOption.UseOpenApi)
         {
-            app.UseSwagger(UseSharkOptions.UseSwaggerConfigure);
-            app.UseSwaggerUI();
+            app.MapOpenApi();
+            app.MapScalarApiReference();
         }
+        return app;
     }
 }
