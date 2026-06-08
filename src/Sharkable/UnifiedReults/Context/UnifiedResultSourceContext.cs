@@ -9,6 +9,9 @@ namespace Sharkable;
 [JsonSourceGenerationOptions(WriteIndented = true)]
 [JsonSerializable(typeof(UnifiedResult<string>))]
 [JsonSerializable(typeof(UnifiedResult<int>))]
+[JsonSerializable(typeof(UnifiedResult<long>))]
+[JsonSerializable(typeof(UnifiedResult<double>))]
+[JsonSerializable(typeof(UnifiedResult<bool>))]
 [JsonSerializable(typeof(UnifiedResult<object?>))]
 public partial class UnifiedResultSourceContext : JsonSerializerContext
 {
