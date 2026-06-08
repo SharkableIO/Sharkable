@@ -179,6 +179,97 @@ public class AutoWrapUseSharkTests : IClassFixture<AutoWrapUseSharkFixture>
     }
 }
 
+public class AuditTrailFixture : IAsyncLifetime
+{
+    public WebApplication App { get; private set; } = null!;
+    public HttpClient Client { get; private set; } = null!;
+
+    public async Task InitializeAsync()
+    {
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Environment.EnvironmentName = "Production";
+
+        builder.Services.AddShark([typeof(SimpleGetEndpoint).Assembly], opt =>
+        {
+            opt.ConfigureAuditTrail(a =>
+            {
+                a.ExcludePaths = ["/excluded"];
+                a.ForwardCorrelationId = true;
+            });
+        });
+
+        App = builder.Build();
+
+        App.MapGet("/excluded", () => "skip-me");
+
+        App.UseShark();
+        await App.StartAsync();
+        Client = App.GetTestClient();
+    }
+
+    public async Task DisposeAsync()
+    {
+        await App.DisposeAsync();
+    }
+}
+
+public class AuditTrailTests : IClassFixture<AuditTrailFixture>
+{
+    private readonly HttpClient _client;
+
+    public AuditTrailTests(AuditTrailFixture fixture)
+    {
+        _client = fixture.Client;
+    }
+
+    [Fact]
+    public async Task Response_Has_CorrelationId_Header()
+    {
+        var res = await _client.GetAsync("/api/simpleget/ping");
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        Assert.True(res.Headers.Contains("X-Correlation-Id"));
+    }
+
+    [Fact]
+    public async Task CorrelationId_Is_Unique_Per_Request()
+    {
+        var res1 = await _client.GetAsync("/api/simpleget/ping");
+        var res2 = await _client.GetAsync("/api/simpleget/ping");
+
+        var id1 = res1.Headers.GetValues("X-Correlation-Id").First();
+        var id2 = res2.Headers.GetValues("X-Correlation-Id").First();
+        Assert.NotEqual(id1, id2);
+    }
+
+    [Fact]
+    public async Task Forwarded_CorrelationId_Appears_In_Response()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/simpleget/ping");
+        request.Headers.Add("X-Correlation-Id", "my-trace-123");
+        var res = await _client.SendAsync(request);
+
+        var returned = res.Headers.GetValues("X-Correlation-Id").First();
+        Assert.Equal("my-trace-123", returned);
+    }
+
+    [Fact]
+    public async Task Excluded_Path_Does_Not_Get_CorrelationId()
+    {
+        var res = await _client.GetAsync("/excluded");
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        Assert.False(res.Headers.Contains("X-Correlation-Id"));
+    }
+
+    [Fact]
+    public async Task Normal_Endpoint_Still_Returns_Correct_Data()
+    {
+        var res = await _client.GetAsync("/api/simpleget/ping");
+        var body = await res.Content.ReadAsStringAsync();
+        Assert.Equal("pong", body);
+    }
+}
+
 public class AdvancedTests : IClassFixture<HealthCheckFixture>
 {
     private readonly HttpClient _client;

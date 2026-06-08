@@ -95,6 +95,17 @@ public sealed class SharkOption : ISharkOption
         OpenApiConfigure = options;
     }
     /// <summary>
+    /// Configures structured request/response audit trail logging.
+    /// When set, the <see cref="AuditTrailMiddleware"/> is wired into the pipeline.
+    /// </summary>
+    public void ConfigureAuditTrail(Action<AuditTrailOptions> configure)
+    {
+        var opt = new AuditTrailOptions();
+        configure(opt);
+        AuditTrailOptions = opt;
+    }
+    internal AuditTrailOptions? AuditTrailOptions { get; set; }
+    /// <summary>
     /// Configures AutoCrud (SqlSugar) options.
     /// </summary>
     public void ConfigureAutoCrud(Action<SqlSugarOptions>? options)
