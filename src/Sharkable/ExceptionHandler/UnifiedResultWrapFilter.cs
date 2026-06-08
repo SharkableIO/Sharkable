@@ -10,7 +10,7 @@ internal sealed class UnifiedResultWrapFilter : IEndpointFilter
     {
         var result = await next(context);
 
-        if (result == null || result is IResult)
+        if (result == null || result is IResult || result is IUnifiedResult)
             return result;
 
         var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();

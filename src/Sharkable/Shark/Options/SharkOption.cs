@@ -29,6 +29,13 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public ExceptionHandlerOptions ExceptionHandlerOptions { get; set; } = new();
     /// <summary>
+    /// When <c>true</c>, endpoint return values that are not <see cref="IResult"/> are
+    /// automatically wrapped in <see cref="UnifiedResult{T}"/>.
+    /// Can also be set at runtime via <see cref="UseSharkOptions.EnableAutoWrap"/>.
+    /// Default is <c>false</c> (opt-in).
+    /// </summary>
+    public bool EnableAutoWrap { get; set; } = false;
+    /// <summary>
     /// When true, scan and register FluentValidation validators, and auto-validate
     /// endpoint parameters that have a registered <see cref="IValidator{T}"/>.
     /// Default is false (opt-in).

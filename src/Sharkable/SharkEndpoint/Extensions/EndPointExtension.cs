@@ -99,7 +99,8 @@ internal static class SharkEndPointExtension
             var group = app.MapGroup(basePath).WithDisplayName(groupName);
 
             // Shared filters (once per group)
-            if (Shark.UseSharkOptions?.EnableAutoWrap ?? false)
+            var autoWrap = Shark.SharkOption.EnableAutoWrap || (Shark.UseSharkOptions?.EnableAutoWrap ?? false);
+            if (autoWrap)
                 group.AddEndpointFilter<UnifiedResultWrapFilter>();
 
             if (Shark.SharkOption.EnableValidation)
