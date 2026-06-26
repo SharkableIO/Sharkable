@@ -20,9 +20,6 @@ public class MyApiResult : IUnifiedResult
 public sealed class MyApiResultFactory : IUnifiedResultFactory
 {
     public IUnifiedResult Create(object? data, string? errorMessage, int statusCode)
-        => Create(data, errorMessage, statusCode, code: null);
-
-    public IUnifiedResult Create(object? data, string? errorMessage, int statusCode, string? code)
     {
         return new MyApiResult
         {
