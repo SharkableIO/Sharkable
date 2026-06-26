@@ -69,7 +69,7 @@ internal sealed class SharkIdempotencyMiddleware
                     return;
 
                 case IdempotencyHit hit:
-                    var fingerprint = ComputeFingerprint(context);
+                    var fingerprint = await ComputeFingerprint(context);
                     if (hit.Record.Fingerprint != fingerprint)
                     {
                         await WriteUnified(context, 422, "idempotency_key_conflict",
@@ -118,7 +118,7 @@ internal sealed class SharkIdempotencyMiddleware
 
                 var record = new IdempotencyRecord(
                     key,
-                    ComputeFingerprint(context),
+                    await ComputeFingerprint(context),
                     context.Response.StatusCode,
                     context.Response.ContentType ?? "application/octet-stream",
                     bytes,
@@ -134,14 +134,17 @@ internal sealed class SharkIdempotencyMiddleware
         }
         finally
         {
-            context.Response.Body = originalBody;
+            if (!context.Response.HasStarted)
+            {
+                context.Response.Body = originalBody;
+            }
         }
     }
 
     private static bool ShouldCache(int status) =>
         status >= 200 && status < 500 && status != 429;
 
-    private string ComputeFingerprint(HttpContext context)
+    private async Task<string> ComputeFingerprint(HttpContext context)
     {
         // For fingerprint we use the buffered request body; if no body was read,
         // we fall back to an empty span. The path is context.Request.Path.
@@ -151,7 +154,7 @@ internal sealed class SharkIdempotencyMiddleware
         // we treat it as empty (known limitation; see §8 of the spec).
         var bodyLength = (int)(context.Request.ContentLength ?? 0);
         byte[] body = bodyLength > 0
-            ? ReadBodyBytes(context.Request.Body, bodyLength)
+            ? await ReadBodyBytes(context.Request.Body, bodyLength)
             : Array.Empty<byte>();
         return IdempotencyFingerprint.Compute(
             context.Request.Method,
@@ -159,14 +162,14 @@ internal sealed class SharkIdempotencyMiddleware
             body);
     }
 
-    private static byte[] ReadBodyBytes(Stream body, int length)
+    private static async Task<byte[]> ReadBodyBytes(Stream body, int length)
     {
         if (body.CanSeek) body.Position = 0;
         var buf = new byte[length];
         int read = 0;
         while (read < length)
         {
-            int n = body.Read(buf, read, length - read);
+            int n = await body.ReadAsync(buf.AsMemory(read, length - read));
             if (n == 0) break;
             read += n;
         }
