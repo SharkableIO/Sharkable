@@ -19,24 +19,20 @@ public class UnifiedResult<T> : IUnifiedResult
     public string? Extra { get; init; }
     /// <summary>UTC timestamp in milliseconds since epoch.</summary>
     public long? TimeStamp { get; init; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-    /// <summary>Optional machine-readable error code.</summary>
-    public string? Code { get; init; }
 
     public UnifiedResult() { }
 
-    public UnifiedResult(T? data, string? errorMessage = null, HttpStatusCode statusCode = HttpStatusCode.OK, string? extra = null, string? code = null)
+    public UnifiedResult(T? data, string? errorMessage = null, HttpStatusCode statusCode = HttpStatusCode.OK, string? extra = null)
     {
         Data = data;
         ErrorMessage = errorMessage;
         StatusCode = statusCode;
         Extra = extra;
-        Code = code;
     }
 
     int IUnifiedResult.StatusCode => (int)StatusCode;
     object? IUnifiedResult.Data => Data;
     string? IUnifiedResult.ErrorMessage => ErrorMessage;
-    string? IUnifiedResult.Code => Code;
 }
 
 /// <summary>
