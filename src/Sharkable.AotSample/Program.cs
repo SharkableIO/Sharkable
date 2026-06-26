@@ -12,7 +12,12 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 //builder.Services.AddDynamicShark();
 builder.Services.AddShark([typeof(Program).Assembly], opt=>{
-    opt.Format = Sharkable.EndpointFormat.Tolower;
+    opt.Format = Sharkable.EndpointFormat.ToLower;
+    opt.EnableIdempotency = true;
+    opt.ConfigureIdempotency(o =>
+    {
+        o.Ttl = TimeSpan.FromMinutes(10);
+    });
     opt.ConfigureAutoCrud(s =>
     {
         s.IsAutoCloseConnection = true;
@@ -23,10 +28,6 @@ builder.Services.AddShark([typeof(Program).Assembly], opt=>{
 var app = builder.Build();
 
 app.UseShark(opt=>{
-    opt.ConfigureSwaggerOptions(s =>
-    {
-        
-    });
 });
 
 var sopt = Shark.Services.GetService<IOptions<SharkOption>>();
