@@ -7,9 +7,10 @@ namespace Sharkable;
 /// </summary>
 public interface IUnifiedResultFactory
 {
-    /// <summary>Creates a unified result with the given data, error message, and status code.</summary>
-    /// <param name="data">Response payload (null on error).</param>
-    /// <param name="errorMessage">Error description (null on success).</param>
-    /// <param name="statusCode">HTTP status code.</param>
-    IUnifiedResult Create(object? data, string? errorMessage, int statusCode);
+    /// <summary>Creates a unified result without an error code.</summary>
+    IUnifiedResult Create(object? data, string? errorMessage, int statusCode)
+        => Create(data, errorMessage, statusCode, code: null);
+
+    /// <summary>Creates a unified result with an optional machine-readable error code.</summary>
+    IUnifiedResult Create(object? data, string? errorMessage, int statusCode, string? code);
 }

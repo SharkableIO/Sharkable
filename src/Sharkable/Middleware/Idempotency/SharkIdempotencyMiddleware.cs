@@ -185,18 +185,10 @@ internal sealed class SharkIdempotencyMiddleware
     private static Task WriteUnified(
         HttpContext context, int status, string code, string message)
     {
-        // Use a simple inline JSON envelope. The framework's UnifiedResult
-        // factory is not injected here to keep this middleware decoupled
-        // from that internal type.
-        var body = new
-        {
-            statusCode = status,
-            success = false,
-            errorMessage = message,
-            code,
-        };
+        var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
+        var result = factory.Create(data: null, errorMessage: message, statusCode: status, code: code);
         context.Response.StatusCode = status;
         context.Response.ContentType = "application/json";
-        return context.Response.WriteAsJsonAsync(body);
+        return context.Response.WriteAsJsonAsync(result, result.GetType());
     }
 }
