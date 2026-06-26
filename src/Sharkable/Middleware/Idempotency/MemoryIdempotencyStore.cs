@@ -11,6 +11,7 @@ namespace Sharkable;
 public sealed class MemoryIdempotencyStore : IIdempotencyStore
 {
     private readonly IMemoryCache _cache;
+    private readonly object _reservationLock = new();
 
     /// <summary>Marker for an in-flight slot (no record yet).</summary>
     private sealed record InFlightMarker;
@@ -22,18 +23,21 @@ public sealed class MemoryIdempotencyStore : IIdempotencyStore
 
     public bool TryReserve(string key, TimeSpan inFlightTtl)
     {
-        // GetOrCreate with a factory is atomic per key in MemoryCache:
-        // the factory runs at most once per key per process.
-        // If the factory returns a value, the cache holds it; we then
-        // check whether what we got back is OUR marker (won) or a
-        // pre-existing marker (lost).
-        var marker = new InFlightMarker();
-        var actual = _cache.GetOrCreate(key, entry =>
+        // IMemoryCache.GetOrCreate is NOT atomic across threads: the
+        // factory may run concurrently on multiple threads, each creating
+        // its own InFlightMarker and each believing it won the reservation.
+        // We serialize the check-and-set with a lock so only one caller
+        // sees its own marker come back from the cache.
+        lock (_reservationLock)
         {
-            entry.AbsoluteExpirationRelativeToNow = inFlightTtl;
-            return marker;
-        });
-        return ReferenceEquals(actual, marker);
+            var marker = new InFlightMarker();
+            var actual = _cache.GetOrCreate<object>(key, entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = inFlightTtl;
+                return marker;
+            });
+            return ReferenceEquals(actual, marker);
+        }
     }
 
     public IdempotencyLookup? Get(string key)
