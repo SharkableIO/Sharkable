@@ -7,6 +7,8 @@
 - All public API properties, methods, and classes **must** have XML doc comments (`/// <summary>`, `/// <param>`, `/// <returns>`)
 - Internal classes and methods should also have brief XML doc comments explaining purpose
 - `SuppressMessage` attributes require a comment explaining why
+- Only modify files and lines strictly required by the task — no incidental refactoring, reformatting, or unrelated changes
+- Do not introduce new NuGet packages without justification — if needed, state the reason and ask first; only add after receiving explicit approval
 
 ## Solution layout
 
