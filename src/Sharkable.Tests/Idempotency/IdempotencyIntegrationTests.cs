@@ -122,15 +122,16 @@ public class IdempotencyIntegrationTests : IClassFixture<IdempotencyTestFixture>
     }
 
     [Fact]
-    public async Task GetWithHeader_Ignored()
+    public async Task GetWithHeader_PassesThrough()
     {
         var key = Guid.NewGuid().ToString();
         var req = new HttpRequestMessage(HttpMethod.Get, "/api/idempotency/test");
         req.Headers.Add("Idempotency-Key", key);
 
         var res = await _client.SendAsync(req);
-        Assert.NotEqual(HttpStatusCode.Conflict, res.StatusCode);
-        Assert.NotEqual(HttpStatusCode.UnprocessableEntity, res.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        // Header is ignored on safe methods; the endpoint is invoked.
+        Assert.Single(IdempotencyTestEndpoint.Invocations);
     }
 
     [Fact]

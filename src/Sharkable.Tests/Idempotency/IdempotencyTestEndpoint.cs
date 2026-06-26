@@ -46,6 +46,12 @@ public class IdempotencyTestEndpoint : ISharkEndpoint
             var json = System.Text.Encoding.UTF8.GetBytes($"{{\"ok\":{(status < 400).ToString().ToLowerInvariant()},\"status\":{status}}}");
             await ctx.Response.Body.WriteAsync(json);
         });
+
+        app.MapGet("test", (HttpContext ctx) =>
+        {
+            Invocations.Add(ctx.Connection.Id + ":" + DateTime.UtcNow.Ticks);
+            return Results.Ok(new { method = "GET" });
+        });
     }
 
     /// <summary>Clears <see cref="Invocations"/>; call between test cases.</summary>
