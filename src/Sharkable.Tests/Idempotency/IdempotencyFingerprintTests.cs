@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.AspNetCore.Http;
 
 namespace Sharkable.Tests.Idempotency;
 
@@ -42,5 +43,14 @@ public class IdempotencyFingerprintTests
         var h1 = IdempotencyFingerprint.Compute("POST", "/api/orders", ReadOnlySpan<byte>.Empty);
         var h2 = IdempotencyFingerprint.Compute("POST", "/api/orders", Array.Empty<byte>());
         Assert.Equal(h1, h2);
+    }
+
+    [Fact]
+    public void Compute_NullOrEmptyPath_TreatedAsRootSlash()
+    {
+        var body = Encoding.UTF8.GetBytes("payload");
+        var root = IdempotencyFingerprint.Compute("POST", "/", body);
+        Assert.Equal(root, IdempotencyFingerprint.Compute("POST", default, body));
+        Assert.Equal(root, IdempotencyFingerprint.Compute("POST", new PathString("/"), body));
     }
 }
