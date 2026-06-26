@@ -140,4 +140,19 @@ public class IdempotencyIntegrationTests : IClassFixture<IdempotencyTestFixture>
         var res = await _client.SendAsync(NewIdempotentRequest(key));
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
     }
+
+    [Fact]
+    public async Task OversizeResponse_500_AndInFlightReleased()
+    {
+        var key = Guid.NewGuid().ToString();
+        var big = NewIdempotentRequest(key);
+        big.RequestUri = new Uri("http://localhost/api/idempotency/test?size=2000000&status=200");
+
+        var r1 = await _client.SendAsync(big);
+        Assert.Equal(HttpStatusCode.InternalServerError, r1.StatusCode);
+
+        // Subsequent request with same key should be able to execute (in-flight released).
+        var r2 = await _client.SendAsync(NewIdempotentRequest(key));
+        Assert.Equal(HttpStatusCode.OK, r2.StatusCode);
+    }
 }
