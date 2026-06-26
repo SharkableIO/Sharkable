@@ -200,7 +200,7 @@ store = context.RequestServices.GetRequiredService<IIdempotencyStore>()
 if !store.TryReserve(key, options.InFlightTtl):
     match store.Get(key):
         case IdempotencyInFlight:
-            context.Response.Headers.RetryAfter = 1   # 1 second
+            context.Response.Headers["Retry-After"] = "1"   # 1 second (delta-seconds)
             await WriteUnifiedResult(context, 409, "idempotency_in_progress", null);
             return
         case IdempotencyHit hit:

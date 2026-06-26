@@ -137,15 +137,16 @@ internal static class IdempotencyFingerprint
     public static string Compute(string method, PathString path, ReadOnlySpan<byte> body)
     {
         using var sha = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        var methodBytes = Encoding.ASCII.GetBytes(method.ToUpperInvariant());
-        sha.AppendData(methodBytes);
-        sha.AppendData((byte)'\n');
-        var pathValue = path.Value ?? "/";
-        sha.AppendData(Encoding.ASCII.GetBytes(pathValue));
-        sha.AppendData((byte)'\n');
+        sha.AppendData(Encoding.ASCII.GetBytes(method.ToUpperInvariant()));
+        sha.AppendData(NewlineBytes);
+        sha.AppendData(Encoding.ASCII.GetBytes(path.Value ?? "/"));
+        sha.AppendData(NewlineBytes);
         sha.AppendData(body);
         return Convert.ToHexString(sha.GetHashAndReset()).ToLowerInvariant();
     }
+
+    // IncrementalHash.AppendData has no single-byte overload; cache a one-byte buffer.
+    private static readonly byte[] NewlineBytes = [(byte)'\n'];
 }
 ```
 
@@ -683,7 +684,7 @@ internal sealed class SharkIdempotencyMiddleware
             switch (existing)
             {
                 case IdempotencyInFlight:
-                    context.Response.Headers.RetryAfter = 1;
+                    context.Response.Headers["Retry-After"] = "1";
                     await WriteUnified(context, 409, "idempotency_in_progress",
                         "An identical request is already in progress; retry after 1 second.");
                     return;
