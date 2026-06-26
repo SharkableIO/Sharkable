@@ -6,6 +6,7 @@ All notable changes to Sharkable are documented here.
 
 ### feat
 
+- Add `RedactingFormatter` — replaces `ILogger<T>` with a structured-log wrapper that redacts configured sensitive fields (password, secret, token, etc.)
 - Add SHA-256 fingerprint helper
 - Add `IIdempotencyStore` interface and record types
 - Add `MemoryIdempotencyStore`
