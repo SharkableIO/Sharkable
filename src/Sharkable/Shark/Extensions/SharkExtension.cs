@@ -40,6 +40,13 @@ public static class SharkExtension
         //register CORS
         if (Shark.SharkOption.CorsConfigure != null)
             services.AddCors(Shark.SharkOption.CorsConfigure);
+        //register idempotency
+        if (Shark.SharkOption.EnableIdempotency)
+        {
+            services.AddMemoryCache();
+            services.AddSingleton(Shark.SharkOption.IdempotencyOptions ?? new SharkIdempotencyOptions());
+            services.AddSingleton<IIdempotencyStore, MemoryIdempotencyStore>();
+        }
         //register JWT auth
         if (Shark.SharkOption.JwtAuthority != null)
         {
