@@ -33,6 +33,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Sharkable.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="" />
     <None Include="sharkable.jpg" Pack="true" PackagePath="" />
   </ItemGroup>
