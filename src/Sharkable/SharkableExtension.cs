@@ -76,6 +76,10 @@ public static class SharkableExtension
         if (Shark.SharkOption.AuditTrailOptions != null)
             app.UseMiddleware<AuditTrailMiddleware>();
 
+        // idempotency
+        if (Shark.SharkOption.EnableIdempotency)
+            app.UseMiddleware<SharkIdempotencyMiddleware>();
+
         app.MapEndpoints();
     }
 }
