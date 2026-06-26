@@ -105,20 +105,17 @@ Requires `IDependencyReflectorFactory` + reflection. Only works when `SharkOptio
 
 Mark classes with `[ScopedService]`, `[TransientService]`, `[SingletonService]` to auto-register.
 
-## Branch & PR
-
-- `main` requires PR — direct push rejected by repo rule
-- After a PR is merged, sync local main: `git checkout main && git pull`
-- If a feature branch is behind, rebase: `git checkout <branch> && git rebase origin/main && git push --force-with-lease origin <branch>`
-- Use **"Rebase and merge"** on GitHub (not "Create a merge commit") to keep linear history
-- For "Rebase and merge" to work, the feature branch must have **linear history** — never merge `main` into feature branch. Instead, rebase: the existing rebase command above is the correct approach
-- If you accidentally created a merge commit on the feature branch (e.g. `git merge main`), fix it with: `git reset --hard <commit-before-merge> && git rebase origin/main && git push --force-with-lease origin <branch>`
-
 ## Documentation site
 
 - Docs repo: `~/dev/sharkableio.github.io/docs/` (docsify site)
 - English: `docs/` root, Chinese: `docs/zh-cn/`
 - New features need both EN and ZH docs + sidebar updates
+
+## Changelog
+
+- `CHANGELOG.md` at repo root **must** be updated in every PR, before merging
+- English only; one entry per logical change under the appropriate version section
+- Format: `- {type}: {description}`, where `{type}` is `feat`, `fix`, `refactor`, `test`, `docs`, or `chore`
 
 ## NuGet publishing
 
