@@ -63,6 +63,12 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public bool EnableHealthChecks { get; set; } = false;
     /// <summary>
+    /// When <c>true</c>, wires the idempotency middleware into the pipeline.
+    /// Requests carrying an <c>Idempotency-Key</c> header on an unsafe HTTP
+    /// method are deduplicated and replayed. Default is <c>false</c>.
+    /// </summary>
+    public bool EnableIdempotency { get; set; } = false;
+    /// <summary>
     /// Configures CORS policies. Calls <c>services.AddCors()</c> when set, and wires <c>app.UseCors()</c>.
     /// </summary>
     public Action<CorsOptions>? CorsConfigure { get; set; }
@@ -106,11 +112,26 @@ public sealed class SharkOption : ISharkOption
     }
     internal AuditTrailOptions? AuditTrailOptions { get; set; }
     /// <summary>
+    /// Stores the idempotency options provided via <see cref="ConfigureIdempotency"/>.
+    /// </summary>
+    internal SharkIdempotencyOptions? IdempotencyOptions { get; set; }
+    /// <summary>
     /// Configures AutoCrud (SqlSugar) options.
     /// </summary>
     public void ConfigureAutoCrud(Action<SqlSugarOptions>? options)
     {
         SqlSugarOptionsConfigure = options;
+    }
+    /// <summary>
+    /// Configures the idempotency middleware. Called only when
+    /// <see cref="EnableIdempotency"/> is <c>true</c>.
+    /// </summary>
+    /// <param name="configure">Callback to mutate the options instance.</param>
+    public void ConfigureIdempotency(Action<SharkIdempotencyOptions> configure)
+    {
+        var opt = new SharkIdempotencyOptions();
+        configure(opt);
+        IdempotencyOptions = opt;
     }
     /// <summary>
     /// Stores the OpenAPI configuration action provided via <see cref="ConfigureOpenApi"/>.
