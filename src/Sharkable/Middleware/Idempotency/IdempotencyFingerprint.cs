@@ -17,6 +17,7 @@ internal static class IdempotencyFingerprint
     /// <param name="method">HTTP method (case-insensitive; normalized to upper).</param>
     /// <param name="path">Request path. Null/empty is treated as <c>"/"</c>.</param>
     /// <param name="body">Raw request body bytes.</param>
+    /// <returns>64-character lower-case hex SHA-256 digest of <c>method + "\n" + path + "\n" + body</c>.</returns>
     public static string Compute(string method, PathString path, ReadOnlySpan<byte> body)
     {
         using var sha = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
