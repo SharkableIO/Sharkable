@@ -141,4 +141,15 @@ public sealed class SharkOption : ISharkOption
     /// Stores the SqlSugar configuration action provided via <see cref="ConfigureAutoCrud"/>.
     /// </summary>
     internal static Action<SqlSugarOptions>? SqlSugarOptionsConfigure{ get; private set; }
+    /// <summary>
+    /// Configures structured log field redaction.
+    /// When set, <see cref="ILogger{T}"/> is replaced with a redacting wrapper.
+    /// </summary>
+    public void ConfigureRedactingLog(Action<RedactingLogOptions> configure)
+    {
+        var opt = new RedactingLogOptions();
+        configure(opt);
+        RedactingLogOptions = opt;
+    }
+    internal RedactingLogOptions? RedactingLogOptions { get; set; }
 }

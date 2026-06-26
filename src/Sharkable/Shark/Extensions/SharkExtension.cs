@@ -1,3 +1,6 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
+
 namespace Sharkable;
 
 public static class SharkExtension
@@ -85,6 +88,12 @@ public static class SharkExtension
                     };
                     Shark.SharkOption.JwtConfigure?.Invoke(opt);
                 });
+        }
+        //register redacting log formatter
+        if (Shark.SharkOption.RedactingLogOptions != null)
+        {
+            services.AddSingleton(Shark.SharkOption.RedactingLogOptions);
+            services.Replace(ServiceDescriptor.Singleton(typeof(ILogger<>), typeof(RedactingLogger<>)));
         }
     }
     /// <summary>
