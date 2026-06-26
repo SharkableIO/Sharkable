@@ -50,6 +50,10 @@ public static class SharkableExtension
     {
         app.UseCommon(setupOption);
 
+        // multi-tenant
+        if (Shark.SharkOption.TenantOptions?.ResolveTenant != null)
+            app.UseMiddleware<TenantResolutionMiddleware>();
+
         // rate limiter
         if (Shark.SharkOption.RateLimiterConfigure != null)
             app.UseRateLimiter();
