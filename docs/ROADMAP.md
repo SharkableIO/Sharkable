@@ -11,10 +11,23 @@
 | 6 | 结构化日志 + 字段脱敏 | `ILogger` + 自定义 `RedactingFormatter` |
 | 8 | 多租户 | `IHttpContextAccessor` + 抽象，纯代码 |
 | 13 | Scalar 增强 | `ConfigureScalar()` + 自动认证 UI 配置 |
+| — | 审计修复（静态字段泄漏等） | 2026-06-27 code audit 5 项 bug 修复 |
+| — | ISharkEndpoint OpenAPI 元数据 | `[SharkDescription]` / `[SharkResponseType]` / `[SharkDeprecated]` |
+| — | XML 文档补齐 | SqlSugarOptions, DbType, LanguageType, InitKeyType, Shark helpers |
 
-## AutoCrud 内部
+## 待定
 
-- 软删除全局过滤器 — AutoCrud 内部，纯表达式树
+| 工作 | 类型 | 评估 |
+|---|---|---|
+| 异常处理器加日志 | 修复 | `ExceptionHandlerMiddleware` catch 后无日志，注入 `ILogger`。小改动 |
+| AutoCrud 单元测试 | 测试 | SqlSugar 8 个 enum + options + extension。中等 |
+| StringExtensions 测试 | 测试 | 补测试缺口。小 |
+| Reflector / SharkEndpointDsl 测试 | 测试 | 补测试缺口。小 |
+| UnifiedResultExtension 测试 | 测试 | 补测试缺口。小 |
+| 软删除全局过滤器 | 功能 | AutoCrud 内部，纯表达式树 |
+| 中间件自动排序 | 优化 | 减少 `UseShark()` 调用顺序的认知负担 |
+| UseShark 错误提示优化 | 优化 | 调用顺序错误时给出清晰的异常信息 |
+| 开发模式错误丰富 | 优化 | dev 环境下错误响应包含堆栈/内部细节 |
 
 ## 已剔除
 
@@ -37,10 +50,3 @@
 - OpenAPI 客户端生成 → `Kiota` / `NSwag` / `Swashbuckle`
 - 完整后台任务调度（Hangfire 等） → `Hangfire`
 
-## 技术负债（来自 2026-06-27 审计）
-
-- 修 `SharkOption` 静态字段泄漏（`OpenApiConfigure` / `SqlSugarOptionsConfigure` 不应是 `static`）
-- 修 `TenantResolutionMiddleware` 对自定义 `ITenant` 静默失败
-- 补充 MultiTenant / Validation / RedactingLogger 测试
-- `SqlSugarOptions` 和 enum 补充 XML 文档注释
-- `ISharkEndpoint` 层 OpenAPI 元数据（概要 / 描述）属性

@@ -1,14 +1,17 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace Sharkable;
 
 internal sealed class SharkExceptionHandlerMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly ILogger<SharkExceptionHandlerMiddleware> _logger;
 
-    public SharkExceptionHandlerMiddleware(RequestDelegate next)
+    public SharkExceptionHandlerMiddleware(RequestDelegate next, ILogger<SharkExceptionHandlerMiddleware> logger)
     {
         _next = next;
+        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -19,6 +22,7 @@ internal sealed class SharkExceptionHandlerMiddleware
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Unhandled exception processing {Method} {Path}", context.Request.Method, context.Request.Path);
             await HandleExceptionAsync(context, ex);
         }
     }
