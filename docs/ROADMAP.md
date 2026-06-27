@@ -8,7 +8,6 @@
 |---|---|---|
 | 3 | 幂等键中间件 | 纯代码，Cache 用 `IMemoryCache` / `OutputCache` |
 | 4 | 分页/过滤/排序 DTO | 纯 POCO，配 AutoCrud 零成本 |
-| 5 | 响应压缩 | `Microsoft.AspNetCore.ResponseCompression` 已在框架引用里 |
 | 6 | 结构化日志 + 字段脱敏 | `ILogger` + 自定义 `RedactingFormatter` |
 | 8 | 多租户 | `IHttpContextAccessor` + 抽象，纯代码 |
 | 9 | 轻量特性开关 | 配置驱动，不引 `Microsoft.FeatureManagement` |
@@ -20,6 +19,10 @@
 | 18 | ProblemDetails 规范化 | ASP.NET Core 9+ 内置 `IProblemDetailsService` |
 | 19 | 软删除全局过滤器 | AutoCrud 内部，纯表达式树 |
 | 20 | `SharkBackgroundService` 抽象 | 封装 `BackgroundService`，零依赖 |
+
+## 已剔除
+
+- 响应压缩 → ASP.NET Core 已内置一行配置，框架封装无价值
 
 ## 已剔除（需新第三方包）
 
