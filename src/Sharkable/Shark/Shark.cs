@@ -56,11 +56,11 @@ public partial class Shark
         AssemblyContext.GetAssemblyContext(assemblies);
     }
     /// <summary>
-    /// get services
+    /// Gets a service of type <typeparamref name="T"/> from the application service provider.
     /// </summary>
-    /// <param name="serviceProvider"></param>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
+    /// <param name="serviceProvider">Optional service provider. Defaults to the application's root provider.</param>
+    /// <typeparam name="T">The service type to resolve.</typeparam>
+    /// <returns>The service instance, or <c>null</c> if not registered.</returns>
     public static T? GetService<T>(IServiceProvider? serviceProvider = null) where T : class
     {
         var service = GetService(typeof(T), serviceProvider) as T;
@@ -89,11 +89,11 @@ public partial class Shark
             null : (serviceProvider ?? GetServiceProvider(typeof(T))).GetKeyedService<T>(key);
     }
     /// <summary>
-    /// get options
+    /// Gets the current value of an <see cref="IOptions{TOptions}"/> from DI.
     /// </summary>
-    /// <param name="serviceProvider">service provider</param>
-    /// <typeparam name="TOptions">typed configuration options</typeparam>
-    /// <returns></returns>
+    /// <param name="serviceProvider">Optional service provider. Defaults to the application's root provider.</param>
+    /// <typeparam name="TOptions">The options type to resolve.</typeparam>
+    /// <returns>The options value, or <c>null</c> if not registered.</returns>
     public static TOptions? GetOptions<TOptions>(IServiceProvider? serviceProvider = null) where TOptions : class,new()
     {
         return GetService<IOptions<TOptions>>(serviceProvider)?.Value;
