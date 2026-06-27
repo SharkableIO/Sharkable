@@ -146,4 +146,4 @@ When told to bump version and publish a new release, execute the following steps
 8. **Push the commit** — `git push`.
 9. **Publish to NuGet** — `dotnet pack src/Sharkable/Sharkable.csproj -c Release && dotnet nuget push src/Sharkable/bin/Release/Sharkable.x.y.z.nupkg --api-key <key> --source https://api.nuget.org/v3/index.json`.
    - The NuGet API key is assumed to be available in the environment. If not, ask the user.
-10. **Update docs site repo** — commit and push the QuickStart changes there too.
+10. **Update docs site repo** — after bumping version, ensure docs site (`~/dev/sharkableio.github.io/docs/`) has all pending changes committed and pushed (at minimum the QuickStart version update, plus any new docs for the release).
