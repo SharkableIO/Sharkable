@@ -134,6 +134,8 @@ Mark classes with `[ScopedService]`, `[TransientService]`, `[SingletonService]` 
 
 When told to bump version and publish a new release, execute the following steps **in order**:
 
+0. **Commit all feature/fix work first** — `git status` must be clean before starting the release. Do NOT bundle feature changes with the version bump commit. The version bump commit should only touch version numbers, CHANGELOG, and docs QuickStart.
+
 1. **Determine the new version** from context (patch/minor/major). Read the current `<AssemblyVersion>` from `src/Sharkable/Sharkable.csproj`.
 2. **Update `src/Sharkable/Sharkable.csproj`** — bump both `<AssemblyVersion>` and `<Version>` to the new version.
 3. **Update `src/Sharkable/Sharkable.nuspec`** — bump `<version>` to the new version.
