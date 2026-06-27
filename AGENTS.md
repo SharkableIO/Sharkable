@@ -117,7 +117,18 @@ Mark classes with `[ScopedService]`, `[TransientService]`, `[SingletonService]` 
 - English only; one entry per logical change under the appropriate version section
 - Format: `- {type}: {description}`, where `{type}` is `feat`, `fix`, `refactor`, `test`, `docs`, or `chore`
 
-## NuGet publishing
+## Release process
 
-- Version lives in `src/Sharkable/Sharkable.csproj` (`<AssemblyVersion>`) and `src/Sharkable/Sharkable.nuspec`
-- Package icon: `src/Sharkable/sharkable.jpg`
+When told to bump version and publish a new release, execute the following steps **in order**:
+
+1. **Determine the new version** from context (patch/minor/major). Read the current `<AssemblyVersion>` from `src/Sharkable/Sharkable.csproj`.
+2. **Update `src/Sharkable/Sharkable.csproj`** — bump both `<AssemblyVersion>` and `<Version>` to the new version.
+3. **Update `src/Sharkable/Sharkable.nuspec`** — bump `<version>` to the new version.
+4. **Move `CHANGELOG.md` unreleased entries** to a new version section with today's date (e.g. `## [0.3.0] — 2026-06-27`).
+5. **Update docs site QuickStart** (`~/dev/sharkableio.github.io/docs/quickstart.md` and `~/dev/sharkableio.github.io/docs/zh-cn/quickstart.md`) — replace the old NuGet version in the `dotnet add package` command with the new version.
+6. **Commit all changes** to the Sharkable repo with message `chore: bump version to x.y.z`.
+7. **Tag the release** — `git tag vx.y.z && git push origin vx.y.z`.
+8. **Push the commit** — `git push`.
+9. **Publish to NuGet** — `dotnet pack src/Sharkable/Sharkable.csproj -c Release && dotnet nuget push src/Sharkable/bin/Release/Sharkable.x.y.z.nupkg --api-key <key> --source https://api.nuget.org/v3/index.json`.
+   - The NuGet API key is assumed to be available in the environment. If not, ask the user.
+10. **Update docs site repo** — commit and push the QuickStart changes there too.
