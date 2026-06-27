@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>true</InvariantGlobalization>
     <PublishAot>true</PublishAot>
+    <NoWarn>$(NoWarn);NU1903</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +27,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Sharkable.AutoCrud.SqlSugar" Version="0.0.18" />
+    <PackageReference Include="Sharkable.AutoCrud.SqlSugar" Version="0.3.2" />
   </ItemGroup>
 </Project>
