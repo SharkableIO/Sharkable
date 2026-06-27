@@ -75,6 +75,11 @@ All notable changes to Sharkable are documented here.
 
 ## [Unreleased]
 
+### feat
+
+- Sync `Sharkable.DbType` enum with SqlSugar 5.1.4.215 — add `TDSQLForPGODBC`, `TDSQL`, `HANA`, `DB2`, `GaussDBNative`, `DuckDB`, `MongoDb`
+- Update `Sharkable.AutoCrud.SqlSugar` to Sharkable v0.3.1 and SqlSugarCore 5.1.4.215
+
 ## [0.3.1] — 2026-06-27
 
 ### feat

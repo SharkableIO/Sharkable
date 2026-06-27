@@ -56,6 +56,20 @@ public enum DbType
     Xugu = 24,
     /// <summary>GoldenDB (ZTE)</summary>
     GoldenDB = 25,
+    /// <summary>TDSQL for PostgreSQL ODBC</summary>
+    TDSQLForPGODBC = 26,
+    /// <summary>TDSQL (Tencent)</summary>
+    TDSQL = 27,
+    /// <summary>SAP HANA</summary>
+    HANA = 28,
+    /// <summary>IBM DB2</summary>
+    DB2 = 29,
+    /// <summary>GaussDB (Native)</summary>
+    GaussDBNative = 30,
+    /// <summary>DuckDB</summary>
+    DuckDB = 31,
+    /// <summary>MongoDB</summary>
+    MongoDb = 32,
     /// <summary>Custom database type</summary>
     Custom = 900
 }

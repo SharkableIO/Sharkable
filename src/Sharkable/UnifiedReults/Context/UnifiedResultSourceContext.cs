@@ -13,6 +13,7 @@ namespace Sharkable;
 [JsonSerializable(typeof(UnifiedResult<double>))]
 [JsonSerializable(typeof(UnifiedResult<bool>))]
 [JsonSerializable(typeof(UnifiedResult<object?>))]
+[JsonSerializable(typeof(IUnifiedResult))]
 public partial class UnifiedResultSourceContext : JsonSerializerContext
 {
 }
