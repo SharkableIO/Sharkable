@@ -95,6 +95,19 @@ Requires `IDependencyReflectorFactory` + reflection. Only works when `SharkOptio
 - Format applied via `EndpointFormat` enum: `CamelCase` (default), `SnakeCase`, `ToLower`, `UnChanged`
 - Set via: `opt.Format = EndpointFormat.SnakeCase` in `AddShark()` callback
 
+## ISharkEndpoint class-level OpenAPI metadata
+
+Apply attributes on `ISharkEndpoint` classes to enrich the generated OpenAPI document:
+
+| Attribute | Purpose | OpenAPI effect |
+|---|---|---|
+| `[SharkDescription("summary","description")]` | Set default summary/description | `summary` / `description` on all operations in the group |
+| `[SharkResponseType(statusCode, typeof(T), "description")]` | Add response metadata | Additional response entries (repeatable) |
+| `[SharkDeprecated]` | Mark as deprecated | Adds `ObsoleteAttribute` to endpoint metadata |
+| `[SharkTag("tag")]` | Override OpenAPI tag | Replaces the auto-derived group name tag (repeatable) |
+
+Individual per-endpoint overrides (`.WithSummary()`, `.WithDescription()`, `.WithOpenApi()`) take precedence.
+
 ## AOT requirements
 
 - Pass assemblies explicitly: `builder.Services.AddShark([typeof(Program).Assembly])`

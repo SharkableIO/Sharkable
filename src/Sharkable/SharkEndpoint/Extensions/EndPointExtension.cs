@@ -109,17 +109,40 @@ internal static class SharkEndPointExtension
             if (Shark.SharkOption.ApiKeys?.Length > 0)
                 group.AddEndpointFilter<ApiKeyFilter>();
 
-            // Resolve tags from all endpoints in this group
+            // Resolve tags + class-level metadata from all endpoint types in this group
             var tags = ResolveGroupTags(endpoints, groupName);
+            var summary = ResolveGroupSummary(endpoints);
+            var description = ResolveGroupDescription(endpoints);
+            var responseTypes = ResolveGroupResponseTypes(endpoints);
+            var isDeprecated = ResolveGroupIsDeprecated(endpoints);
 
-            // Auto-Tags + OperationId via Add() convention (works in JIT and AOT)
+            // Auto-Tags + OperationId + class-level metadata via Add() convention
             var capturedGroupName = !string.IsNullOrWhiteSpace(version) ? $"{version}_{groupName}" : groupName;
             var capturedBasePath = basePath;
             var capturedTags = tags;
+            var capturedSummary = summary;
+            var capturedDescription = description;
+            var capturedResponseTypes = responseTypes;
+            var capturedIsDeprecated = isDeprecated;
             ((IEndpointConventionBuilder)group).Add(builder =>
             {
                 if (!builder.Metadata.Any(m => m is ITagsMetadata) && capturedTags.Count != 0)
                     builder.Metadata.Add(new TagsAttribute([.. capturedTags]));
+
+                if (capturedSummary != null && !builder.Metadata.Any(m => m is EndpointSummaryAttribute))
+                    builder.Metadata.Add(new EndpointSummaryAttribute(capturedSummary));
+
+                if (capturedDescription != null && !builder.Metadata.Any(m => m is EndpointDescriptionAttribute))
+                    builder.Metadata.Add(new EndpointDescriptionAttribute(capturedDescription));
+
+                foreach (var rt in capturedResponseTypes)
+                {
+                    if (!builder.Metadata.Any(m => m is IProducesResponseTypeMetadata pm && pm.StatusCode == rt.StatusCode))
+                        builder.Metadata.Add(rt);
+                }
+
+                if (capturedIsDeprecated && !builder.Metadata.Any(m => m is ObsoleteAttribute))
+                    builder.Metadata.Add(new ObsoleteAttribute("This endpoint is deprecated."));
 
                 if (!builder.Metadata.Any(m => m is EndpointNameMetadata))
                 {
@@ -165,6 +188,39 @@ internal static class SharkEndPointExtension
             tags.Add(defaultTag);
 
         return tags;
+    }
+
+    private static string? ResolveGroupSummary(List<(SharkEndpoint, Type)> endpoints)
+    {
+        return endpoints
+            .Select(ep => ep.Item2.GetCustomAttribute<SharkDescriptionAttribute>()?.Summary)
+            .FirstOrDefault(s => s != null);
+    }
+
+    private static string? ResolveGroupDescription(List<(SharkEndpoint, Type)> endpoints)
+    {
+        return endpoints
+            .Select(ep => ep.Item2.GetCustomAttribute<SharkDescriptionAttribute>()?.Description)
+            .FirstOrDefault(d => d != null);
+    }
+
+    private static List<IProducesResponseTypeMetadata> ResolveGroupResponseTypes(List<(SharkEndpoint, Type)> endpoints)
+    {
+        return endpoints
+            .SelectMany(ep => ep.Item2.GetCustomAttributes<SharkResponseTypeAttribute>())
+            .Select(attr => (IProducesResponseTypeMetadata)new SharkResponseMetadata
+            {
+                StatusCode = attr.StatusCode,
+                Type = attr.ResponseType,
+                ContentTypes = ["application/json"],
+            })
+            .ToList();
+    }
+
+    private static bool ResolveGroupIsDeprecated(List<(SharkEndpoint, Type)> endpoints)
+    {
+        return endpoints.Any(ep =>
+            ep.Item2.GetCustomAttribute<SharkDeprecatedAttribute>() != null);
     }
 
     internal static void WireSharkEndpoint(this IServiceCollection services)

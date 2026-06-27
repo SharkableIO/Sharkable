@@ -10,6 +10,14 @@ All notable changes to Sharkable are documented here.
 - Add multi-tenant support — `ITenant` scoped service, `TenantResolutionMiddleware`, `TenantResolver` helpers (`FromHost` / `FromClaim` / delegate)
 - Add `WrapSchemaFactory` to `SharkOption` — lets custom `IUnifiedResultFactory` users match the OpenAPI schema to their actual response shape
 - Add `ConfigureScalar()` to `SharkOption` — custom title, theme, layout, and auto-detected Bearer/API Key auth in Scalar UI
+- Add `SharkDescriptionAttribute` — class-level OpenAPI summary/description for `ISharkEndpoint` endpoints
+- Add `SharkResponseTypeAttribute` — class-level response metadata for `ISharkEndpoint` endpoints
+- Add `SharkDeprecatedAttribute` — marks `ISharkEndpoint` endpoints as deprecated via `ObsoleteAttribute` on endpoint metadata
+- Add `[RequiresDynamicCode]` to `SharkEndpointAttribute` — AOT compile-time warning when using old-style endpoints
+
+### test
+
+- Add tests for MultiTenant, ValidationFilter, RedactingLogger, and the new metadata attributes
 
 ### fix
 
