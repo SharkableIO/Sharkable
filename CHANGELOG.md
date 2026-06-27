@@ -75,6 +75,12 @@ All notable changes to Sharkable are documented here.
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-06-27
+
+### feat
+
+- Add exception handler logging — `SharkExceptionHandlerMiddleware` now logs unhandled exceptions with HTTP method, request path, and full exception details via `ILogger`
+
 ## [0.2.0] — 2026-06-08
 
 - feat: add built-in middleware (E) and security (F) features
