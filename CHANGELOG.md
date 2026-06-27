@@ -75,10 +75,13 @@ All notable changes to Sharkable are documented here.
 
 ## [Unreleased]
 
+## [0.3.2] — 2026-06-27
+
 ### feat
 
+- Add NuGet package icon (`sharkable.jpg`)
 - Sync `Sharkable.DbType` enum with SqlSugar 5.1.4.215 — add `TDSQLForPGODBC`, `TDSQL`, `HANA`, `DB2`, `GaussDBNative`, `DuckDB`, `MongoDb`
-- Update `Sharkable.AutoCrud.SqlSugar` to Sharkable v0.3.1 and SqlSugarCore 5.1.4.215
+- Update `Sharkable.AutoCrud.SqlSugar` to v0.3.2 with SqlSugarCore 5.1.4.215
 
 ## [0.3.1] — 2026-06-27
 
