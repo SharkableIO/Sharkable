@@ -14,12 +14,12 @@
 | — | 审计修复（静态字段泄漏等） | 2026-06-27 code audit 5 项 bug 修复 |
 | — | ISharkEndpoint OpenAPI 元数据 | `[SharkDescription]` / `[SharkResponseType]` / `[SharkDeprecated]` |
 | — | XML 文档补齐 | SqlSugarOptions, DbType, LanguageType, InitKeyType, Shark helpers |
+| — | 异常处理器加日志 | 注入 `ILogger`，`LogError` 记录请求方法和路径 |
 
 ## 待定
 
 | 工作 | 类型 | 评估 |
 |---|---|---|
-| 异常处理器加日志 | 修复 | `ExceptionHandlerMiddleware` catch 后无日志，注入 `ILogger`。小改动 |
 | AutoCrud 单元测试 | 测试 | SqlSugar 8 个 enum + options + extension。中等 |
 | StringExtensions 测试 | 测试 | 补测试缺口。小 |
 | Reflector / SharkEndpointDsl 测试 | 测试 | 补测试缺口。小 |
