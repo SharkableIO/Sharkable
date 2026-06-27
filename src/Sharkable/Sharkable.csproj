@@ -3,8 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Description>🌈Powerful tools for dotnet aot and more</Description>
-    <AssemblyVersion>0.2.0</AssemblyVersion>
-    <Version>0.2.0</Version>
+    <AssemblyVersion>0.3.0</AssemblyVersion>
+    <Version>0.3.0</Version>
     <PackageProjectUrl>https://sharkableio.github.io/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/SharkableIO/Sharkable.git</RepositoryUrl>
     <PackageTags>dotnet,minimalapi,toolkit,framework</PackageTags>

@@ -2,7 +2,7 @@
 
 All notable changes to Sharkable are documented here.
 
-## [Unreleased]
+## [0.3.0] — 2026-06-27
 
 ### feat
 
@@ -35,6 +35,8 @@ All notable changes to Sharkable are documented here.
 - `AssemblyContext()` constructor changed from `public` to `internal`
 - Replace `throw new Exception` with `throw new InvalidOperationException` in two places
 - Remove dead code `UrlToDictionary()` from `StringExtension.cs`
+
+### feat
 
 - Make `IIdempotencyStore` fully async (`TryReserveAsync`, `GetAsync`, `StoreAsync`, `ReleaseAsync`) — enables distributed store plugins (Redis, PostgreSQL, etc.) without sync-over-async deadlock
 - Add SHA-256 fingerprint helper
@@ -70,6 +72,8 @@ All notable changes to Sharkable are documented here.
 
 - Enable idempotency middleware for end-to-end AOT verification
 - Doc fixes and roadmap
+
+## [Unreleased]
 
 ## [0.2.0] — 2026-06-08
 
