@@ -3,7 +3,8 @@ namespace Sharkable;
 /// <summary>
 /// Stores idempotency keys, their in-flight placeholders, and the responses
 /// they produced. Implementations are responsible for atomicity of
-/// <see cref="TryReserve"/>; the middleware relies on it.
+/// <see cref="TryReserveAsync"/>; the middleware relies on it.
+/// All methods are async to allow distributed store plugins (Redis, PostgreSQL, etc.).
 /// </summary>
 public interface IIdempotencyStore
 {
@@ -15,14 +16,14 @@ public interface IIdempotencyStore
     /// <param name="key">The Idempotency-Key header value.</param>
     /// <param name="inFlightTtl">How long the in-flight placeholder lives before auto-eviction.</param>
     /// <returns><c>true</c> if reservation succeeded; <c>false</c> if the key was already taken.</returns>
-    bool TryReserve(string key, TimeSpan inFlightTtl);
+    Task<bool> TryReserveAsync(string key, TimeSpan inFlightTtl);
 
     /// <summary>
     /// Returns the current state of the key: in-flight, completed, or absent (null).
     /// </summary>
     /// <param name="key">The Idempotency-Key header value.</param>
     /// <returns>An <see cref="IdempotencyInFlight"/>, <see cref="IdempotencyHit"/>, or <c>null</c>.</returns>
-    IdempotencyLookup? Get(string key);
+    Task<IdempotencyLookup?> GetAsync(string key);
 
     /// <summary>
     /// Stores the completed response under the key. Replaces any in-flight
@@ -31,14 +32,14 @@ public interface IIdempotencyStore
     /// <param name="key">The Idempotency-Key header value.</param>
     /// <param name="record">The response record to cache.</param>
     /// <param name="ttl">How long the record should live in the store.</param>
-    void Store(string key, IdempotencyRecord record, TimeSpan ttl);
+    Task StoreAsync(string key, IdempotencyRecord record, TimeSpan ttl);
 
     /// <summary>
     /// Removes the in-flight placeholder without storing a record. Called
     /// when the response should not be cached (5xx, 429, oversize).
     /// </summary>
     /// <param name="key">The Idempotency-Key header value.</param>
-    void Release(string key);
+    Task ReleaseAsync(string key);
 }
 
 /// <summary>

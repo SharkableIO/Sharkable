@@ -8,6 +8,10 @@ All notable changes to Sharkable are documented here.
 
 - Add `RedactingFormatter` — replaces `ILogger<T>` with a structured-log wrapper that redacts configured sensitive fields (password, secret, token, etc.)
 - Add multi-tenant support — `ITenant` scoped service, `TenantResolutionMiddleware`, `TenantResolver` helpers (`FromHost` / `FromClaim` / delegate)
+
+### refactor
+
+- Make `IIdempotencyStore` fully async (`TryReserveAsync`, `GetAsync`, `StoreAsync`, `ReleaseAsync`) — enables distributed store plugins (Redis, PostgreSQL, etc.) without sync-over-async deadlock
 - Add SHA-256 fingerprint helper
 - Add `IIdempotencyStore` interface and record types
 - Add `MemoryIdempotencyStore`

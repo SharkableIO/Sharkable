@@ -56,10 +56,10 @@ internal sealed class SharkIdempotencyMiddleware
         }
 
         // 4. Try to reserve the slot.
-        if (!_store.TryReserve(key, _options.InFlightTtl))
+        if (!await _store.TryReserveAsync(key, _options.InFlightTtl))
         {
             // Slot was already taken. Look at its state.
-            var existing = _store.Get(key);
+            var existing = await _store.GetAsync(key);
             switch (existing)
             {
                 case IdempotencyInFlight:
@@ -100,7 +100,7 @@ internal sealed class SharkIdempotencyMiddleware
                     "Idempotency response for key {Key} exceeds {Max} bytes; " +
                     "rejecting and releasing in-flight slot.",
                     key, _options.MaxResponseSize);
-                _store.Release(key);
+                await _store.ReleaseAsync(key);
                 context.Response.StatusCode = 500;
                 context.Response.Body = originalBody;
                 await WriteUnified(context, 500, "idempotency_response_too_large",
@@ -123,12 +123,12 @@ internal sealed class SharkIdempotencyMiddleware
                     context.Response.ContentType ?? "application/octet-stream",
                     bytes,
                     DateTimeOffset.UtcNow);
-                _store.Store(key, record, _options.Ttl);
+                await _store.StoreAsync(key, record, _options.Ttl);
             }
             else
             {
                 // 429 or 5xx: do not cache. Release slot and forward body.
-                _store.Release(key);
+                await _store.ReleaseAsync(key);
                 await buffer.CopyToAsync(originalBody);
             }
         }

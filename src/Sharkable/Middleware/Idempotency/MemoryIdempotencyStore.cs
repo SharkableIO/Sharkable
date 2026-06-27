@@ -21,7 +21,7 @@ public sealed class MemoryIdempotencyStore : IIdempotencyStore
         _cache = cache;
     }
 
-    public bool TryReserve(string key, TimeSpan inFlightTtl)
+    public Task<bool> TryReserveAsync(string key, TimeSpan inFlightTtl)
     {
         // IMemoryCache.GetOrCreate is NOT atomic across threads: the
         // factory may run concurrently on multiple threads, each creating
@@ -36,31 +36,34 @@ public sealed class MemoryIdempotencyStore : IIdempotencyStore
                 entry.AbsoluteExpirationRelativeToNow = inFlightTtl;
                 return marker;
             });
-            return ReferenceEquals(actual, marker);
+            return Task.FromResult(ReferenceEquals(actual, marker));
         }
     }
 
-    public IdempotencyLookup? Get(string key)
+    public Task<IdempotencyLookup?> GetAsync(string key)
     {
         if (!_cache.TryGetValue(key, out var value) || value is null)
-            return null;
-        return value switch
+            return Task.FromResult<IdempotencyLookup?>(null);
+        var result = value switch
         {
-            InFlightMarker => new IdempotencyInFlight(),
+            InFlightMarker => (IdempotencyLookup)new IdempotencyInFlight(),
             IdempotencyRecord r => new IdempotencyHit(r),
             _ => null,
         };
+        return Task.FromResult(result);
     }
 
-    public void Store(string key, IdempotencyRecord record, TimeSpan ttl)
+    public Task StoreAsync(string key, IdempotencyRecord record, TimeSpan ttl)
     {
         using var entry = _cache.CreateEntry(key);
         entry.AbsoluteExpirationRelativeToNow = ttl;
         entry.Value = record;
+        return Task.CompletedTask;
     }
 
-    public void Release(string key)
+    public Task ReleaseAsync(string key)
     {
         _cache.Remove(key);
+        return Task.CompletedTask;
     }
 }
