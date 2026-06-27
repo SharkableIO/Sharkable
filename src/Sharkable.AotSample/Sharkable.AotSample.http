@@ -1,11 +1,82 @@
-@Sharkable.AotSample_HostAddress = http://localhost:5161
+@host = http://localhost:5161
+@apiKey = demo-key
 
-GET {{Sharkable.AotSample_HostAddress}}/todos/
-Accept: application/json
+### ── Health check ────────────────────────────────────────────────────
+GET {{host}}/healthz
+
+### ── Info ────────────────────────────────────────────────────────────
+GET {{host}}/api/info/version
+X-Api-Key: {{apiKey}}
 
 ###
+GET {{host}}/api/info/features
+X-Api-Key: {{apiKey}}
 
-GET {{Sharkable.AotSample_HostAddress}}/todos/1
-Accept: application/json
+### ── Todo CRUD (main, /api/todo/) ────────────────────────────────────
+GET {{host}}/api/todo/
+X-Api-Key: {{apiKey}}
 
 ###
+GET {{host}}/api/todo/1
+X-Api-Key: {{apiKey}}
+
+###
+POST {{host}}/api/todo/
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+{"title":"New task","description":"Created via .http","priority":1}
+
+###
+PUT {{host}}/api/todo/1
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+{"title":"Updated task","description":"Modified","priority":2,"dueBy":null}
+
+###
+POST {{host}}/api/todo/1/complete
+X-Api-Key: {{apiKey}}
+
+###
+DELETE {{host}}/api/todo/1
+X-Api-Key: {{apiKey}}
+
+### ── Not found ───────────────────────────────────────────────────────
+GET {{host}}/api/todo/999
+X-Api-Key: {{apiKey}}
+
+### ── Validation error ─────────────────────────────────────────────────
+POST {{host}}/api/todo/
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+{"title":"","priority":1}
+
+### ── Idempotency ──────────────────────────────────────────────────────
+POST {{host}}/api/todo/
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+Idempotency-Key: my-unique-key
+
+{"title":"Idempotent create","priority":1}
+
+###
+POST {{host}}/api/todo/
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+Idempotency-Key: my-unique-key
+
+{"title":"Same key, different body","priority":2}
+
+### ── Todo v1 (deprecated, /api/v1/todo/) ───────────────────────────────
+GET {{host}}/api/v1/todo/
+X-Api-Key: {{apiKey}}
+
+### ── Todo v2 (enhanced, /api/v2/todo/) ─────────────────────────────────
+GET {{host}}/api/v2/todo/
+X-Api-Key: {{apiKey}}
+
+###
+GET {{host}}/api/v2/todo/2
+X-Api-Key: {{apiKey}}
