@@ -4,4 +4,4 @@
 // a specific target and scoped to a namespace, type, member, etc.
 
 
-[assembly: SuppressMessage("Style", "IDE0130:Namespace does not match folder structure", Justification = "<Pending>", Scope = "namespace", Target = "~N:Sharkable")]
+[assembly: SuppressMessage("Style", "IDE0130:Namespace does not match folder structure", Justification = "All Sharkable public API types intentionally use the flat Sharkable namespace regardless of folder structure", Scope = "namespace", Target = "~N:Sharkable")]

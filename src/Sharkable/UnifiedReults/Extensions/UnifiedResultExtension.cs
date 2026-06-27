@@ -47,6 +47,6 @@ public static class UnifiedResultExtension
         HttpStatusCode statusCode = HttpStatusCode.Unauthorized, 
         string? extra = null)
     {
-        return errors == null ? Results.Unauthorized() : Results.Unauthorized();
+        return Results.Unauthorized();
     }
 }

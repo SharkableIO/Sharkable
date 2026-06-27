@@ -3,7 +3,7 @@ namespace Sharkable;
 
 public class SqlSugarOptions
 {
-    public InitKeyType InitKeyType = InitKeyType.Attribute;
+    public InitKeyType InitKeyType { get; set; } = InitKeyType.Attribute;
 
     public object? ConfigId { get; set; }
 

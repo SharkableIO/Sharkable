@@ -47,14 +47,6 @@ public partial class Shark
     /// <summary>Gets the application service provider.</summary>
     public static IServiceProvider GetServiceProvider(Type? serviceType = null)
     {
-        // console program
-        // if(HostEnvironment == default) 
-        //     return Services;
-
-        /*if (Services != null &&
-            InternalShark.InternalServices
-                .Where(x => x.ServiceType == (serviceType.IsGenericType ? serviceType.GetGenericTypeDefinition() : serviceType))
-                .Any(x => x.Lifetime == ServiceLifetime.Singleton))*/
         return Services;
     }
 

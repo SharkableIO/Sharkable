@@ -6,7 +6,8 @@ internal static class AutoCrudExtension
     internal static IServiceCollection AddAutoCrud(this IServiceCollection services)
     {
         //only proceed when AutoCrud is configured
-        if (SharkOption.SqlSugarOptionsConfigure == null)
+        var sqlSugarOptions = Shark.SharkOption.SqlSugarOptionsConfigure;
+        if (sqlSugarOptions == null)
             return services;
         //get auto crud sqlsugar extensions
         //todo: will use regex extension to get all Sharkable.AutoCrud.* if more aot supported orms are comming out;
@@ -17,7 +18,7 @@ internal static class AutoCrudExtension
             var method = crudTypes?.GetMethods(BindingFlags.Public | BindingFlags.Static)
                 .FirstOrDefault(x => x.Name == "AddSqlSugar");
 
-            if (method?.Invoke(null, [services, SharkOption.SqlSugarOptionsConfigure]) is IServiceCollection s)
+            if (method?.Invoke(null, [services, sqlSugarOptions]) is IServiceCollection s)
             {
                 Utils.WriteDebug("auto crud generation added.");
                 return s;

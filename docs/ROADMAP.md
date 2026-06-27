@@ -6,16 +6,11 @@
 
 | # | 功能 | 备注 |
 |---|---|---|
+| 2 | API 版本控制 | `[SharkVersion("v2")]` → `/api/v2/{group}/{route}` |
 | 3 | 幂等键中间件 | 纯代码，Cache 用 `IMemoryCache` / `OutputCache` |
 | 6 | 结构化日志 + 字段脱敏 | `ILogger` + 自定义 `RedactingFormatter` |
 | 8 | 多租户 | `IHttpContextAccessor` + 抽象，纯代码 |
-
-## 待评估
-
-| # | 功能 | 备注 |
-|---|---|---|
-| 13 | Scalar 增强 | 已有 Scalar，加 example / auth UI 配置 |
-| 18 | ProblemDetails 规范化 | ASP.NET Core 9+ 内置 `IProblemDetailsService` |
+| 13 | Scalar 增强 | `ConfigureScalar()` + 自动认证 UI 配置 |
 
 ## AutoCrud 内部
 
@@ -29,6 +24,7 @@
 - Webhook 出站 + HMAC 签名 → 场景特定且复杂度高，超出框架范围
 - 集成测试基类 → 需测试框架，且认证/数据库/mock 高度定制化
 - Correlation ID → `AuditTrailMiddleware` 已覆盖
+- ProblemDetails (RFC 9457) → 与 `UnifiedResult<T>` 统一格式定位冲突，两种错误格式反而让用户困惑
 - ETag / 304 条件请求 → 强业务侵入性，框架无法透明实现
 - `SharkBackgroundService` 抽象 → `BackgroundService` 已满足需求
 
@@ -41,6 +37,10 @@
 - OpenAPI 客户端生成 → `Kiota` / `NSwag` / `Swashbuckle`
 - 完整后台任务调度（Hangfire 等） → `Hangfire`
 
-## 灰色（取决于运行时内置情况）
+## 技术负债（来自 2026-06-27 审计）
 
-- API 版本控制 → .NET 10 稳定版暂无内置 API，需 `Microsoft.AspNetCore.Mvc.Versioning` 第三方包
+- 修 `SharkOption` 静态字段泄漏（`OpenApiConfigure` / `SqlSugarOptionsConfigure` 不应是 `static`）
+- 修 `TenantResolutionMiddleware` 对自定义 `ITenant` 静默失败
+- 补充 MultiTenant / Validation / RedactingLogger 测试
+- `SqlSugarOptions` 和 enum 补充 XML 文档注释
+- `ISharkEndpoint` 层 OpenAPI 元数据（概要 / 描述）属性

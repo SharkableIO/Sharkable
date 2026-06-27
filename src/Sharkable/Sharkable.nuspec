@@ -9,7 +9,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="expression">MIT</license>
     <icon>sharkable.jpg</icon>
-    <projectUrl>https://github.com/SharkableIO/Sharkable</projectUrl>
+    <projectUrl>https://sharkableio.github.io/</projectUrl>
     <description>a dotnet minimal api framework collection aimed to support aot</description>
     <releaseNotes>fix where options not invoked properly</releaseNotes>
     <copyright>CopyRight 2024 Penglei</copyright>

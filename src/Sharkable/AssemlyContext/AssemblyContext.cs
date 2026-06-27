@@ -41,7 +41,7 @@ public class AssemblyContext
         }
     }
 
-    public AssemblyContext()
+    internal AssemblyContext()
     {
         
     }

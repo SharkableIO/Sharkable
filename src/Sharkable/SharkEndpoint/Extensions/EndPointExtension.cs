@@ -203,9 +203,8 @@ internal static class SharkEndPointExtension
 
     private static SharkEndpoint CreateSharkEndpoint<T>(T shark, string? apiPrefix = "api") where T : ISharkEndpoint
     {
-        var sharkEndpointType = typeof(SharkEndpoint);
         var sharkAttribute = shark.GetType().GetCustomAttribute<SharkEndpointAttribute>();
-        var instance = (SharkEndpoint)Activator.CreateInstance(sharkEndpointType, nonPublic: true)!;
+        var instance = new SharkEndpoint();
 
         if (sharkAttribute != null)
         {
@@ -277,7 +276,7 @@ internal static class SharkEndPointExtension
                     return;
                 var factory = app.Services.GetService<IDependencyReflectorFactory>();
                 var instance = factory?.CreateInstance(t) ??
-                               throw new Exception($"error when creating an instance of {t.Name}");
+                               throw new InvalidOperationException($"error when creating an instance of {t.Name}");
                     
                 var group = app.MapGroup(endpointAttribute.Group!);
 

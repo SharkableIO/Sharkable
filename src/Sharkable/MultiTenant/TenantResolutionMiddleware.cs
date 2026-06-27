@@ -13,9 +13,9 @@ internal sealed class TenantResolutionMiddleware
 
     public async Task InvokeAsync(HttpContext context, ITenant tenant)
     {
-        if (_options.ResolveTenant != null && tenant is Tenant t)
+        if (_options.ResolveTenant != null)
         {
-            t.TenantId = _options.ResolveTenant(context);
+            tenant.TenantId = _options.ResolveTenant(context);
         }
         await _next(context);
     }

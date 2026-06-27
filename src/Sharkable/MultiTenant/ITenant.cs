@@ -9,5 +9,5 @@ public interface ITenant
     /// <summary>
     /// The resolved tenant identifier for the current request, or <c>null</c> if no tenant could be resolved.
     /// </summary>
-    string? TenantId { get; }
+    string? TenantId { get; set; }
 }

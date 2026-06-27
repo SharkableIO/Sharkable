@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.OpenApi;
+using Microsoft.OpenApi;
+using Scalar.AspNetCore;
 
 namespace Sharkable;
 
@@ -35,6 +37,14 @@ public sealed class SharkOption : ISharkOption
     /// Default is <c>false</c> (opt-in).
     /// </summary>
     public bool EnableAutoWrap { get; set; } = false;
+    /// <summary>
+    /// Custom factory for the OpenAPI schema used by <see cref="EnableAutoWrap"/>.
+    /// Takes the original response schema and returns the wrapped schema.
+    /// When <c>null</c>, the default <see cref="UnifiedResult{T}"/> shape is used.
+    /// Set this when using a custom <see cref="IUnifiedResultFactory"/> so that
+    /// the generated OpenAPI document matches your actual response structure.
+    /// </summary>
+    public Func<OpenApiSchema, IOpenApiSchema>? WrapSchemaFactory { get; set; }
     /// <summary>
     /// When true, scan and register FluentValidation validators, and auto-validate
     /// endpoint parameters that have a registered <see cref="IValidator{T}"/>.
@@ -101,6 +111,14 @@ public sealed class SharkOption : ISharkOption
         OpenApiConfigure = options;
     }
     /// <summary>
+    /// Configures the Scalar API reference UI.
+    /// </summary>
+    public void ConfigureScalar(Action<ScalarOptions> configure)
+    {
+        ScalarConfigure = configure;
+    }
+    internal Action<ScalarOptions>? ScalarConfigure { get; set; }
+    /// <summary>
     /// Configures structured request/response audit trail logging.
     /// When set, the <see cref="AuditTrailMiddleware"/> is wired into the pipeline.
     /// </summary>
@@ -136,11 +154,11 @@ public sealed class SharkOption : ISharkOption
     /// <summary>
     /// Stores the OpenAPI configuration action provided via <see cref="ConfigureOpenApi"/>.
     /// </summary>
-    internal static Action<OpenApiOptions>? OpenApiConfigure { get; private set; }
+    internal Action<OpenApiOptions>? OpenApiConfigure { get; private set; }
     /// <summary>
     /// Stores the SqlSugar configuration action provided via <see cref="ConfigureAutoCrud"/>.
     /// </summary>
-    internal static Action<SqlSugarOptions>? SqlSugarOptionsConfigure{ get; private set; }
+    internal Action<SqlSugarOptions>? SqlSugarOptionsConfigure{ get; private set; }
     /// <summary>
     /// Configures structured log field redaction.
     /// When set, <see cref="ILogger{T}"/> is replaced with a redacting wrapper.

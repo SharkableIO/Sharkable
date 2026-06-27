@@ -8,8 +8,25 @@ All notable changes to Sharkable are documented here.
 
 - Add `RedactingFormatter` — replaces `ILogger<T>` with a structured-log wrapper that redacts configured sensitive fields (password, secret, token, etc.)
 - Add multi-tenant support — `ITenant` scoped service, `TenantResolutionMiddleware`, `TenantResolver` helpers (`FromHost` / `FromClaim` / delegate)
+- Add `WrapSchemaFactory` to `SharkOption` — lets custom `IUnifiedResultFactory` users match the OpenAPI schema to their actual response shape
+- Add `ConfigureScalar()` to `SharkOption` — custom title, theme, layout, and auto-detected Bearer/API Key auth in Scalar UI
+
+### fix
+
+- Adapt to `Microsoft.OpenApi` v2 breaking changes — flat namespace, `JsonSchemaType` enum, `IOpenApiSchema` dictionary value type
+- Fix `SharkOption` static field leak — `OpenApiConfigure` / `SqlSugarOptionsConfigure` changed from `static` to instance properties
+- Fix `TenantResolutionMiddleware` silently failing for custom `ITenant` implementations — `ITenant.TenantId` changed to `{ get; set; }`
+- Fix `CreateSharkEndpoint` AOT risk — use `new SharkEndpoint()` instead of `Activator.CreateInstance(nonPublic: true)`
+- Fix `AsUnauthorized()` pointless null check — simplified to direct return
+- Fix typo in `.csproj` description: `🌈owerful` → `🌈Powerful`
 
 ### refactor
+
+- Rename `Utils/AssembliyUtil.cs` → `Utils/AssemblyUtil.cs`
+- `SqlSugarOptions.InitKeyType` changed from public field to auto-property
+- `AssemblyContext()` constructor changed from `public` to `internal`
+- Replace `throw new Exception` with `throw new InvalidOperationException` in two places
+- Remove dead code `UrlToDictionary()` from `StringExtension.cs`
 
 - Make `IIdempotencyStore` fully async (`TryReserveAsync`, `GetAsync`, `StoreAsync`, `ReleaseAsync`) — enables distributed store plugins (Redis, PostgreSQL, etc.) without sync-over-async deadlock
 - Add SHA-256 fingerprint helper
@@ -35,6 +52,8 @@ All notable changes to Sharkable are documented here.
 
 ### docs
 
+- Add Scalar configuration docs (EN + ZH)
+- Add `WrapSchemaFactory` usage docs to unified-result (EN + ZH)
 - Add idempotency middleware design spec
 - Add idempotency middleware implementation plan
 - Add README section
