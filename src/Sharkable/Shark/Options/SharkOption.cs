@@ -91,6 +91,12 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public bool EnableHealthChecks { get; set; } = false;
     /// <summary>
+    /// Optional callback to add custom health checks. Called after
+    /// <c>services.AddHealthChecks()</c>. The builder parameter is
+    /// <see cref="IHealthChecksBuilder"/>.
+    /// </summary>
+    public Action<IHealthChecksBuilder>? HealthChecksConfigure { get; set; }
+    /// <summary>
     /// When <c>true</c>, wires the idempotency middleware into the pipeline.
     /// Requests carrying an <c>Idempotency-Key</c> header on an unsafe HTTP
     /// method are deduplicated and replayed. Default is <c>false</c>.

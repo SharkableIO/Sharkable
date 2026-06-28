@@ -19,6 +19,8 @@ internal sealed class InternalShark
     internal static bool IsShuttingDown;
     internal static int ActiveRequests;
     internal static AuditLogBuffer? AuditLogBuffer;
+    internal static DateTimeOffset StartedAt;
+    internal static string? AppVersion;
     internal static void ConfigureShark(IWebHostBuilder builder, Assembly[]? assemblies, IHostBuilder? hostBuilder = default)
     {
         if(hostBuilder == null || hostBuilder == default)

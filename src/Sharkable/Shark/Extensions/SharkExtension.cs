@@ -39,7 +39,14 @@ public static class SharkExtension
             services.AddOutputCache(Shark.SharkOption.OutputCacheConfigure);
         //register health checks
         if (Shark.SharkOption.EnableHealthChecks)
-            services.AddHealthChecks();
+        {
+            var hc = services.AddHealthChecks();
+            Shark.SharkOption.HealthChecksConfigure?.Invoke(hc);
+
+            // auto-check JWT authority if configured
+            if (Shark.SharkOption.JwtAuthority != null)
+                hc.AddCheck<JwtHealthCheck>("jwt");
+        }
         //register CORS
         if (Shark.SharkOption.CorsConfigure != null)
             services.AddCors(Shark.SharkOption.CorsConfigure);
@@ -156,7 +163,9 @@ public static class SharkExtension
         InternalShark.Configuration = app.Configuration;
         InternalShark.HostEnvironment = app.Environment;
         InternalShark.ServiceScopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
-        InternalShark.ServiceProvider = app.Services;//InternalShark.ServiceScopeFactory.CreateScope().ServiceProvider;
+        InternalShark.ServiceProvider = app.Services;
+        InternalShark.StartedAt = DateTimeOffset.UtcNow;
+        InternalShark.AppVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3);
         //setup OpenAPI endpoint + Scalar UI
         app.UseSharkOpenApi();
        // app.MapSharkEndpointsWithAttributes();
