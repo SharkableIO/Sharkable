@@ -127,8 +127,9 @@ Mark classes with `[ScopedService]`, `[TransientService]`, `[SingletonService]` 
 - Chinese docs (zh-cn): `i18n/zh-cn/docusaurus-plugin-content-docs/current/` (current), `i18n/zh-cn/docusaurus-plugin-content-docs/version-<label>/` (released versions)
 - Sidebars: `sidebars.js` (current), `versioned_sidebars/version-<label>-sidebars.json` (released versions)
 - **When adding new pages**, add files to `docs/` AND mirror in `versioned_docs/version-<label>/`; update both `sidebars.js` and `versioned_sidebars/version-<label>-sidebars.json`; translate in both `i18n/zh-cn/.../current/` and `i18n/zh-cn/.../version-<label>/`
+- **Sidebar category labels must be fully translated** — every new or renamed sidebar category in `sidebars.js` must have a corresponding `"sidebar.docs.category.<Name>"` entry in ALL applicable ZH JSON files: `i18n/zh-cn/docusaurus-plugin-content-docs/current.json` AND `i18n/zh-cn/docusaurus-plugin-content-docs/version-<label>.json`. Missing a category translation in any version causes the EN label to appear in the ZH sidebar for that version.
 - **Versioned docs are frozen release snapshots** — they must reflect the state at release time. Never backport version bumps or new features into versioned docs. The `QuickStart` version number in versioned docs stays at its release version forever.
-- **When cutting a new version**, run `npm run docusaurus docs:version <label>` to snapshot `docs/` + `sidebars.js`; then mirror the i18n content manually
+- **When cutting a new version**, run `npm run docusaurus docs:version <label>` to snapshot `docs/` + `sidebars.js`; then verify and fix the ZH version label in `i18n/zh-cn/.../version-<label>.json` (Docusaurus defaults it to `"Next"` — must change to `"<label>"`); then add any missing sidebar category translations for the new version.
 
 ## Changelog
 
