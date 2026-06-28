@@ -81,6 +81,7 @@ All notable changes to Sharkable are documented here.
 - Add distributed tracing (`TracingMiddleware`) — W3C `traceparent` via `ActivitySource`, `ITracingExporter` interface for OpenTelemetry plugins, zero external dependencies
 - Add built-in profiler (`ProfilerMiddleware` + `/_sharkable/profiler`) — request counts, average latency, top-N slowest recent requests, memory delta tracking
 - Add extensible health checks — structured JSON `/healthz` via ASP.NET Core `HealthCheckService`, `HealthChecksConfigure` callback for custom checks, auto JWT authority reachability check, uptime + version in response
+- Add multi-tenant data source isolation — `ITenantDataSource` scoped service, `TenantOptions.ConfigureDataSource()` for per-tenant connection string routing
 
 ## [0.4.0] — 2026-06-28
 

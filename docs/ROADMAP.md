@@ -36,7 +36,7 @@
 | # | Feature | Value | Intrusion | Status |
 |---|---------|-------|-----------|--------|
 | 8 | **Idempotency distributed store interface** — `IIdempotencyStore` + `TryAddSingleton`, `MemoryIdempotencyStore` default, users plug Redis/DB | Cluster HA | Config only | ✅ v0.4.0 |
-| 9 | **Multi-tenant data source isolation** — `ISqlSugarClient` auto-switches connection string per tenant via DI scope | SaaS | Config only | |
+| 9 | **Multi-tenant data source isolation** — `ITenantDataSource` scoped service, `TenantOptions.ConfigureDataSource()`, per-tenant connection string routing via DI scope | SaaS | Config only | ✅ |
 | 10 | **Rate limiting distributed store interface** — `IDistributedRateLimitStore` + `MemoryRateLimitStore` default, `SharkRateLimiterMiddleware`, `Sharkable.Cache.Redis` plugin | Cluster HA | Config only | ✅ v0.4.0 |
 | 11 | **Adaptive rate limiting** — dynamically adjust permit limit based on CPU/GC metrics | Robustness | Config only | |
 

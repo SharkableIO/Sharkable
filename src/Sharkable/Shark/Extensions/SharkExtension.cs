@@ -127,6 +127,12 @@ public static class SharkExtension
         if (Shark.SharkOption.TenantOptions != null)
         {
             services.AddScoped<ITenant, Tenant>();
+
+            if (Shark.SharkOption.TenantOptions.DataSourceOptions != null)
+            {
+                services.AddSingleton(Shark.SharkOption.TenantOptions.DataSourceOptions);
+                services.AddScoped<ITenantDataSource, DefaultTenantDataSource>();
+            }
         }
         //register distributed tracing
         if (Shark.SharkOption.TracingOptions != null)
