@@ -165,6 +165,29 @@ internal static class SharkEndPointExtension
                 }
             });
 
+            // AutoCrud: generate routes before user's AddRoutes so overrides take precedence
+            var crudGenerator = app.Services.GetService<IAutoCrudGenerator>();
+            if (crudGenerator != null)
+            {
+                foreach (var (_, classType) in endpoints)
+                {
+                    var entityInterface = classType.GetInterfaces()
+                        .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IAutoCrudEntity<>));
+                    if (entityInterface == null) continue;
+
+                    var entityType = entityInterface.GetGenericArguments()[0];
+                    var operations = CrudOperations.All;
+                    try
+                    {
+                        if (Activator.CreateInstance(classType) is IAutoCrudEntityMarker marker)
+                            operations = marker.GetOperations();
+                    }
+                    catch { }
+
+                    crudGenerator.GenerateRoutes(group, entityType, classType, operations);
+                }
+            }
+
             // Call AddRoutes for each endpoint in this group
             endpoints.MyForEach(ep => ep.Item1.BuildAction?.Invoke(group));
         }

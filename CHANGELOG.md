@@ -85,6 +85,7 @@ All notable changes to Sharkable are documented here.
 - Add adaptive rate limiting — `SharkRateLimiterOptions.EnableAdaptive`, dynamic CPU/GC-based permit adjustment via `AdaptiveLimitMonitor`
 - Add automatic ETag generation (304 Not Modified) — `SharkOption.EnableETag`, SHA256 content hashing, `ETagMiddleware`
 - Add error message localization — `IErrorLocalizer` interface + `ErrorLocalizerFactory`, `Accept-Language`-aware translation for middleware errors
+- Add AutoCrud abstractions — `IAutoCrudEntity<T>` + `CrudOperations` + `IAutoCrudGenerator` for pluggable CRUD route generation
 
 ## [0.4.0] — 2026-06-28
 
