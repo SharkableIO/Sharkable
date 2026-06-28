@@ -139,6 +139,8 @@ Mark classes with `[ScopedService]`, `[TransientService]`, `[SingletonService]` 
 
 ## Release process
 
+**IMPORTANT: Never publish to NuGet without explicit permission.** This includes both the main `Sharkable` package and any plugin packages (e.g., `Sharkable.Cache.Redis`). Only run `dotnet nuget push` when explicitly instructed.
+
 When told to bump version and publish a new release, execute the following steps **in order**:
 
 0. **Commit all feature/fix work first** — `git status` must be clean before starting the release. Do NOT bundle feature changes with the version bump commit. The version bump commit should only touch version numbers, CHANGELOG, and docs QuickStart.
