@@ -121,6 +121,18 @@ public static class SharkExtension
         {
             services.AddScoped<ITenant, Tenant>();
         }
+        //register distributed tracing
+        if (Shark.SharkOption.TracingOptions != null)
+        {
+            services.AddSingleton(Shark.SharkOption.TracingOptions);
+            if (Shark.SharkOption.TracingOptions.Exporter != null)
+                services.AddSingleton(Shark.SharkOption.TracingOptions.Exporter);
+        }
+        //register profiler
+        if (Shark.SharkOption.ProfilerOptions != null)
+        {
+            services.AddSingleton(Shark.SharkOption.ProfilerOptions);
+        }
 
         //validate configuration
         var configErrors = ConfigurationValidator.Validate();

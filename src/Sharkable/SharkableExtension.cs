@@ -51,6 +51,10 @@ public static class SharkableExtension
     {
         app.UseCommon(setupOption);
 
+        // distributed tracing — must be first in pipeline to capture full request
+        if (Shark.SharkOption.TracingOptions != null)
+            app.UseMiddleware<TracingMiddleware>();
+
         // graceful shutdown — must be early in pipeline to reject new requests
         var gsOptions = Shark.SharkOption.GracefulShutdownOptions;
         var auditOptions = Shark.SharkOption.AuditTrailOptions;
@@ -115,6 +119,13 @@ public static class SharkableExtension
         // idempotency
         if (Shark.SharkOption.EnableIdempotency)
             app.UseMiddleware<SharkIdempotencyMiddleware>();
+
+        // profiler — wraps endpoints to record latency/memory
+        if (Shark.SharkOption.ProfilerOptions != null)
+        {
+            app.UseMiddleware<ProfilerMiddleware>();
+            app.MapProfilerEndpoint();
+        }
 
         app.MapEndpoints();
     }

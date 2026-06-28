@@ -232,4 +232,30 @@ public sealed class SharkOption : ISharkOption
         GracefulShutdownOptions = opt;
     }
     internal GracefulShutdownOptions? GracefulShutdownOptions { get; set; }
+    /// <summary>
+    /// Configures distributed tracing. When set, a W3C <c>traceparent</c>
+    /// middleware is wired at the front of the pipeline, creating an
+    /// <see cref="System.Diagnostics.Activity"/> per request.
+    /// Compatible with OpenTelemetry exporters (Jaeger, Zipkin, OTLP)
+    /// out of the box.
+    /// </summary>
+    public void ConfigureTracing(Action<TracingOptions> configure)
+    {
+        var opt = new TracingOptions();
+        configure(opt);
+        TracingOptions = opt;
+    }
+    internal TracingOptions? TracingOptions { get; set; }
+    /// <summary>
+    /// Configures the built-in profiler panel. Exposes a
+    /// <c>/_sharkable/profiler</c> (configurable) endpoint showing request
+    /// counts, average latency, and top-N slowest recent requests.
+    /// </summary>
+    public void ConfigureProfiler(Action<ProfilerOptions> configure)
+    {
+        var opt = new ProfilerOptions();
+        configure(opt);
+        ProfilerOptions = opt;
+    }
+    internal ProfilerOptions? ProfilerOptions { get; set; }
 }

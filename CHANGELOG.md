@@ -78,6 +78,8 @@ All notable changes to Sharkable are documented here.
 ### feat
 
 - Add route conflict Roslyn Analyzer (`SHARK001`) — compile-time detection of duplicate `ISharkEndpoint` route registrations, ships with NuGet package automatically
+- Add distributed tracing (`TracingMiddleware`) — W3C `traceparent` via `ActivitySource`, `ITracingExporter` interface for OpenTelemetry plugins, zero external dependencies
+- Add built-in profiler (`ProfilerMiddleware` + `/_sharkable/profiler`) — request counts, average latency, top-N slowest recent requests, memory delta tracking
 
 ## [0.4.0] — 2026-06-28
 

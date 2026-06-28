@@ -171,12 +171,3 @@ public sealed class SharkableEndpointRouteAnalyzer : DiagnosticAnalyzer
         return RouteConstraintPattern.Replace(route.TrimStart('/'), "{$1}");
     }
 }
-
-// TEST: Verify analyzer is loaded
-#pragma warning disable RS1035
-[System.Runtime.CompilerServices.ModuleInitializer]
-internal static void Init()
-{
-    System.Console.Error.WriteLine("SHARKABLE ANALYZER LOADED");
-}
-#pragma warning restore RS1035
