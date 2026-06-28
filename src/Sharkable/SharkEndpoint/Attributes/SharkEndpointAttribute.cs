@@ -1,6 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-
-namespace Sharkable;
+﻿namespace Sharkable;
 
 /// <summary>
 /// Marks a class as an attribute-based endpoint (legacy style, not AOT-compatible).
@@ -10,7 +8,7 @@ namespace Sharkable;
 /// <param name="apiPrefix">URL prefix. Set to null to omit prefix.</param>
 /// <param name="version">Optional version segment appended to the URL path.</param>
 [AttributeUsage(AttributeTargets.Class)]
-[RequiresDynamicCode("SharkEndpointAttribute uses runtime reflection; use ISharkEndpoint for AOT-safe code")]
+[Obsolete("Use ISharkEndpoint (AddRoutes method) instead. This attribute-based style is not AOT-compatible and will be removed in a future version.")]
 public sealed class SharkEndpointAttribute(string? group = null, string? apiPrefix = "api", string? version = null) : Attribute
 {
     /// <summary>URL group name. When null, derived automatically from the class name.</summary>

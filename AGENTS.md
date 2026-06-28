@@ -36,6 +36,7 @@ No test project exists. No linter/formatter beyond compiler warnings.
 - **All namespaces are `Sharkable`** — flat, not matching folder structure. `IDE0130` suppressed globally.
 - `partial class Utils` is split across files in `Utils/`. Never add a new file to `Utils/` without reading existing ones.
 - `EditorConfig` silences `CA1822` and `IDE0160`.
+- **Documentation language**: all project docs (ROADMAP, specs, plans, design docs) must be written in English — this is a global open-source project.
 
 ## Entry points (call order matters)
 
@@ -118,11 +119,15 @@ Individual per-endpoint overrides (`.WithSummary()`, `.WithDescription()`, `.Wit
 
 Mark classes with `[ScopedService]`, `[TransientService]`, `[SingletonService]` to auto-register.
 
-## Documentation site
+## Documentation site (Docusaurus)
 
-- Docs repo: `~/dev/sharkableio.github.io/docs/` (docsify site)
-- English: `docs/` root, Chinese: `docs/zh-cn/`
-- New features need both EN and ZH docs + sidebar updates
+- Docs repo: `~/dev/sharkableio.github.io/` (Docusaurus site)
+- **Docusaurus versioning** — docs are version-snapshot-based. Every release has frozen docs under `versioned_docs/`; `docs/` is the latest (unreleased) version.
+- English docs: `docs/` (current), `versioned_docs/version-<label>/` (released versions)
+- Chinese docs (zh-cn): `i18n/zh-cn/docusaurus-plugin-content-docs/current/` (current), `i18n/zh-cn/docusaurus-plugin-content-docs/version-<label>/` (released versions)
+- Sidebars: `sidebars.js` (current), `versioned_sidebars/version-<label>-sidebars.json` (released versions)
+- **When adding new pages**, add files to `docs/` AND mirror in `versioned_docs/version-<label>/`; update both `sidebars.js` and `versioned_sidebars/version-<label>-sidebars.json`; translate in both `i18n/zh-cn/.../current/` and `i18n/zh-cn/.../version-<label>/`
+- **When cutting a new version**, run `npm run docusaurus docs:version <label>` to snapshot `docs/` + `sidebars.js`; then mirror the i18n content manually
 
 ## Changelog
 
@@ -140,10 +145,10 @@ When told to bump version and publish a new release, execute the following steps
 2. **Update `src/Sharkable/Sharkable.csproj`** — bump both `<AssemblyVersion>` and `<Version>` to the new version.
 3. **Update `src/Sharkable/Sharkable.nuspec`** — bump `<version>` to the new version.
 4. **Move `CHANGELOG.md` unreleased entries** to a new version section with today's date (e.g. `## [0.3.0] — 2026-06-27`).
-5. **Update docs site QuickStart** (`~/dev/sharkableio.github.io/docs/quickstart.md` and `~/dev/sharkableio.github.io/docs/zh-cn/quickstart.md`) — replace the old NuGet version in the `dotnet add package` command with the new version.
+5. **Update docs site QuickStart** — replace the old NuGet version in the `dotnet add package` command in all 4 copies: `docs/quickstart.md` (EN current), `versioned_docs/version-<label>/quickstart.md` (EN released), `i18n/zh-cn/docusaurus-plugin-content-docs/current/quickstart.md` (ZH current), `i18n/zh-cn/docusaurus-plugin-content-docs/version-<label>/quickstart.md` (ZH released).
 6. **Commit all changes** to the Sharkable repo with message `chore: bump version to x.y.z`.
 7. **Tag the release** — `git tag vx.y.z && git push origin vx.y.z`.
 8. **Push the commit** — `git push`.
 9. **Publish to NuGet** — `dotnet pack src/Sharkable/Sharkable.csproj -c Release && dotnet nuget push src/Sharkable/bin/Release/Sharkable.x.y.z.nupkg --api-key <key> --source https://api.nuget.org/v3/index.json`.
    - The NuGet API key is assumed to be available in the environment. If not, ask the user.
-10. **Update docs site repo** — after bumping version, ensure docs site (`~/dev/sharkableio.github.io/docs/`) has all pending changes committed and pushed (at minimum the QuickStart version update, plus any new docs for the release).
+10. **Update docs site repo** — after bumping version, ensure docs site (`~/dev/sharkableio.github.io/`) has all pending changes committed and pushed (at minimum the QuickStart version update, plus any new docs for the release).

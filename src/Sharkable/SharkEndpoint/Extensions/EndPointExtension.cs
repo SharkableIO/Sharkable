@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿#pragma warning disable CS0618 // Internal use of legacy attribute-based endpoint system
+
+using System.Linq;
 using System.Linq.Expressions;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;

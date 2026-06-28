@@ -1,9 +1,10 @@
-﻿
-namespace Sharkable;
+﻿namespace Sharkable;
 
 /// <summary>
-/// A factory that can create objects with DI
+/// Factory for creating objects via reflection with DI support.
+/// This is an internal API of the legacy attribute-based endpoint system.
 /// </summary>
+[Obsolete("Internal API of the legacy [SharkEndpoint] system. No replacement needed — migrate to ISharkEndpoint.")]
 public interface IDependencyReflectorFactory
 {
     /// <summary>

@@ -3,8 +3,10 @@
 namespace Sharkable;
 
 /// <summary>
-/// A factory that can create objects with dependency injection
+/// Default implementation of <see cref="IDependencyReflectorFactory"/>.
+/// Internal API of the legacy attribute-based endpoint system.
 /// </summary>
+[Obsolete("Internal API of the legacy [SharkEndpoint] system. No replacement needed — migrate to ISharkEndpoint.")]
 public class DependencyReflectorFactory : IDependencyReflectorFactory
 {
     private readonly IServiceProvider _serviceProvider;

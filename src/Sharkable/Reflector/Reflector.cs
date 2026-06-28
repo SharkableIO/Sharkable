@@ -4,8 +4,9 @@ namespace Sharkable;
 
 /// <summary>
 /// Utilities for reflecting on types and creating delegates at runtime.
-/// Used internally by attribute-based endpoint mapping.
+/// Internal API of the legacy attribute-based endpoint system.
 /// </summary>
+[Obsolete("Internal API of the legacy [SharkEndpoint] system. No replacement needed — migrate to ISharkEndpoint.")]
 public partial class Reflector
 {
     internal static IEnumerable<MethodInfo>? GetMethods<T>(T type, 

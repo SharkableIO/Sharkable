@@ -1,8 +1,10 @@
 ﻿namespace Sharkable;
 
 /// <summary>
-/// HTTP methods supported by Sharkable attribute-based endpoints.
+/// HTTP methods for attribute-based endpoints (legacy style, not AOT-compatible).
+/// Use <see cref="ISharkEndpoint.AddRoutes"/> with <c>app.MapGet/MapPost/...</c> instead.
 /// </summary>
+[Obsolete("Use ISharkEndpoint (AddRoutes method with MapGet/MapPost/...) instead. This enum is only used by [SharkMethod] which is obsolete.")]
 public enum SharkHttpMethod
 {
     /// <summary>HTTP GET</summary>

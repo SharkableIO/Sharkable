@@ -75,6 +75,10 @@ All notable changes to Sharkable are documented here.
 
 ## [Unreleased]
 
+### refactor
+
+- Deprecate `[SharkEndpoint]` / `[SharkMethod]` / `SharkHttpMethod` and related reflection infrastructure (`IDependencyReflectorFactory`, `DependencyReflectorFactory`, `Reflector`, `ReflectorExtension`) — all marked `[Obsolete]` with guidance to migrate to `ISharkEndpoint`
+
 ## [0.3.2] — 2026-06-27
 
 ### feat

@@ -1,13 +1,11 @@
-﻿using Microsoft.Extensions.Primitives;
-using System.Diagnostics.CodeAnalysis;
-
-namespace Sharkable;
+﻿namespace Sharkable;
 
 /// <summary>
-/// delegate of a http method
+/// Defines a route method for attribute-based endpoints (legacy style, not AOT-compatible).
+/// Use <see cref="ISharkEndpoint.AddRoutes"/> with <c>app.MapGet/MapPost/...</c> instead.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-[RequiresDynamicCode("SharkMethodAttribute uses reflection and is not supported in AOT mode; use ISharkEndpoint instead")]
+[Obsolete("Use ISharkEndpoint (AddRoutes method with MapGet/MapPost/...) instead. This attribute-based style is not AOT-compatible and will be removed in a future version.")]
 public sealed class SharkMethodAttribute(
     [StringSyntax("Route")] string? pattern,
     SharkHttpMethod method = SharkHttpMethod.POST)

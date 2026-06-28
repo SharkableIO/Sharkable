@@ -1,3 +1,5 @@
+#pragma warning disable CS0618 // Sample using legacy attribute-based endpoint for demonstration
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 //using MongoDB.Driver;
