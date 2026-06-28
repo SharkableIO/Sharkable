@@ -48,7 +48,28 @@ public static class SharkExtension
         {
             services.AddMemoryCache();
             services.AddSingleton(Shark.SharkOption.IdempotencyOptions ?? new SharkIdempotencyOptions());
-            services.AddSingleton<IIdempotencyStore, MemoryIdempotencyStore>();
+            if (Shark.SharkOption.IdempotencyStoreFactory != null)
+                services.AddSingleton(Shark.SharkOption.IdempotencyStoreFactory);
+            else
+                services.TryAddSingleton<IIdempotencyStore, MemoryIdempotencyStore>();
+        }
+        //register distributed rate limiter
+        if (Shark.SharkOption.RateLimitingOptions != null)
+        {
+            services.AddSingleton(Shark.SharkOption.RateLimitingOptions);
+            if (Shark.SharkOption.RateLimitStoreFactory != null)
+                services.AddSingleton(Shark.SharkOption.RateLimitStoreFactory);
+            else
+                services.TryAddSingleton<IDistributedRateLimitStore, MemoryRateLimitStore>();
+        }
+        else
+        {
+            // Always register the store interface so plugins can provide their own.
+            // TryAddSingleton ensures a previously-registered plugin implementation wins.
+            if (Shark.SharkOption.RateLimitStoreFactory != null)
+                services.AddSingleton(Shark.SharkOption.RateLimitStoreFactory);
+            else
+                services.TryAddSingleton<IDistributedRateLimitStore, MemoryRateLimitStore>();
         }
         //register JWT auth
         if (Shark.SharkOption.JwtAuthority != null)

@@ -75,8 +75,16 @@ All notable changes to Sharkable are documented here.
 
 ## [Unreleased]
 
+### feat
+
+- Add `IDistributedRateLimitStore` — pluggable distributed counter store interface for rate limiting (Redis, PostgreSQL, etc.), with `MemoryRateLimitStore` as default
+- Add `SharkRateLimiterMiddleware` — fixed-window rate limiting middleware backed by `IDistributedRateLimitStore`, configured via `SharkOption.ConfigureRateLimiting()`
+- Add `SharkRateLimiterOptions` — per-endpoint or global rate limit configuration
+- Add `IdempotencyStoreFactory` and `RateLimitStoreFactory` to `SharkOption` — factory delegates for plugging in custom stores inside the `AddShark()` callback
+
 ### refactor
 
+- `IIdempotencyStore` registration inside `AddCommon()` now uses `TryAddSingleton` — NuGet plugin packages can register a custom store before `AddShark()` and it will take precedence
 - Deprecate `[SharkEndpoint]` / `[SharkMethod]` / `SharkHttpMethod` and related reflection infrastructure (`IDependencyReflectorFactory`, `DependencyReflectorFactory`, `Reflector`, `ReflectorExtension`) — all marked `[Obsolete]` with guidance to migrate to `ISharkEndpoint`
 
 ## [0.3.2] — 2026-06-27

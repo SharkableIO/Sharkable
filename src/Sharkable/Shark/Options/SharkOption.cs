@@ -60,8 +60,26 @@ public sealed class SharkOption : ISharkOption
     /// <summary>
     /// Configures rate limiting policies. Calls <c>services.AddRateLimiter()</c> when set.
     /// Apply to endpoints via <c>.SharkRequireRateLimiting("policyName")</c>.
+    /// For distributed rate limiting backed by Redis/PostgreSQL, use
+    /// <see cref="ConfigureRateLimiting"/> instead.
     /// </summary>
     public Action<RateLimiterOptions>? RateLimiterConfigure { get; set; }
+    /// <summary>
+    /// Overrides the default <see cref="IIdempotencyStore"/> registration.
+    /// When set, the factory is invoked with <see cref="IServiceProvider"/> to
+    /// create the store instance. Use this to plug in a Redis or database-backed
+    /// store. If <c>null</c>, <see cref="MemoryIdempotencyStore"/> is used as
+    /// the default unless a custom implementation was already registered.
+    /// </summary>
+    public Func<IServiceProvider, IIdempotencyStore>? IdempotencyStoreFactory { get; set; }
+    /// <summary>
+    /// Overrides the default <see cref="IDistributedRateLimitStore"/> registration.
+    /// When set, the factory is invoked with <see cref="IServiceProvider"/> to
+    /// create the store instance. Use this to plug in a Redis or database-backed
+    /// store. If <c>null</c>, <see cref="MemoryRateLimitStore"/> is used as
+    /// the default unless a custom implementation was already registered.
+    /// </summary>
+    public Func<IServiceProvider, IDistributedRateLimitStore>? RateLimitStoreFactory { get; set; }
     /// <summary>
     /// Configures output caching policies. Calls <c>services.AddOutputCache()</c> when set.
     /// Apply to endpoints via <c>.SharkCacheOutput("policyName")</c>.
@@ -134,11 +152,29 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     internal SharkIdempotencyOptions? IdempotencyOptions { get; set; }
     /// <summary>
+    /// Stores the distributed rate limiter options provided via
+    /// <see cref="ConfigureRateLimiting"/>.
+    /// </summary>
+    internal SharkRateLimiterOptions? RateLimitingOptions { get; set; }
+    /// <summary>
     /// Configures AutoCrud (SqlSugar) options.
     /// </summary>
     public void ConfigureAutoCrud(Action<SqlSugarOptions>? options)
     {
         SqlSugarOptionsConfigure = options;
+    }
+    /// <summary>
+    /// Configures the distributed rate limiter middleware. When set, a
+    /// fixed-window rate limiter backed by <see cref="IDistributedRateLimitStore"/>
+    /// is wired into the pipeline. Uses <see cref="MemoryRateLimitStore"/> by
+    /// default; swap to Redis via <see cref="RateLimitStoreFactory"/>.
+    /// </summary>
+    /// <param name="configure">Callback to mutate the options instance.</param>
+    public void ConfigureRateLimiting(Action<SharkRateLimiterOptions> configure)
+    {
+        var opt = new SharkRateLimiterOptions();
+        configure(opt);
+        RateLimitingOptions = opt;
     }
     /// <summary>
     /// Configures the idempotency middleware. Called only when

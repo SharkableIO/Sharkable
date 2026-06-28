@@ -87,6 +87,8 @@ public static class SharkableExtension
         // rate limiter
         if (Shark.SharkOption.RateLimiterConfigure != null)
             app.UseRateLimiter();
+        if (Shark.SharkOption.RateLimitingOptions != null)
+            app.UseMiddleware<SharkRateLimiterMiddleware>();
         // output cache
         if (Shark.SharkOption.OutputCacheConfigure != null)
             app.UseOutputCache();
