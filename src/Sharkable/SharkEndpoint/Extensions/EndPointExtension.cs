@@ -111,6 +111,9 @@ internal static class SharkEndPointExtension
             if (Shark.SharkOption.ApiKeys?.Length > 0)
                 group.AddEndpointFilter<ApiKeyFilter>();
 
+            if (Shark.SharkOption.AuthorizationInterceptorFactory != null)
+                group.AddEndpointFilter<AuthorizationInterceptorFilter>();
+
             // Resolve tags + class-level metadata from all endpoint types in this group
             var tags = ResolveGroupTags(endpoints, groupName);
             var summary = ResolveGroupSummary(endpoints);

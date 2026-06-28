@@ -75,6 +75,11 @@ All notable changes to Sharkable are documented here.
 
 ## [Unreleased]
 
+### feat
+
+- Add `IAuthorizationInterceptor` — pluggable authorization hook (claim-based RBAC, tenant-scoped access, custom API-key logic) via endpoint filter
+- Fix JWT events chaining — user `OnTokenValidated` / custom handlers now chain with Sharkable's default `OnChallenge` / `OnForbidden` instead of being overwritten
+
 ## [0.4.1] — 2026-06-28
 
 ### feat

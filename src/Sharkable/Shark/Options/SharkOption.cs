@@ -283,4 +283,11 @@ public sealed class SharkOption : ISharkOption
     /// no-op (keys returned unchanged).
     /// </summary>
     public Func<IServiceProvider, IErrorLocalizer>? ErrorLocalizerFactory { get; set; }
+    /// <summary>
+    /// Pluggable authorization interceptor. Runs before every endpoint.
+    /// Return <c>null</c> to allow; return a non-null <see cref="IResult"/>
+    /// to reject. Use for claim-based RBAC, tenant-scoped access, or custom
+    /// API-key validation logic.
+    /// </summary>
+    public Func<IServiceProvider, IAuthorizationInterceptor>? AuthorizationInterceptorFactory { get; set; }
 }

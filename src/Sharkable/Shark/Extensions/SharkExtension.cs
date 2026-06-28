@@ -94,27 +94,42 @@ public static class SharkExtension
                     };
                     if (Shark.SharkOption.JwtAudiences?.Length > 0)
                         opt.TokenValidationParameters.ValidAudiences = Shark.SharkOption.JwtAudiences;
-                    opt.Events = new JwtBearerEvents
+
+                    // Let user configure first (OnTokenValidated, custom claims, etc.)
+                    Shark.SharkOption.JwtConfigure?.Invoke(opt);
+
+                    // Save user's handlers so we can chain with Sharkable defaults
+                    var userOnChallenge = opt.Events.OnChallenge;
+                    var userOnForbidden = opt.Events.OnForbidden;
+
+                    opt.Events.OnChallenge = async ctx =>
                     {
-                        OnChallenge = ctx =>
+                        if (userOnChallenge != null)
+                            await userOnChallenge(ctx);
+                        if (!ctx.Response.HasStarted)
                         {
                             ctx.HandleResponse();
                             var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
                             var result = factory.Create(null, "Authentication failed", 401);
                             ctx.Response.StatusCode = 401;
                             ctx.Response.ContentType = "application/json";
-                            return ctx.Response.WriteAsJsonAsync(result, result.GetType());
-                        },
-                        OnForbidden = ctx =>
+                            await ctx.Response.WriteAsJsonAsync(result, result.GetType());
+                        }
+                    };
+
+                    opt.Events.OnForbidden = async ctx =>
+                    {
+                        if (userOnForbidden != null)
+                            await userOnForbidden(ctx);
+                        if (!ctx.Response.HasStarted)
                         {
                             var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
                             var result = factory.Create(null, "Forbidden", 403);
                             ctx.Response.StatusCode = 403;
                             ctx.Response.ContentType = "application/json";
-                            return ctx.Response.WriteAsJsonAsync(result, result.GetType());
-                        },
+                            await ctx.Response.WriteAsJsonAsync(result, result.GetType());
+                        }
                     };
-                    Shark.SharkOption.JwtConfigure?.Invoke(opt);
                 });
         }
         //register redacting log formatter
@@ -159,6 +174,11 @@ public static class SharkExtension
         else
         {
             services.TryAddSingleton<IErrorLocalizer, DefaultErrorLocalizer>();
+        }
+        //register authorization interceptor
+        if (Shark.SharkOption.AuthorizationInterceptorFactory != null)
+        {
+            services.AddSingleton(Shark.SharkOption.AuthorizationInterceptorFactory);
         }
 
         //validate configuration
