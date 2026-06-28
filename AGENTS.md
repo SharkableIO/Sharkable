@@ -155,4 +155,50 @@ When told to bump version and publish a new release, execute the following steps
 8. **Push the commit** — `git push`.
 9. **Publish to NuGet** — `dotnet pack src/Sharkable/Sharkable.csproj -c Release && dotnet nuget push src/Sharkable/bin/Release/Sharkable.x.y.z.nupkg --api-key <key> --source https://api.nuget.org/v3/index.json`.
    - The NuGet API key is assumed to be available in the environment. If not, ask the user.
-10. **Update docs site repo** — after bumping version, ensure docs site (`~/dev/sharkableio.github.io/`) has all pending changes committed and pushed (at minimum the QuickStart version update, plus any new docs for the release).
+ 10. **Update docs site repo** — after bumping version, ensure docs site (`~/dev/sharkableio.github.io/`) has all pending changes committed and pushed (at minimum the QuickStart version update, plus any new docs for the release).
+
+## Documentation checklist (apply after EVERY feature or version change)
+
+### QuickStart — 6 files, 2 version strings each
+
+After ANY version bump, verify BOTH the `dotnet add package` line AND the `<PackageReference>` line are correct in these locations:
+
+| File | Expected version | Frozen? |
+|------|-----------------|---------|
+| `docs/quickstart.md` | latest (e.g. 0.4.1) | No |
+| `i18n/zh-cn/.../current/quickstart.md` | latest (e.g. 0.4.1) | No |
+| `versioned_docs/version-0.4.x/quickstart.md` | 0.4.0 | **Yes — never change** |
+| `i18n/zh-cn/.../version-0.4.x/quickstart.md` | 0.4.0 | **Yes — never change** |
+| `versioned_docs/version-0.3.x/quickstart.md` | 0.3.2 | **Yes — never change** |
+| `i18n/zh-cn/.../version-0.3.x/quickstart.md` | 0.3.2 | **Yes — never change** |
+
+**Check command:** `grep -r "add package\|PackageReference" ~/dev/sharkableio.github.io/docs ~/dev/sharkableio.github.io/versioned_docs ~/dev/sharkableio.github.io/i18n`
+
+### Sidebar translations — 3 JSON files
+
+Every time `sidebars.js` adds or renames a category, the ZH label MUST be added to ALL three:
+- `i18n/zh-cn/.../current.json`
+- `i18n/zh-cn/.../version-0.4.x.json`
+- `i18n/zh-cn/.../version-0.3.x.json` (only if applicable to that version)
+
+**Check command:** Compare `grep "label:" sidebars.js` categories against `jq 'keys'` of each JSON file.
+
+### Version labels — cut-time fix
+
+After `npm run docusaurus docs:version <label>`, Docusaurus defaults the ZH version label to `"Next"`. Immediately fix:
+- `i18n/zh-cn/.../version-<label>.json` → `"version.label": { "message": "<label>" }`
+
+### CHANGELOG — every feature
+
+- Update `CHANGELOG.md` in the **same commit** as the feature implementation
+- `Unreleased` section for ongoing work; move to dated version section at release time
+
+### Deprecation warnings in docs
+
+When an API is marked `[Obsolete]`, the corresponding doc page MUST include a prominent deprecation warning with the version of deprecation and the target removal version. Example:
+
+> **Deprecated since v0.4.0. Will be removed in v0.5.0.** Migrate to `ISharkEndpoint` immediately.
+
+### NuGet publish restriction
+
+**NEVER run `dotnet nuget push` without explicit user permission.** This applies to ALL packages: Sharkable, Sharkable.Cache.Redis, Sharkable.AutoCrud.SqlSugar, and any future plugin packages.
