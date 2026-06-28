@@ -9,12 +9,18 @@ internal sealed class AuditTrailMiddleware
     private readonly RequestDelegate _next;
     private readonly ILogger<AuditTrailMiddleware> _logger;
     private readonly AuditTrailOptions _options;
+    private readonly AuditLogBuffer? _buffer;
 
     public AuditTrailMiddleware(RequestDelegate next, ILogger<AuditTrailMiddleware> logger)
     {
         _next = next;
         _logger = logger;
         _options = Shark.SharkOption.AuditTrailOptions!;
+        _buffer = _options.AsyncWrite
+            ? new AuditLogBuffer(_options, _logger)
+            : null;
+        if (_buffer != null)
+            InternalShark.AuditLogBuffer = _buffer;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -38,7 +44,25 @@ internal sealed class AuditTrailMiddleware
         finally
         {
             stopwatch.Stop();
-            LogRequest(context, path, correlationId, stopwatch.ElapsedMilliseconds);
+            var statusCode = context.Response.StatusCode;
+            var query = _options.IncludeQueryString
+                ? RedactQueryString(context.Request.QueryString.Value)
+                : null;
+
+            if (_buffer != null)
+            {
+                _buffer.Write(new AuditLogEntry(
+                    context.Request.Method,
+                    path,
+                    query,
+                    statusCode,
+                    stopwatch.ElapsedMilliseconds,
+                    correlationId));
+            }
+            else
+            {
+                LogRequest(context.Request.Method, path, query, statusCode, stopwatch.ElapsedMilliseconds, correlationId);
+            }
         }
     }
 
@@ -74,9 +98,8 @@ internal sealed class AuditTrailMiddleware
         });
     }
 
-    private void LogRequest(HttpContext context, string path, string correlationId, long elapsedMs)
+    private void LogRequest(string method, string path, string? query, int statusCode, long elapsedMs, string correlationId)
     {
-        var statusCode = context.Response.StatusCode;
         var logLevel = statusCode >= 500 ? _options.ErrorLogLevel
                      : statusCode >= 400 ? _options.WarningLogLevel
                      : _options.SuccessLogLevel;
@@ -84,38 +107,14 @@ internal sealed class AuditTrailMiddleware
         if (!_logger.IsEnabled(logLevel))
             return;
 
-        var query = _options.IncludeQueryString
-            ? RedactQueryString(context.Request.QueryString.Value)
-            : null;
-
-        var headerLog = _options.RedactHeaders.Length > 0
-            ? BuildHeaderLog(context)
-            : null;
-
         _logger.Log(logLevel,
             "HTTP {Method} {Path}{Query} responded {StatusCode} in {ElapsedMs}ms [CorrelationId: {CorrelationId}]",
-            context.Request.Method,
+            method,
             path,
             query,
             statusCode,
             elapsedMs,
             correlationId);
-    }
-
-    private string? BuildHeaderLog(HttpContext context)
-    {
-        var sb = new StringBuilder();
-        var redacted = new HashSet<string>(_options.RedactHeaders, StringComparer.OrdinalIgnoreCase);
-
-        foreach (var header in context.Request.Headers)
-        {
-            if (redacted.Contains(header.Key))
-                sb.Append($"{header.Key}=[REDACTED] ");
-            else
-                sb.Append($"{header.Key}={header.Value} ");
-        }
-
-        return sb.Length > 0 ? sb.ToString(0, sb.Length - 1) : null;
     }
 
     private string? RedactQueryString(string? queryString)

@@ -16,6 +16,9 @@ internal sealed class InternalShark
     public static IHostEnvironment HostEnvironment { get; internal set; } = null!;
     public static IServiceScopeFactory ServiceScopeFactory { get; internal set; } = null!;
     public static bool AotMode { get; internal set; } = false;
+    internal static bool IsShuttingDown;
+    internal static int ActiveRequests;
+    internal static AuditLogBuffer? AuditLogBuffer;
     internal static void ConfigureShark(IWebHostBuilder builder, Assembly[]? assemblies, IHostBuilder? hostBuilder = default)
     {
         if(hostBuilder == null || hostBuilder == default)

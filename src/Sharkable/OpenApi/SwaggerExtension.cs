@@ -19,19 +19,25 @@ internal static class OpenApiExtension
                     {
                         foreach (var pathItem in document.Paths.Values)
                         {
+                            if (pathItem?.Operations == null)
+                                continue;
                             foreach (var operation in pathItem.Operations.Values)
                             {
+                                if (operation?.Responses == null)
+                                    continue;
                                 foreach (var response in operation.Responses.Values)
                                 {
+                                    if (response?.Content == null)
+                                        continue;
                                     if (response.Content.TryGetValue("application/json", out var mediaType)
                                         && mediaType.Schema is OpenApiSchema original
                                         && original.Properties?.ContainsKey("data") != true)
-                                {
-                                    var wrapSchema = Shark.SharkOption.WrapSchemaFactory;
-                                    mediaType.Schema = wrapSchema != null
-                                        ? wrapSchema(original)
-                                        : DefaultUnifiedResultSchema(original);
-                                }
+                                    {
+                                        var wrapSchema = Shark.SharkOption.WrapSchemaFactory;
+                                        mediaType.Schema = wrapSchema != null
+                                            ? wrapSchema(original)
+                                            : DefaultUnifiedResultSchema(original);
+                                    }
                                 }
                             }
                         }

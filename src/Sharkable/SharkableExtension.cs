@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Hosting;
+using System.Threading;
 
 namespace  Microsoft.Extensions.DependencyInjection;
 
@@ -49,6 +50,35 @@ public static class SharkableExtension
     public static void UseShark(this WebApplication app, Action<UseSharkOptions>? setupOption = null)
     {
         app.UseCommon(setupOption);
+
+        // graceful shutdown — must be early in pipeline to reject new requests
+        var gsOptions = Shark.SharkOption.GracefulShutdownOptions;
+        var auditOptions = Shark.SharkOption.AuditTrailOptions;
+        if (gsOptions != null || auditOptions?.EnsureFlushOnShutdown == true)
+        {
+            var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+
+            lifetime.ApplicationStopping.Register(() =>
+            {
+                if (gsOptions != null)
+                {
+                    Volatile.Write(ref InternalShark.IsShuttingDown, true);
+
+                    var drainCts = new CancellationTokenSource(gsOptions.DrainTimeout);
+                    while (!drainCts.IsCancellationRequested)
+                    {
+                        if (Volatile.Read(ref InternalShark.ActiveRequests) == 0)
+                            break;
+                        Thread.Sleep(100);
+                    }
+                }
+
+                InternalShark.AuditLogBuffer?.FlushRemaining();
+            });
+
+            if (gsOptions != null)
+                app.UseMiddleware<GracefulShutdownMiddleware>();
+        }
 
         // multi-tenant
         if (Shark.SharkOption.TenantOptions?.ResolveTenant != null)

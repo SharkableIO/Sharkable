@@ -100,6 +100,13 @@ public static class SharkExtension
         {
             services.AddScoped<ITenant, Tenant>();
         }
+
+        //validate configuration
+        var configErrors = ConfigurationValidator.Validate();
+        if (configErrors.Count > 0)
+        {
+            throw new SharkConfigurationException(configErrors);
+        }
     }
     /// <summary>
     /// common webapplication extensions for sharkable

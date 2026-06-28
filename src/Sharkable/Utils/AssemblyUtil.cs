@@ -8,16 +8,17 @@ public partial class Utils
         if (assembly.Length > 0)
             return assembly;
 
-        var lst = new List<Assembly?>();
+        var lst = new List<Assembly>();
 
         var entry = Assembly.GetEntryAssembly();
-        lst.AddNonNull(entry);
+        if (entry != null)
+            lst.Add(entry);
 
         var refAssemblies = entry?.GetReferencedAssemblies();
 
         refAssemblies.MyForEach(refAssemblie =>
         {
-            lst.AddNonNull(Assembly.Load(refAssemblie));
+            lst.Add(Assembly.Load(refAssemblie));
         });
         return [.. lst];
     }

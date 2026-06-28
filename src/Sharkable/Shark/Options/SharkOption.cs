@@ -181,4 +181,19 @@ public sealed class SharkOption : ISharkOption
         TenantOptions = opt;
     }
     internal TenantOptions? TenantOptions { get; set; }
+    /// <summary>
+    /// Configures graceful shutdown behavior. When set, the application will:
+    /// <list type="bullet">
+    ///   <item>Mark <c>/healthz</c> as unhealthy on SIGTERM (load balancer traffic drain)</item>
+    ///   <item>Reject new requests with 503 during shutdown</item>
+    ///   <item>Wait for in-flight requests to complete up to <see cref="GracefulShutdownOptions.DrainTimeout"/></item>
+    /// </list>
+    /// </summary>
+    public void ConfigureGracefulShutdown(Action<GracefulShutdownOptions> configure)
+    {
+        var opt = new GracefulShutdownOptions();
+        configure(opt);
+        GracefulShutdownOptions = opt;
+    }
+    internal GracefulShutdownOptions? GracefulShutdownOptions { get; set; }
 }

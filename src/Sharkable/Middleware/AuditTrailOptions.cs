@@ -56,4 +56,29 @@ public sealed class AuditTrailOptions
     /// otherwise generates a new UUID. Response header is always set.
     /// </summary>
     public bool ForwardCorrelationId { get; set; } = true;
+
+    /// <summary>
+    /// Maximum log entries to buffer before flushing. Default is <c>1</c> (flush immediately).
+    /// Set higher (e.g. 50–100) to batch writes when <see cref="AsyncWrite"/> is <c>true</c>.
+    /// </summary>
+    public int BatchSize { get; set; } = 1;
+
+    /// <summary>
+    /// Maximum interval between flushes when <see cref="AsyncWrite"/> is <c>true</c>.
+    /// Only applies when <see cref="BatchSize"/> &gt; 1 and entries haven't reached the batch threshold.
+    /// Default is 5 seconds.
+    /// </summary>
+    public TimeSpan FlushInterval { get; set; } = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// When <c>true</c>, log entries are written on a background thread without blocking the request.
+    /// Default is <c>false</c> (synchronous, matching prior behavior).
+    /// </summary>
+    public bool AsyncWrite { get; set; }
+
+    /// <summary>
+    /// When <c>true</c>, remaining buffered log entries are flushed during graceful shutdown.
+    /// Default is <c>true</c>.
+    /// </summary>
+    public bool EnsureFlushOnShutdown { get; set; } = true;
 }

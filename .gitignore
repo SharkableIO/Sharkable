@@ -508,3 +508,6 @@ dist
 .yarn/install-state.gz
 .pnp.*
 dist/
+
+# Local project notes, scratch files, and personal analysis
+local/
