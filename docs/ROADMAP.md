@@ -25,11 +25,11 @@
 
 ## Phase 2 — Observability
 
-| # | Feature | Value | Intrusion |
-|---|---------|-------|-----------|
-| 5 | **Built-in distributed tracing** — ActivitySource + W3C `traceparent` propagation, auto `X-Trace-Id` header | Observability | Zero — `ActivitySource` |
-| 6 | **Extensible health checks** — auto-register DB connectivity (SqlSugar), JWT config validity, custom checks | Operations | Config only |
-| 7 | **Lightweight profiler panel** — per-request latency, memory delta, slow-request TOP10, dev-only endpoint | Debugging | Config only |
+| # | Feature | Value | Intrusion | Status |
+|---|---------|-------|-----------|--------|
+| 5 | **Built-in distributed tracing** — ActivitySource + W3C `traceparent` propagation, `ITracingExporter` for OpenTelemetry plugins, auto `X-Trace-Id` header | Observability | Zero — `ActivitySource` | ✅ |
+| 6 | **Extensible health checks** — auto-register DB connectivity (SqlSugar), JWT config validity, custom checks | Operations | Config only | |
+| 7 | **Lightweight profiler panel** — per-request latency, memory delta, slow-request TOP10, `/_sharkable/profiler` | Debugging | Config only | ✅ |
 
 ## Phase 3 — Distributed / cluster support
 
