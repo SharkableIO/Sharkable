@@ -2,20 +2,26 @@
 
 > **Core principle**: features auto-discover via conventions or activate via config. Users never change their `ISharkEndpoint` coding pattern, never implement new interfaces, and never call framework APIs in business code.
 
-## v0.4.0
+## v0.4.0 — 2026-06-28 ✅
 
-- Remove `[SharkEndpoint]` / `[SharkMethod]` / `SharkHttpMethod` and related reflection infrastructure (`IDependencyReflectorFactory`, `DependencyReflectorFactory`, `Reflector`, `ReflectorExtension`) — migrate to `ISharkEndpoint`
+- [x] Deprecate `[SharkEndpoint]` / `[SharkMethod]` / `SharkHttpMethod` and related reflection infrastructure (`IDependencyReflectorFactory`, `DependencyReflectorFactory`, `Reflector`, `ReflectorExtension`) — migrate to `ISharkEndpoint`
+- [x] **Startup configuration self-check** — `ConfigurationValidator` validates JWT, multi-tenant configs at `AddShark()` time
+- [x] **Graceful shutdown** — K8s-friendly SIGTERM handling: health check → 503, drain requests, then shutdown
+- [x] **Audit trail batch/async write** — Channel-based buffer + background flush (`AsyncWrite`, `BatchSize`, `FlushInterval`)
+- [x] **Idempotency distributed store** — `IIdempotencyStore` swappable via `TryAddSingleton` or `IdempotencyStoreFactory`
+- [x] **Rate limiting distributed store** — `IDistributedRateLimitStore` + `SharkRateLimiterMiddleware`, `MemoryRateLimitStore` default, `RateLimitStoreFactory`
+- [x] **Sharkable.Cache.Redis NuGet plugin** — Redis-backed `IIdempotencyStore` + `IDistributedRateLimitStore`, `AddSharkableRedis()`
 
 ---
 
 ## Phase 1 — Existing feature hardening (zero-intrusion)
 
-| # | Feature | Value | Intrusion |
-|---|---------|-------|-----------|
-| 1 | **Startup configuration self-check** — validate JWT, rate limiting, multi-tenant configs at `AddShark()` time with clear error messages | Prevent misconfiguration | Zero — auto-runs |
-| 2 | **Graceful shutdown** — K8s-friendly SIGTERM handling: health check → 503, drain requests, then shutdown | Production necessity | Zero — K8s-native |
-| 3 | **Audit trail batch/async write** — buffer + background flush instead of sync writes | Performance | Zero — internal mechanism only |
-| 4 | **Compile-time route conflict detection** — Roslyn Analyzer that catches `GET /api/orders/{id}` registered twice before runtime | Quality assurance | Zero — ships with NuGet |
+| # | Feature | Value | Intrusion | Status |
+|---|---------|-------|-----------|--------|
+| 1 | **Startup configuration self-check** — validate JWT, rate limiting, multi-tenant configs at `AddShark()` time with clear error messages | Prevent misconfiguration | Zero — auto-runs | ✅ v0.4.0 |
+| 2 | **Graceful shutdown** — K8s-friendly SIGTERM handling: health check → 503, drain requests, then shutdown | Production necessity | Zero — K8s-native | ✅ v0.4.0 |
+| 3 | **Audit trail batch/async write** — buffer + background flush instead of sync writes | Performance | Zero — internal mechanism only | ✅ v0.4.0 |
+| 4 | **Compile-time route conflict detection** — Roslyn Analyzer that catches `GET /api/orders/{id}` registered twice before runtime | Quality assurance | Zero — ships with NuGet | |
 
 ## Phase 2 — Observability
 
@@ -27,12 +33,12 @@
 
 ## Phase 3 — Distributed / cluster support
 
-| # | Feature | Value | Intrusion |
-|---|---------|-------|-----------|
-| 8 | **Idempotency distributed store interface** — extract `IIdempotencyStore`, keep `MemoryIdempotencyStore` default, users plug Redis/DB | Cluster HA | Config only |
-| 9 | **Multi-tenant data source isolation** — `ISqlSugarClient` auto-switches connection string per tenant via DI scope | SaaS | Config only |
-| 10 | **Rate limiting distributed store interface** — extract `IRateLimitStore`, same pattern as idempotency | Cluster HA | Config only |
-| 11 | **Adaptive rate limiting** — dynamically adjust permit limit based on CPU/GC metrics | Robustness | Config only |
+| # | Feature | Value | Intrusion | Status |
+|---|---------|-------|-----------|--------|
+| 8 | **Idempotency distributed store interface** — `IIdempotencyStore` + `TryAddSingleton`, `MemoryIdempotencyStore` default, users plug Redis/DB | Cluster HA | Config only | ✅ v0.4.0 |
+| 9 | **Multi-tenant data source isolation** — `ISqlSugarClient` auto-switches connection string per tenant via DI scope | SaaS | Config only | |
+| 10 | **Rate limiting distributed store interface** — `IDistributedRateLimitStore` + `MemoryRateLimitStore` default, `SharkRateLimiterMiddleware`, `Sharkable.Cache.Redis` plugin | Cluster HA | Config only | ✅ v0.4.0 |
+| 11 | **Adaptive rate limiting** — dynamically adjust permit limit based on CPU/GC metrics | Robustness | Config only | |
 
 ## Phase 4 — Developer experience & polish
 
