@@ -82,6 +82,9 @@ All notable changes to Sharkable are documented here.
 - Add built-in profiler (`ProfilerMiddleware` + `/_sharkable/profiler`) — request counts, average latency, top-N slowest recent requests, memory delta tracking
 - Add extensible health checks — structured JSON `/healthz` via ASP.NET Core `HealthCheckService`, `HealthChecksConfigure` callback for custom checks, auto JWT authority reachability check, uptime + version in response
 - Add multi-tenant data source isolation — `ITenantDataSource` scoped service, `TenantOptions.ConfigureDataSource()` for per-tenant connection string routing
+- Add adaptive rate limiting — `SharkRateLimiterOptions.EnableAdaptive`, dynamic CPU/GC-based permit adjustment via `AdaptiveLimitMonitor`
+- Add automatic ETag generation (304 Not Modified) — `SharkOption.EnableETag`, SHA256 content hashing, `ETagMiddleware`
+- Add error message localization — `IErrorLocalizer` interface + `ErrorLocalizerFactory`, `Accept-Language`-aware translation for middleware errors
 
 ## [0.4.0] — 2026-06-28
 

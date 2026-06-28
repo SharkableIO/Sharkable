@@ -120,6 +120,10 @@ public static class SharkableExtension
         if (Shark.SharkOption.EnableIdempotency)
             app.UseMiddleware<SharkIdempotencyMiddleware>();
 
+        // ETag / 304 conditional responses
+        if (Shark.SharkOption.EnableETag)
+            app.UseMiddleware<ETagMiddleware>();
+
         // profiler — wraps endpoints to record latency/memory
         if (Shark.SharkOption.ProfilerOptions != null)
         {

@@ -146,6 +146,20 @@ public static class SharkExtension
         {
             services.AddSingleton(Shark.SharkOption.ProfilerOptions);
         }
+        //register ETag
+        if (Shark.SharkOption.EnableETag)
+        {
+            services.AddSingleton(Shark.SharkOption.ETagOptions ?? new ETagOptions());
+        }
+        //register error localizer
+        if (Shark.SharkOption.ErrorLocalizerFactory != null)
+        {
+            services.AddSingleton(Shark.SharkOption.ErrorLocalizerFactory);
+        }
+        else
+        {
+            services.TryAddSingleton<IErrorLocalizer, DefaultErrorLocalizer>();
+        }
 
         //validate configuration
         var configErrors = ConfigurationValidator.Validate();

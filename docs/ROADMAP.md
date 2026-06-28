@@ -38,16 +38,16 @@
 | 8 | **Idempotency distributed store interface** — `IIdempotencyStore` + `TryAddSingleton`, `MemoryIdempotencyStore` default, users plug Redis/DB | Cluster HA | Config only | ✅ v0.4.0 |
 | 9 | **Multi-tenant data source isolation** — `ITenantDataSource` scoped service, `TenantOptions.ConfigureDataSource()`, per-tenant connection string routing via DI scope | SaaS | Config only | ✅ |
 | 10 | **Rate limiting distributed store interface** — `IDistributedRateLimitStore` + `MemoryRateLimitStore` default, `SharkRateLimiterMiddleware`, `Sharkable.Cache.Redis` plugin | Cluster HA | Config only | ✅ v0.4.0 |
-| 11 | **Adaptive rate limiting** — dynamically adjust permit limit based on CPU/GC metrics | Robustness | Config only | |
+| 11 | **Adaptive rate limiting** — `EnableAdaptive`, dynamically adjust permit limit based on CPU/GC metrics | Robustness | Config only | ✅ |
 
 ## Phase 4 — Developer experience & polish
 
 | # | Feature | Value | Intrusion |
 |---|---------|-------|-----------|
-| 12 | **Auto ETag / conditional requests** — SHA256 content hashing, `304 Not Modified` for GET endpoints | Cache optimization | Zero — auto |
-| 13 | **Response compression** — auto-enable for GET endpoints, skip already-compressed content | Performance | Config only |
-| 14 | **OpenAPI example generation** — infer realistic examples from type names + XML docs | DX | Zero — auto |
-| 15 | **Error message localization** — `Accept-Language` driven `UnifiedResult` error messages via resource files | i18n | Config only |
+| 12 | **Auto ETag / conditional requests** — SHA256 content hashing, `304 Not Modified` for GET endpoints | Cache optimization | Zero — auto | ✅ |
+| 13 | **Response compression** — auto-enable for GET endpoints, skip already-compressed content | Performance | Config only | |
+| 14 | **OpenAPI example generation** — infer realistic examples from type names + XML docs | DX | Zero — auto | |
+| 15 | **Error message localization** — `Accept-Language` driven `IErrorLocalizer`, `ErrorLocalizerFactory`, pluggable translator | i18n | Config only | ✅ |
 | 16 | **AutoCrud AOT zero rd.xml** — Source Generator emits rd.xml content at compile time, user never touches it | AOT experience | Zero — Source Generator |
 | 17 | **Soft-delete global filter** — entity implements `ISoftDeletable`, AutoCrud auto-filters `IsDeleted = false` | Data layer | Entity marker interface |
 | 18 | **BackgroundService enhancement** — auto health reporting, graceful stop, retry policy, execution tracing | Background jobs | Zero — auto |

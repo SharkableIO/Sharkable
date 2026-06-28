@@ -189,8 +189,6 @@ internal sealed class SharkIdempotencyMiddleware
         HttpContext context, int status, string code, string message)
     {
         var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
-        // Embed the machine-readable code at the start of the message so clients
-        // can route on the status code and still get a stable identifier.
         var errorMessage = $"[{code}] {message}";
         var result = factory.Create(data: null, errorMessage: errorMessage, statusCode: status);
         context.Response.StatusCode = status;

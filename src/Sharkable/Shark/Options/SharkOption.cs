@@ -264,4 +264,23 @@ public sealed class SharkOption : ISharkOption
         ProfilerOptions = opt;
     }
     internal ProfilerOptions? ProfilerOptions { get; set; }
+    /// <summary>
+    /// Enables automatic ETag generation and 304 Not Modified responses for
+    /// GET/HEAD requests. Excludes health check, OpenAPI, and profiler paths
+    /// by default.
+    /// Default is <c>false</c>.
+    /// </summary>
+    public bool EnableETag { get; set; } = false;
+    /// <summary>
+    /// Options for ETag middleware (excluded paths, etc.).
+    /// </summary>
+    public ETagOptions? ETagOptions { get; set; }
+    /// <summary>
+    /// Pluggable error message localizer. When set, error messages from
+    /// middleware (429, 503, etc.) are translated based on the
+    /// <c>Accept-Language</c> request header. Set a factory to provide
+    /// your implementation, or leave <c>null</c> for the default
+    /// no-op (keys returned unchanged).
+    /// </summary>
+    public Func<IServiceProvider, IErrorLocalizer>? ErrorLocalizerFactory { get; set; }
 }

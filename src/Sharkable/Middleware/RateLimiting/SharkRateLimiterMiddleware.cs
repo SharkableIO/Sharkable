@@ -10,6 +10,7 @@ internal sealed class SharkRateLimiterMiddleware
     private readonly RequestDelegate _next;
     private readonly IDistributedRateLimitStore _store;
     private readonly SharkRateLimiterOptions _options;
+    private readonly AdaptiveLimitMonitor? _adaptiveMonitor;
 
     public SharkRateLimiterMiddleware(
         RequestDelegate next,
@@ -19,6 +20,12 @@ internal sealed class SharkRateLimiterMiddleware
         _next = next;
         _store = store;
         _options = options;
+
+        if (options.EnableAdaptive)
+        {
+            _adaptiveMonitor = new AdaptiveLimitMonitor(options);
+            _adaptiveMonitor.Start();
+        }
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -26,25 +33,35 @@ internal sealed class SharkRateLimiterMiddleware
         var keyGenerator = _options.KeyGenerator ?? _options.DefaultKeyGenerator;
         var key = keyGenerator(context);
         var count = await _store.IncrementAsync(key, _options.DefaultWindow);
-        var remaining = _options.DefaultLimit - count;
+
+        var effectiveLimit = _adaptiveMonitor != null
+            ? _adaptiveMonitor.CurrentLimit
+            : _options.DefaultLimit;
+
+        var remaining = effectiveLimit - count;
 
         if (_options.IncludeHeaders)
         {
+            var limit = effectiveLimit;
             context.Response.OnStarting(() =>
             {
-                context.Response.Headers[$"{_options.HeaderPrefix}-Limit"] = _options.DefaultLimit.ToString();
+                context.Response.Headers[$"{_options.HeaderPrefix}-Limit"] = limit.ToString();
                 context.Response.Headers[$"{_options.HeaderPrefix}-Remaining"] = remaining > 0 ? remaining.ToString() : "0";
                 context.Response.Headers[$"{_options.HeaderPrefix}-Reset"] = ((long)_options.DefaultWindow.TotalSeconds).ToString();
                 return Task.CompletedTask;
             });
         }
 
-        if (count > _options.DefaultLimit)
+        if (count > effectiveLimit)
         {
             context.Response.StatusCode = 429;
             context.Response.ContentType = "application/json";
+            var localizer = ErrorLocalizerHelper.GetLocalizer();
+            var culture = ErrorLocalizerHelper.ResolveCulture(context);
             var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
-            var result = factory.Create(data: null, errorMessage: "Rate limit exceeded. Please retry later.", statusCode: 429);
+            var result = factory.Create(data: null,
+                errorMessage: localizer.Localize("RateLimitExceeded", culture),
+                statusCode: 429);
             await context.Response.WriteAsJsonAsync(result, result.GetType());
             return;
         }

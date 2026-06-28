@@ -18,7 +18,13 @@ internal sealed class GracefulShutdownMiddleware
         {
             context.Response.StatusCode = 503;
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsync($"{{\"statusCode\":503,\"errorMessage\":\"Server is shutting down\"}}");
+            var localizer = ErrorLocalizerHelper.GetLocalizer();
+            var culture = ErrorLocalizerHelper.ResolveCulture(context);
+            await context.Response.WriteAsJsonAsync(new
+            {
+                statusCode = 503,
+                errorMessage = localizer.Localize("ServerShuttingDown", culture),
+            });
             return;
         }
 
