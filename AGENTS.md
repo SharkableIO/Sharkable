@@ -149,7 +149,7 @@ When told to bump version and publish a new release, execute the following steps
 2. **Update `src/Sharkable/Sharkable.csproj`** — bump both `<AssemblyVersion>` and `<Version>` to the new version.
 3. **Update `src/Sharkable/Sharkable.nuspec`** — bump `<version>` to the new version.
 4. **Move `CHANGELOG.md` unreleased entries** to a new version section with today's date (e.g. `## [0.3.0] — 2026-06-27`).
-5. **Update docs site QuickStart** — replace the old NuGet version in the `dotnet add package` command in the **current** docs only (2 copies): `docs/quickstart.md` (EN) and `i18n/zh-cn/docusaurus-plugin-content-docs/current/quickstart.md` (ZH). Versioned docs (`versioned_docs/version-<label>/` and `i18n/zh-cn/.../version-<label>/`) are frozen release snapshots — **never change their version numbers**. When a new version is later cut via `npm run docusaurus docs:version`, the current docs (already carrying the new version) are snapshot automatically.
+5. **Update docs site QuickStart** — replace **both** the `dotnet add package` and `<PackageReference>` version numbers in the **current** docs only (2 copies): `docs/quickstart.md` (EN) and `i18n/zh-cn/docusaurus-plugin-content-docs/current/quickstart.md` (ZH). Versioned docs (`versioned_docs/version-<label>/` and `i18n/zh-cn/.../version-<label>/`) are frozen release snapshots — **never change their version numbers**. When a new version is later cut via `npm run docusaurus docs:version`, the current docs (already carrying the new version) are snapshot automatically.
 6. **Commit all changes** to the Sharkable repo with message `chore: bump version to x.y.z`.
 7. **Tag the release** — `git tag vx.y.z && git push origin vx.y.z`.
 8. **Push the commit** — `git push`.
