@@ -38,8 +38,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Sharkable.Analyzers\Sharkable.Analyzers.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="" />
     <None Include="sharkable.jpg" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="analyzers\dotnet\cs\Sharkable.Analyzers.dll" Pack="true" PackagePath="analyzers/dotnet/cs" />
   </ItemGroup>
 
 </Project>

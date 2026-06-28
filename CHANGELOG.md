@@ -75,6 +75,10 @@ All notable changes to Sharkable are documented here.
 
 ## [Unreleased]
 
+### feat
+
+- Add route conflict Roslyn Analyzer (`SHARK001`) — compile-time detection of duplicate `ISharkEndpoint` route registrations, ships with NuGet package automatically
+
 ## [0.4.0] — 2026-06-28
 
 ### feat
