@@ -159,29 +159,28 @@ When told to bump version and publish a new release, execute the following steps
 
 ## Documentation checklist (apply after EVERY feature or version change)
 
-### QuickStart — 6 files, 2 version strings each
+### QuickStart — 2 files always updated, versioned files NEVER touched
 
-After ANY version bump, verify BOTH the `dotnet add package` line AND the `<PackageReference>` line are correct in these locations:
+After ANY version bump, update BOTH version strings (`dotnet add package` line AND `<PackageReference>` line) in the **current** docs only:
 
-| File | Expected version | Frozen? |
-|------|-----------------|---------|
-| `docs/quickstart.md` | latest (e.g. 0.4.1) | No |
-| `i18n/zh-cn/.../current/quickstart.md` | latest (e.g. 0.4.1) | No |
-| `versioned_docs/version-0.4.x/quickstart.md` | 0.4.0 | **Yes — never change** |
-| `i18n/zh-cn/.../version-0.4.x/quickstart.md` | 0.4.0 | **Yes — never change** |
-| `versioned_docs/version-0.3.x/quickstart.md` | 0.3.2 | **Yes — never change** |
-| `i18n/zh-cn/.../version-0.3.x/quickstart.md` | 0.3.2 | **Yes — never change** |
+| File | Rule |
+|------|------|
+| `docs/quickstart.md` | Update to new version |
+| `i18n/zh-cn/.../current/quickstart.md` | Update to new version |
+
+**Never touch** any `versioned_docs/version-<label>/quickstart.md` or `i18n/zh-cn/.../version-<label>/quickstart.md` — they are frozen snapshots. Each versioned QuickStart keeps its own release version forever. When `npm run docusaurus docs:version <new-label>` is later run, the current docs (already carrying the new version) are snapshot automatically.
 
 **Check command:** `grep -r "add package\|PackageReference" ~/dev/sharkableio.github.io/docs ~/dev/sharkableio.github.io/versioned_docs ~/dev/sharkableio.github.io/i18n`
 
-### Sidebar translations — 3 JSON files
+### Sidebar translations — update ALL applicable JSON files
 
-Every time `sidebars.js` adds or renames a category, the ZH label MUST be added to ALL three:
+Every time `sidebars.js` adds or renames a category, the ZH label MUST be added to:
 - `i18n/zh-cn/.../current.json`
-- `i18n/zh-cn/.../version-0.4.x.json`
-- `i18n/zh-cn/.../version-0.3.x.json` (only if applicable to that version)
+- `i18n/zh-cn/.../version-<label>.json` **for every existing version**
 
-**Check command:** Compare `grep "label:" sidebars.js` categories against `jq 'keys'` of each JSON file.
+The rule: `ls i18n/zh-cn/docusaurus-plugin-content-docs/version-*.json` → update every one of them. A missing category translation in ANY version will cause the EN label to appear in the ZH sidebar for that version.
+
+**Check command:** Compare `grep "label:" sidebars.js` categories against `jq 'keys'` of each version JSON file.
 
 ### Version labels — cut-time fix
 
