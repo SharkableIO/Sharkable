@@ -75,8 +75,13 @@ All notable changes to Sharkable are documented here.
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-06-28
+
 ### feat
 
+- Add startup configuration self-check — `ConfigurationValidator` validates JWT, multi-tenant, and API key settings at startup, throwing `SharkConfigurationException` with all errors
+- Add graceful shutdown — `GracefulShutdownMiddleware` + `GracefulShutdownOptions`, health check returns 503 during drain, configurable `DrainTimeout`
+- Add audit trail async/batch write — `AuditLogBuffer` (Channel-based, configurable `BatchSize`/`FlushInterval`/`AsyncWrite`), `AuditTrailMiddleware` supports async fire-and-forget logging
 - Add `IDistributedRateLimitStore` — pluggable distributed counter store interface for rate limiting (Redis, PostgreSQL, etc.), with `MemoryRateLimitStore` as default
 - Add `SharkRateLimiterMiddleware` — fixed-window rate limiting middleware backed by `IDistributedRateLimitStore`, configured via `SharkOption.ConfigureRateLimiting()`
 - Add `SharkRateLimiterOptions` — per-endpoint or global rate limit configuration
@@ -86,6 +91,10 @@ All notable changes to Sharkable are documented here.
 
 - `IIdempotencyStore` registration inside `AddCommon()` now uses `TryAddSingleton` — NuGet plugin packages can register a custom store before `AddShark()` and it will take precedence
 - Deprecate `[SharkEndpoint]` / `[SharkMethod]` / `SharkHttpMethod` and related reflection infrastructure (`IDependencyReflectorFactory`, `DependencyReflectorFactory`, `Reflector`, `ReflectorExtension`) — all marked `[Obsolete]` with guidance to migrate to `ISharkEndpoint`
+
+### fix
+
+- Fix 5 pre-existing nullability warnings (`CS8766`, `CS8601`, `CS8602`) in `SharkResponseMetadata.cs`, `AssemblyUtil.cs`, `SwaggerExtension.cs`
 
 ## [0.3.2] — 2026-06-27
 
