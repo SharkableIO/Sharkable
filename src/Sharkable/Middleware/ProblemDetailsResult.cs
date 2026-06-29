@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 
 namespace Sharkable;
 
@@ -6,6 +7,7 @@ namespace Sharkable;
 /// Helper that writes either Sharkable's unified result or
 /// RFC 7807 ProblemDetails format, depending on
 /// <see cref="SharkOption.UseProblemDetails"/>.
+/// Uses a concrete type for AOT safety.
 /// </summary>
 internal static class ProblemDetailsResult
 {
@@ -14,15 +16,16 @@ internal static class ProblemDetailsResult
         if (Shark.SharkOption.UseProblemDetails)
         {
             ctx.Response.ContentType = "application/problem+json";
-            await ctx.Response.WriteAsJsonAsync(new
+            var problem = new ProblemDetailsData
             {
                 type = $"https://httpstatuses.com/{statusCode}",
                 title = GetTitle(statusCode),
                 status = statusCode,
-                detail,
+                detail = detail,
                 instance = ctx.Request.Path.Value ?? "/",
                 traceId = Activity.Current?.TraceId.ToString(),
-            });
+            };
+            await ctx.Response.WriteAsJsonAsync(problem);
         }
         else
         {
@@ -46,4 +49,18 @@ internal static class ProblemDetailsResult
         503 => "Service Unavailable",
         _ => "Error",
     };
+}
+
+/// <summary>
+/// RFC 7807 ProblemDetails response type. Used as a concrete
+/// type for AOT-safe JSON serialization.
+/// </summary>
+internal sealed class ProblemDetailsData
+{
+    public string type { get; set; } = "";
+    public string title { get; set; } = "";
+    public int status { get; set; }
+    public string detail { get; set; } = "";
+    public string instance { get; set; } = "";
+    public string? traceId { get; set; }
 }
