@@ -31,7 +31,7 @@ public abstract class SharkBackgroundService : BackgroundService, IHealthCheck
     /// <summary>
     /// Total successful executions since startup.
     /// </summary>
-    public long RunCount;
+    public long RunCount { get; private set; }
 
     /// <summary>
     /// Creates a new background service with the given interval and retry policy.
@@ -65,7 +65,7 @@ public abstract class SharkBackgroundService : BackgroundService, IHealthCheck
                     await OnExecuteAsync(stoppingToken);
                     success = true;
                     LastError = null;
-                    Interlocked.Increment(ref RunCount);
+                    RunCount++;
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
@@ -75,7 +75,10 @@ public abstract class SharkBackgroundService : BackgroundService, IHealthCheck
                 {
                     LastError = ex.Message;
                     if (attempt < _maxRetries)
-                        await Task.Delay(_retryDelay, stoppingToken);
+                    {
+                        try { await Task.Delay(_retryDelay, stoppingToken); }
+                        catch (OperationCanceledException) { break; }
+                    }
                 }
             }
 
