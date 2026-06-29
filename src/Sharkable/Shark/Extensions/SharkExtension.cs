@@ -184,6 +184,15 @@ public static class SharkExtension
             services.TryAddSingleton<ISagaStore, MemorySagaStore>();
         services.TryAddSingleton<SagaExecutor>();
 
+        //register cron job store + scheduler
+        if (Shark.SharkOption.CronJobStoreFactory != null)
+            services.AddSingleton<ICronJobStore>(sp => Shark.SharkOption.CronJobStoreFactory(sp));
+        else
+            services.TryAddSingleton<ICronJobStore, MemoryCronJobStore>();
+        services.TryAddSingleton<CronScheduler>();
+        services.TryAddSingleton<ICronScheduler>(sp => sp.GetRequiredService<CronScheduler>());
+        services.AddHostedService<SharkCronHostedService>();
+
         //validate configuration
         var configErrors = ConfigurationValidator.Validate();
         if (configErrors.Count > 0)

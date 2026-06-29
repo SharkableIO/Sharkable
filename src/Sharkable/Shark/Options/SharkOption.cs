@@ -310,4 +310,15 @@ public sealed class SharkOption : ISharkOption
     /// is used as the default unless a custom implementation was already registered.
     /// </summary>
     public Func<IServiceProvider, ISagaStore>? SagaStoreFactory { get; set; }
+    /// <summary>
+    /// Overrides the default <see cref="ICronJobStore"/> registration.
+    /// Same factory pattern as <see cref="SagaStoreFactory"/>.
+    /// </summary>
+    public Func<IServiceProvider, ICronJobStore>? CronJobStoreFactory { get; set; }
+    /// <summary>
+    /// Callback for registering cron jobs. Invoked during
+    /// <c>AddShark()</c> so that jobs can be registered before the
+    /// hosted service starts.
+    /// </summary>
+    public Action<ICronScheduler>? ConfigureCronJobs { get; set; }
 }

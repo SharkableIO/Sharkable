@@ -88,6 +88,7 @@ All notable changes to Sharkable are documented here.
 - Add soft delete — `ISoftDeletable` marker, AutoCrud auto-filters `IsDeleted = 0` on reads + soft-deletes on `CrudOperations.Delete`
 - Add `SharkBackgroundService` — enhanced `BackgroundService` with health reporting, retry policy, execution tracing
 - Add distributed transactions (SAGA) — `ISagaStep` + `ISagaStore` + `SagaExecutor` + `MemorySagaStore`, crash-recovery, distributed lock, `RedisSagaStore` in Cache.Redis
+- Add distributed cron job scheduler — 6-field cron expression parser, `ICronJobStore` with retry/timeout/concurrency control, admin endpoint `/_sharkable/jobs`, `RedisCronJobStore` in Cache.Redis
 
 ## [0.4.1] — 2026-06-28
 

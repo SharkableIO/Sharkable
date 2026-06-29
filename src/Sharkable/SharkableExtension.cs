@@ -135,6 +135,10 @@ public static class SharkableExtension
             app.MapProfilerEndpoint();
         }
 
+        // cron jobs admin endpoint
+        if (Shark.SharkOption.ConfigureCronJobs != null)
+            CronAdminEndpoint.Map(app);
+
         app.MapEndpoints();
     }
 }
