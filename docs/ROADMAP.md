@@ -45,12 +45,12 @@
 | # | Feature | Value | Intrusion |
 |---|---------|-------|-----------|
 | 12 | **Auto ETag / conditional requests** — SHA256 content hashing, `304 Not Modified` for GET endpoints | Cache optimization | Zero — auto | ✅ |
-| 13 | **Response compression** — auto-enable for GET endpoints, skip already-compressed content | Performance | Config only | |
+| 13 | **Response compression** — `EnableResponseCompression`, uses ASP.NET Core built-in middleware | Performance | Config only | ✅ |
 | 14 | **OpenAPI example generation** — infer realistic examples from type names + XML docs | DX | Zero — auto | |
 | 15 | **Error message localization** — `Accept-Language` driven `IErrorLocalizer`, `ErrorLocalizerFactory`, pluggable translator | i18n | Config only | ✅ |
-| 16 | **AutoCrud AOT zero rd.xml** — Source Generator emits rd.xml content at compile time, user never touches it | AOT experience | Zero — Source Generator |
-| 17 | **Soft-delete global filter** — entity implements `ISoftDeletable`, AutoCrud auto-filters `IsDeleted = false` | Data layer | Entity marker interface |
-| 18 | **BackgroundService enhancement** — auto health reporting, graceful stop, retry policy, execution tracing | Background jobs | Zero — auto |
+| 16 | **AutoCrud AOT zero rd.xml** — Source Generator emits `typeof(T)` references at compile time, user never touches it | AOT experience | Zero — Source Generator | ✅ |
+| 17 | **Soft-delete global filter** — entity implements `ISoftDeletable`, AutoCrud auto-filters `IsDeleted = false` + soft deletes | Data layer | Entity marker interface | ✅ |
+| 18 | **BackgroundService enhancement** — `SharkBackgroundService` with health reporting, retry policy, execution tracing | Background jobs | Zero — auto | ✅ |
 | 19 | **ProblemDetails (RFC 7807) compatibility** — `UseProblemDetails` flag, all error responses output standard format with type/title/status/detail/instance/traceId | Interop | Config only | ✅ |
 
 ## Excluded (high-intrusion)
