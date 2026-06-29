@@ -303,4 +303,11 @@ public sealed class SharkOption : ISharkOption
     /// MIME types (images, videos). Default is <c>false</c>.
     /// </summary>
     public bool EnableResponseCompression { get; set; } = false;
+    /// <summary>
+    /// Overrides the default <see cref="ISagaStore"/> registration.
+    /// When set, the factory is invoked with <see cref="IServiceProvider"/>
+    /// to create the store instance. If <c>null</c>, <see cref="MemorySagaStore"/>
+    /// is used as the default unless a custom implementation was already registered.
+    /// </summary>
+    public Func<IServiceProvider, ISagaStore>? SagaStoreFactory { get; set; }
 }

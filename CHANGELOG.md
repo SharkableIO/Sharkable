@@ -87,6 +87,7 @@ All notable changes to Sharkable are documented here.
 - Add response compression — `SharkOption.EnableResponseCompression`, uses ASP.NET Core built-in middleware
 - Add soft delete — `ISoftDeletable` marker, AutoCrud auto-filters `IsDeleted = 0` on reads + soft-deletes on `CrudOperations.Delete`
 - Add `SharkBackgroundService` — enhanced `BackgroundService` with health reporting, retry policy, execution tracing
+- Add distributed transactions (SAGA) — `ISagaStep` + `ISagaStore` + `SagaExecutor` + `MemorySagaStore`, crash-recovery, distributed lock, `RedisSagaStore` in Cache.Redis
 
 ## [0.4.1] — 2026-06-28
 

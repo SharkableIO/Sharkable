@@ -177,6 +177,12 @@ public static class SharkExtension
         {
             services.AddSingleton(Shark.SharkOption.AuthorizationInterceptorFactory);
         }
+        //register saga store
+        if (Shark.SharkOption.SagaStoreFactory != null)
+            services.AddSingleton(Shark.SharkOption.SagaStoreFactory);
+        else
+            services.TryAddSingleton<ISagaStore, MemorySagaStore>();
+        services.TryAddSingleton<SagaExecutor>();
 
         //validate configuration
         var configErrors = ConfigurationValidator.Validate();
