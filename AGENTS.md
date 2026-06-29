@@ -201,3 +201,5 @@ When an API is marked `[Obsolete]`, the corresponding doc page MUST include a pr
 ### NuGet publish restriction
 
 **NEVER run `dotnet nuget push` without explicit user permission.** This applies to ALL packages: Sharkable, Sharkable.Cache.Redis, Sharkable.AutoCrud.SqlSugar, and any future plugin packages.
+
+A "release" or "publish" instruction means: bump version numbers, update CHANGELOG, tag git, push code, update docs site. It does **NOT** include `dotnet nuget push` unless the user explicitly says so.
