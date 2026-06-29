@@ -179,7 +179,7 @@ public static class SharkExtension
         }
         //register saga store
         if (Shark.SharkOption.SagaStoreFactory != null)
-            services.AddSingleton(Shark.SharkOption.SagaStoreFactory);
+            services.AddSingleton<ISagaStore>(sp => Shark.SharkOption.SagaStoreFactory(sp));
         else
             services.TryAddSingleton<ISagaStore, MemorySagaStore>();
         services.TryAddSingleton<SagaExecutor>();

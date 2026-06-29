@@ -14,6 +14,11 @@ public sealed class MemorySagaStore : ISagaStore
     private readonly ConcurrentDictionary<string, byte> _locks = new();
 
     /// <inheritdoc />
+    /// <remarks>
+    /// Lock TTL is ignored — <see cref="ConcurrentDictionary"/> has no
+    /// expiration. In-process only; for production with crash recovery,
+    /// use a distributed store such as <c>RedisSagaStore</c>.
+    /// </remarks>
     public Task<bool> TryAcquireLockAsync(string sagaId, TimeSpan ttl)
     {
         return Task.FromResult(_locks.TryAdd(sagaId, 0));
