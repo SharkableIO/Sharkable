@@ -27,8 +27,17 @@ public sealed class CronScheduler : ICronScheduler
 
     public void Register(CronJob job)
     {
+        // Parse cron first — fail fast before any state mutation
+        CronExpression expr;
+        try { expr = CronExpression.Parse(job.Cron); }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Cron job {Name} has invalid expression: {Cron}", job.Name, job.Cron);
+            return;
+        }
+
+        lock (_expressions) _expressions[job.Name] = expr;
         lock (_jobs) _jobs[job.Name] = job;
-        lock (_expressions) _expressions[job.Name] = CronExpression.Parse(job.Cron);
 
         var state = new CronJobState
         {
@@ -58,13 +67,6 @@ public sealed class CronScheduler : ICronScheduler
             if (state.IsRunning && job.Options.Concurrency == CronJobConcurrency.SkipIfRunning)
                 continue;
 
-            if (job.Options.Concurrency == CronJobConcurrency.SkipIfRunning)
-            {
-                if (!await _store.TryAcquireJobLockAsync(job.Name, TimeSpan.FromMinutes(10)))
-                    continue;
-                state.IsRunning = true;
-            }
-
             CronExpression? expr;
             lock (_expressions) _expressions.TryGetValue(job.Name, out expr);
             if (expr == null) continue;
@@ -73,8 +75,16 @@ public sealed class CronScheduler : ICronScheduler
             if (next == null) continue;
 
             state.NextRun = next;
-            if (next <= now)
-                due.Add((job, state));
+            if (next > now) continue;
+
+            if (job.Options.Concurrency == CronJobConcurrency.SkipIfRunning)
+            {
+                if (!await _store.TryAcquireJobLockAsync(job.Name, TimeSpan.FromMinutes(10)))
+                    continue;
+                state.IsRunning = true;
+            }
+
+            due.Add((job, state));
         }
 
         due.Sort((a, b) => (a.Item2.NextRun ?? DateTimeOffset.MaxValue)
