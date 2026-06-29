@@ -18,6 +18,9 @@ public sealed record CronJob(
 /// </summary>
 public interface ICronScheduler
 {
+    /// <summary>Registers a cron job from configuration.</summary>
+    void Register(CronJob job);
+
     /// <summary>Manually triggers a job immediately, regardless of its cron schedule.</summary>
     Task<CronJobState?> TriggerAsync(string name);
 

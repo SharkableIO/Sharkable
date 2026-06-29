@@ -6,10 +6,11 @@ namespace Sharkable;
 /// Cron scheduler implementation. Runs as a singleton, managing all
 /// registered jobs and their lifecycle.
 /// </summary>
-internal sealed class CronScheduler : ICronScheduler
+public sealed class CronScheduler : ICronScheduler
 {
     private readonly Dictionary<string, CronJob> _jobs = [];
     private readonly Dictionary<string, CronJobState> _states = [];
+    private readonly Dictionary<string, CronExpression> _expressions = [];
     private readonly ICronJobStore _store;
     private readonly ILogger<CronScheduler> _logger;
 
@@ -24,9 +25,10 @@ internal sealed class CronScheduler : ICronScheduler
         get { lock (_jobs) return _jobs.Values.ToList(); }
     }
 
-    internal void Register(CronJob job)
+    public void Register(CronJob job)
     {
         lock (_jobs) _jobs[job.Name] = job;
+        lock (_expressions) _expressions[job.Name] = CronExpression.Parse(job.Cron);
 
         var state = new CronJobState
         {
@@ -56,7 +58,18 @@ internal sealed class CronScheduler : ICronScheduler
             if (state.IsRunning && job.Options.Concurrency == CronJobConcurrency.SkipIfRunning)
                 continue;
 
-            var next = CronExpression.Parse(job.Cron).GetNext(now - TimeSpan.FromSeconds(1));
+            if (job.Options.Concurrency == CronJobConcurrency.SkipIfRunning)
+            {
+                if (!await _store.TryAcquireJobLockAsync(job.Name, TimeSpan.FromMinutes(10)))
+                    continue;
+                state.IsRunning = true;
+            }
+
+            CronExpression? expr;
+            lock (_expressions) _expressions.TryGetValue(job.Name, out expr);
+            if (expr == null) continue;
+
+            var next = expr.GetNext(now - TimeSpan.FromSeconds(1));
             if (next == null) continue;
 
             state.NextRun = next;
