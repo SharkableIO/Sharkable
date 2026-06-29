@@ -75,12 +75,14 @@ All notable changes to Sharkable are documented here.
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-06-29
+
 ### feat
 
 - Add `IAuthorizationInterceptor` — pluggable authorization hook (claim-based RBAC, tenant-scoped access, custom API-key logic) via endpoint filter
 - Fix JWT events chaining — user `OnTokenValidated` / custom handlers now chain with Sharkable's default `OnChallenge` / `OnForbidden` instead of being overwritten
 - Add pagination to AutoCrud `List` — `GET /{group}?page=1&pageSize=20` returns `{ items, total, page, pageSize, totalPages }`
-- Add `CrudOperations.ListAll` — optionally expose full-table dump via `?all=true`, intentionally excluded from `All` for safety
+- Add `CrudOperations.ListAll` — optionally expose full-table dump via dedicated `GET /all` route, intentionally excluded from `All` for safety
 - Add AutoCrud search/filtering — `filter[field][op]=value` convention with 10 operators (eq/ne/gt/gte/lt/lte/like/in/nin/null), sort support, field-level validation
 - Add AutoCrud AOT zero rd.xml — Source Generator preserves entity types at compile time, no manual configuration
 - Add ProblemDetails (RFC 7807) support — `SharkOption.UseProblemDetails` flag, all error responses output standard format with `type`/`title`/`status`/`detail`/`instance`/`traceId`
