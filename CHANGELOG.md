@@ -2,6 +2,12 @@
 
 All notable changes to Sharkable are documented here.
 
+## Unreleased
+
+### fix
+
+- Fix `InvalidOperationException` when `UseAuthorization` is called without `AddAuthorization` — register `AddAuthorization` in `SharkExtension` when JWT is configured
+
 ## [0.3.0] — 2026-06-27
 
 ### feat

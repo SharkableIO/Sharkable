@@ -84,6 +84,7 @@ public static class SharkExtension
         //register JWT auth
         if (Shark.SharkOption.JwtAuthority != null)
         {
+            services.AddAuthorization();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(opt =>
                 {
