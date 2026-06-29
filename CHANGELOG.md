@@ -81,6 +81,7 @@ All notable changes to Sharkable are documented here.
 - Fix JWT events chaining — user `OnTokenValidated` / custom handlers now chain with Sharkable's default `OnChallenge` / `OnForbidden` instead of being overwritten
 - Add pagination to AutoCrud `List` — `GET /{group}?page=1&pageSize=20` returns `{ items, total, page, pageSize, totalPages }`
 - Add `CrudOperations.ListAll` — optionally expose full-table dump via `?all=true`, intentionally excluded from `All` for safety
+- Add AutoCrud search/filtering — `filter[field][op]=value` convention with 10 operators (eq/ne/gt/gte/lt/lte/like/in/nin/null), sort support, field-level validation
 
 ## [0.4.1] — 2026-06-28
 
