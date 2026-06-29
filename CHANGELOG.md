@@ -83,6 +83,7 @@ All notable changes to Sharkable are documented here.
 - Add `CrudOperations.ListAll` — optionally expose full-table dump via `?all=true`, intentionally excluded from `All` for safety
 - Add AutoCrud search/filtering — `filter[field][op]=value` convention with 10 operators (eq/ne/gt/gte/lt/lte/like/in/nin/null), sort support, field-level validation
 - Add AutoCrud AOT zero rd.xml — Source Generator preserves entity types at compile time, no manual configuration
+- Add ProblemDetails (RFC 7807) support — `SharkOption.UseProblemDetails` flag, all error responses output standard format with `type`/`title`/`status`/`detail`/`instance`/`traceId`
 
 ## [0.4.1] — 2026-06-28
 

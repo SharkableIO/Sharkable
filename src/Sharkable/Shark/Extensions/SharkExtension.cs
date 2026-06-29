@@ -109,11 +109,8 @@ public static class SharkExtension
                         if (!ctx.Response.HasStarted)
                         {
                             ctx.HandleResponse();
-                            var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
-                            var result = factory.Create(null, "Authentication failed", 401);
                             ctx.Response.StatusCode = 401;
-                            ctx.Response.ContentType = "application/json";
-                            await ctx.Response.WriteAsJsonAsync(result, result.GetType());
+                            await ProblemDetailsResult.WriteAsync(ctx.HttpContext, 401, "Authentication failed");
                         }
                     };
 
@@ -123,11 +120,8 @@ public static class SharkExtension
                             await userOnForbidden(ctx);
                         if (!ctx.Response.HasStarted)
                         {
-                            var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
-                            var result = factory.Create(null, "Forbidden", 403);
                             ctx.Response.StatusCode = 403;
-                            ctx.Response.ContentType = "application/json";
-                            await ctx.Response.WriteAsJsonAsync(result, result.GetType());
+                            await ProblemDetailsResult.WriteAsync(ctx.HttpContext, 403, "Forbidden");
                         }
                     };
                 });

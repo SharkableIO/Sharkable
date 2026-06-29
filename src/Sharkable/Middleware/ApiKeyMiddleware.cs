@@ -19,9 +19,9 @@ internal sealed class ApiKeyFilter : IEndpointFilter
         if (!context.HttpContext.Request.Headers.TryGetValue("X-Api-Key", out var apiKey) ||
             !_validKeys.Contains(apiKey.ToString()))
         {
-            var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
-            var result = factory.Create(null, "Missing or invalid API key", 401);
-            return Results.Json(result, statusCode: 401);
+            context.HttpContext.Response.StatusCode = 401;
+            await ProblemDetailsResult.WriteAsync(context.HttpContext, 401, "Missing or invalid API key");
+            return Results.Empty;
         }
 
         return await next(context);

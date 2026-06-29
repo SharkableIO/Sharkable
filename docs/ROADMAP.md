@@ -51,7 +51,7 @@
 | 16 | **AutoCrud AOT zero rd.xml** — Source Generator emits rd.xml content at compile time, user never touches it | AOT experience | Zero — Source Generator |
 | 17 | **Soft-delete global filter** — entity implements `ISoftDeletable`, AutoCrud auto-filters `IsDeleted = false` | Data layer | Entity marker interface |
 | 18 | **BackgroundService enhancement** — auto health reporting, graceful stop, retry policy, execution tracing | Background jobs | Zero — auto |
-| 19 | **ProblemDetails (RFC 7807) compatibility** — `UnifiedResult<T>` auto-maps to ProblemDetails format | Interop | Zero — auto |
+| 19 | **ProblemDetails (RFC 7807) compatibility** — `UseProblemDetails` flag, all error responses output standard format with type/title/status/detail/instance/traceId | Interop | Config only | ✅ |
 
 ## Excluded (high-intrusion)
 

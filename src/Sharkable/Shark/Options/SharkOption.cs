@@ -290,4 +290,10 @@ public sealed class SharkOption : ISharkOption
     /// API-key validation logic.
     /// </summary>
     public Func<IServiceProvider, IAuthorizationInterceptor>? AuthorizationInterceptorFactory { get; set; }
+    /// <summary>
+    /// When <c>true</c>, all error responses (401, 403, 429, 500, 503, etc.)
+    /// are written in RFC 7807 ProblemDetails format instead of the Sharkable
+    /// unified result envelope. Default is <c>false</c>.
+    /// </summary>
+    public bool UseProblemDetails { get; set; } = false;
 }

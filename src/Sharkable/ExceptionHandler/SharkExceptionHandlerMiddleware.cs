@@ -33,11 +33,7 @@ internal sealed class SharkExceptionHandlerMiddleware
         var statusCode = (int)options.GetStatusCode(exception);
         var errorMessage = options.GetErrorMessage(exception);
 
-        var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
-        var result = factory.Create(null, errorMessage, statusCode);
-
-        context.Response.ContentType = "application/json";
         context.Response.StatusCode = statusCode;
-        return context.Response.WriteAsJsonAsync(result, result.GetType());
+        return ProblemDetailsResult.WriteAsync(context, statusCode, errorMessage);
     }
 }

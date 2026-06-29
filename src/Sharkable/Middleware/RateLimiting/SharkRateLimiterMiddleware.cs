@@ -55,14 +55,10 @@ internal sealed class SharkRateLimiterMiddleware
         if (count > effectiveLimit)
         {
             context.Response.StatusCode = 429;
-            context.Response.ContentType = "application/json";
             var localizer = ErrorLocalizerHelper.GetLocalizer();
             var culture = ErrorLocalizerHelper.ResolveCulture(context);
-            var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
-            var result = factory.Create(data: null,
-                errorMessage: localizer.Localize("RateLimitExceeded", culture),
-                statusCode: 429);
-            await context.Response.WriteAsJsonAsync(result, result.GetType());
+            await ProblemDetailsResult.WriteAsync(context, 429,
+                localizer.Localize("RateLimitExceeded", culture));
             return;
         }
 

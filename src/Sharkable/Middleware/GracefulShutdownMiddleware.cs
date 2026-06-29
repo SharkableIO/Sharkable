@@ -17,14 +17,10 @@ internal sealed class GracefulShutdownMiddleware
         if (Volatile.Read(ref InternalShark.IsShuttingDown))
         {
             context.Response.StatusCode = 503;
-            context.Response.ContentType = "application/json";
             var localizer = ErrorLocalizerHelper.GetLocalizer();
             var culture = ErrorLocalizerHelper.ResolveCulture(context);
-            await context.Response.WriteAsJsonAsync(new
-            {
-                statusCode = 503,
-                errorMessage = localizer.Localize("ServerShuttingDown", culture),
-            });
+            await ProblemDetailsResult.WriteAsync(context, 503,
+                localizer.Localize("ServerShuttingDown", culture));
             return;
         }
 
