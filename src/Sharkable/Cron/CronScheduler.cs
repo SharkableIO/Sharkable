@@ -39,13 +39,18 @@ public sealed class CronScheduler : ICronScheduler
         lock (_expressions) _expressions[job.Name] = expr;
         lock (_jobs) _jobs[job.Name] = job;
 
-        var state = new CronJobState
+        // Load persisted state from store (survives restarts), or create fresh
+        var existing = _store.LoadStateAsync(job.Name, CancellationToken.None).GetAwaiter().GetResult();
+        var state = existing ?? new CronJobState
         {
             Name = job.Name,
             Description = job.Options.Description ?? "",
             Cron = job.Cron,
             Paused = job.Options.Paused,
         };
+        state.Description = job.Options.Description ?? "";
+        state.Cron = job.Cron;
+
         lock (_states) _states[job.Name] = state;
     }
 
