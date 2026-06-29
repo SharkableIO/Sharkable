@@ -2,7 +2,7 @@
 
 All notable changes to Sharkable are documented here.
 
-## Unreleased
+## [0.5.1] — 2026-06-29
 
 ### fix
 
