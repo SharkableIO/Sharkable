@@ -8,6 +8,7 @@ global using Microsoft.AspNetCore.OutputCaching;
 global using Microsoft.AspNetCore.Cors.Infrastructure;
 global using Microsoft.AspNetCore.Authentication.JwtBearer;
 global using Microsoft.IdentityModel.Tokens;
+global using Microsoft.Extensions.Hosting;
 global using Microsoft.AspNetCore.Http;
 global using Microsoft.AspNetCore.Authorization;
 global using Sharkable;

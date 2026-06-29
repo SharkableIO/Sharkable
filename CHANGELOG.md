@@ -84,6 +84,9 @@ All notable changes to Sharkable are documented here.
 - Add AutoCrud search/filtering — `filter[field][op]=value` convention with 10 operators (eq/ne/gt/gte/lt/lte/like/in/nin/null), sort support, field-level validation
 - Add AutoCrud AOT zero rd.xml — Source Generator preserves entity types at compile time, no manual configuration
 - Add ProblemDetails (RFC 7807) support — `SharkOption.UseProblemDetails` flag, all error responses output standard format with `type`/`title`/`status`/`detail`/`instance`/`traceId`
+- Add response compression — `SharkOption.EnableResponseCompression`, uses ASP.NET Core built-in middleware
+- Add soft delete — `ISoftDeletable` marker, AutoCrud auto-filters `IsDeleted = 0` on reads + soft-deletes on `CrudOperations.Delete`
+- Add `SharkBackgroundService` — enhanced `BackgroundService` with health reporting, retry policy, execution tracing
 
 ## [0.4.1] — 2026-06-28
 

@@ -55,6 +55,10 @@ public static class SharkableExtension
         if (Shark.SharkOption.TracingOptions != null)
             app.UseMiddleware<TracingMiddleware>();
 
+        // response compression — early for max coverage
+        if (Shark.SharkOption.EnableResponseCompression)
+            app.UseResponseCompression();
+
         // graceful shutdown — must be early in pipeline to reject new requests
         var gsOptions = Shark.SharkOption.GracefulShutdownOptions;
         var auditOptions = Shark.SharkOption.AuditTrailOptions;

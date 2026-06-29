@@ -47,6 +47,9 @@ public static class SharkExtension
             if (Shark.SharkOption.JwtAuthority != null)
                 hc.AddCheck<JwtHealthCheck>("jwt");
         }
+        //register response compression
+        if (Shark.SharkOption.EnableResponseCompression)
+            services.AddResponseCompression();
         //register CORS
         if (Shark.SharkOption.CorsConfigure != null)
             services.AddCors(Shark.SharkOption.CorsConfigure);

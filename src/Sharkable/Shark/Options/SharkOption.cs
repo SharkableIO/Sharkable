@@ -296,4 +296,11 @@ public sealed class SharkOption : ISharkOption
     /// unified result envelope. Default is <c>false</c>.
     /// </summary>
     public bool UseProblemDetails { get; set; } = false;
+    /// <summary>
+    /// When <c>true</c>, enables response compression via
+    /// <c>services.AddResponseCompression()</c> and
+    /// <c>app.UseResponseCompression()</c>. Skips already-compressed
+    /// MIME types (images, videos). Default is <c>false</c>.
+    /// </summary>
+    public bool EnableResponseCompression { get; set; } = false;
 }
