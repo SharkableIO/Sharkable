@@ -79,6 +79,8 @@ All notable changes to Sharkable are documented here.
 
 - Add `IAuthorizationInterceptor` — pluggable authorization hook (claim-based RBAC, tenant-scoped access, custom API-key logic) via endpoint filter
 - Fix JWT events chaining — user `OnTokenValidated` / custom handlers now chain with Sharkable's default `OnChallenge` / `OnForbidden` instead of being overwritten
+- Add pagination to AutoCrud `List` — `GET /{group}?page=1&pageSize=20` returns `{ items, total, page, pageSize, totalPages }`
+- Add `CrudOperations.ListAll` — optionally expose full-table dump via `?all=true`, intentionally excluded from `All` for safety
 
 ## [0.4.1] — 2026-06-28
 
