@@ -31,4 +31,16 @@ public class SqlSugarOptions
 
     /// <summary>Optional suffix for index names.</summary>
     public string? IndexSuffix { get; set; }
+
+    /// <summary>Maximum page size for AutoCrud list endpoints. Default: <c>100</c>.</summary>
+    public int MaxPageSize { get; set; } = 100;
+
+    /// <summary>Default page size for AutoCrud list endpoints. Default: <c>20</c>.</summary>
+    public int DefaultPageSize { get; set; } = 20;
+
+    /// <summary>
+    /// Field name used for soft delete filtering. Default: <c>"IsDeleted"</c>.
+    /// Only used when the entity implements <see cref="ISoftDeletable"/>.
+    /// </summary>
+    public string SoftDeleteFieldName { get; set; } = "IsDeleted";
 }

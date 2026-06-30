@@ -9,6 +9,8 @@ All notable changes to Sharkable are documented here.
 - Add `HttpContext.Localize(string key, params object[] args)` overload — format args in localized strings
 - Add `HttpContext.GetCulture()` extension — resolve client culture from `Accept-Language` header
 - `ApiKeyFilter` automatically skipped when `AuthorizationInterceptorFactory` is set — interceptor owns auth entirely
+- Add `SqlSugarOptions.MaxPageSize` / `DefaultPageSize` — configurable AutoCrud pagination limits (defaults: 100 / 20)
+- Add `SqlSugarOptions.SoftDeleteFieldName` — configurable soft delete field (default: `"IsDeleted"`)
 
 ## [0.5.2] — 2026-06-30
 
