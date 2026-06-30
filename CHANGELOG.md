@@ -2,6 +2,13 @@
 
 All notable changes to Sharkable are documented here.
 
+## Unreleased
+
+### feat
+
+- Add `HttpContext.Localize(string key, params object[] args)` overload — format args in localized strings
+- Add `HttpContext.GetCulture()` extension — resolve client culture from `Accept-Language` header
+
 ## [0.5.2] — 2026-06-30
 
 ### feat
