@@ -12,6 +12,11 @@ All notable changes to Sharkable are documented here.
 - Add `SqlSugarOptions.MaxPageSize` / `DefaultPageSize` — configurable AutoCrud pagination limits (defaults: 100 / 20)
 - Add `SqlSugarOptions.SoftDeleteFieldName` — configurable soft delete field (default: `"IsDeleted"`)
 
+### security
+
+- Add 100ms regex timeout to `FormatAsGroupName` / `GetVersionFormat` — prevent ReDoS via malicious `GroupNameSuffixPattern` / `VersionFormatPattern`
+- Add `SafeSoftDeleteField` validation in `AutoCrudGenerator` — reject non-alphanumeric field names to prevent SQL injection
+
 ## [0.5.2] — 2026-06-30
 
 ### feat

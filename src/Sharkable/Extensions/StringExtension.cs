@@ -6,13 +6,23 @@ namespace Sharkable;
 
 internal static class StringExtension
 {
+    private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(100);
+
     internal static string? FormatAsGroupName(this string? str)
     {
         if (string.IsNullOrWhiteSpace(str))
             return str;
         var suffixPattern = Shark.SharkOption?.GroupNameSuffixPattern
             ?? "(endpoint|service|services|controller|controllers|apicontroller)(?=V?\\d*$)";
-        return Regex.Replace(str, suffixPattern, "", RegexOptions.IgnoreCase).GetVersionFormat();
+        try
+        {
+            var result = Regex.Replace(str, suffixPattern, "", RegexOptions.IgnoreCase, RegexTimeout);
+            return result.GetVersionFormat();
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return str;
+        }
     }
    
     internal static string? ToCamelCase(this string? str)
@@ -90,7 +100,14 @@ internal static class StringExtension
         var pattern = Shark.SharkOption?.VersionFormatPattern ?? @"V(\d+)";
         var replacement = Shark.SharkOption?.VersionFormatReplacement ?? @"@$1";
 
-        return Regex.Replace(str, pattern, replacement);
+        try
+        {
+            return Regex.Replace(str, pattern, replacement, RegexOptions.None, RegexTimeout);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return str;
+        }
     }
     internal static string? GetCaseFormat(this string? str, EndpointFormat format = EndpointFormat.UnChanged)
     {
