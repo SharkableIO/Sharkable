@@ -2,7 +2,7 @@
 
 All notable changes to Sharkable are documented here.
 
-## Unreleased
+## [0.5.2] — 2026-06-30
 
 ### feat
 
@@ -24,7 +24,6 @@ All notable changes to Sharkable are documented here.
 ### docs
 
 - Add complete error localization guide with `IErrorLocalizer` implementation example, `HttpContext.Localize()` usage, and middleware integration pattern (EN + ZH)
-
 
 ## [0.5.1] — 2026-06-29
 
