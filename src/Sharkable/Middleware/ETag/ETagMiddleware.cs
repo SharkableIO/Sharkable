@@ -15,9 +15,6 @@ internal sealed class ETagMiddleware
     private readonly ETagOptions _options;
     private readonly ILogger<ETagMiddleware> _logger;
 
-    private static readonly HashSet<string> CacheableMethods = new(
-        StringComparer.OrdinalIgnoreCase) { "GET", "HEAD" };
-
     public ETagMiddleware(RequestDelegate next, ETagOptions options, ILogger<ETagMiddleware> logger)
     {
         _next = next;
@@ -27,7 +24,7 @@ internal sealed class ETagMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (!CacheableMethods.Contains(context.Request.Method) || ShouldSkip(context.Request.Path))
+        if (!_options.CacheableMethods.Contains(context.Request.Method) || ShouldSkip(context.Request.Path))
         {
             await _next(context);
             return;
@@ -52,7 +49,7 @@ internal sealed class ETagMiddleware
         var etag = $"\"{hash}\"";
 
         context.Response.Headers["ETag"] = etag;
-        context.Response.Headers["Cache-Control"] = "public, max-age=0, must-revalidate";
+        context.Response.Headers["Cache-Control"] = _options.CacheControlHeader;
 
         if (context.Request.Headers.TryGetValue("If-None-Match", out var ifNoneMatch) &&
             ifNoneMatch.ToString().Trim('"') == hash)
@@ -77,8 +74,8 @@ internal sealed class ETagMiddleware
         return false;
     }
 
-    private static bool IsUncacheableStatus(int statusCode)
-        => statusCode is < 200 or >= 300;
+    private bool IsUncacheableStatus(int statusCode)
+        => _options.ShouldSkipStatus(statusCode);
 
     private static string ComputeHash(byte[] bytes)
     {

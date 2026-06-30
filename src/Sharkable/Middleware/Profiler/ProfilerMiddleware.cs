@@ -78,7 +78,8 @@ internal static class ProfilerStore
         Entries.Enqueue(entry);
         Interlocked.Increment(ref _count);
 
-        while (_count > 1000)
+        var maxEntries = Shark.SharkOption.ProfilerOptions?.MaxEntries ?? 1000;
+        while (_count > maxEntries)
         {
             if (Entries.TryDequeue(out _))
                 Interlocked.Decrement(ref _count);

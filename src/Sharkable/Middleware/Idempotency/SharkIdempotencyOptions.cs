@@ -32,6 +32,17 @@ public sealed class SharkIdempotencyOptions
     /// <summary>Response header set on replays. Default is <c>"X-Idempotent-Replayed"</c>.</summary>
     public string ReplayedHeaderName { get; set; } = "X-Idempotent-Replayed";
 
+    /// <summary>Value for the <c>Retry-After</c> response header in seconds. Default is 1.</summary>
+    public int RetryAfterSeconds { get; set; } = 1;
+
+    /// <summary>
+    /// Predicate that determines whether a status code should be cached
+    /// for future idempotent replays. Default caches 2xx-4xx except 429.
+    /// Return <c>true</c> to cache the response.
+    /// </summary>
+    public Func<int, bool> ShouldCacheStatus { get; set; } = static status =>
+        status >= 200 && status < 500 && status != 429;
+
     /// <summary>
     /// HTTP methods that activate the middleware when <see cref="HeaderName"/>
     /// is present. Default is POST, PUT, PATCH, DELETE.

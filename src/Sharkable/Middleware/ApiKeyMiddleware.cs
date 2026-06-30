@@ -16,7 +16,7 @@ internal sealed class ApiKeyFilter : IEndpointFilter
         if (context.HttpContext.GetEndpoint()?.Metadata.GetMetadata<IAllowAnonymous>() != null)
             return await next(context);
 
-        if (!context.HttpContext.Request.Headers.TryGetValue("X-Api-Key", out var apiKey) ||
+        if (!context.HttpContext.Request.Headers.TryGetValue(Shark.SharkOption.ApiKeyHeaderName, out var apiKey) ||
             !_validKeys.Contains(apiKey.ToString()))
         {
             context.HttpContext.Response.StatusCode = 401;

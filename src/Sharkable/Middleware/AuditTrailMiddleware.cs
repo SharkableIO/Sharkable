@@ -88,12 +88,12 @@ internal sealed class AuditTrailMiddleware
         return Guid.NewGuid().ToString("N");
     }
 
-    private static void SetResponseCorrelationId(HttpContext context, string correlationId)
+    private void SetResponseCorrelationId(HttpContext context, string correlationId)
     {
         context.Response.OnStarting(() =>
         {
-            if (!context.Response.Headers.ContainsKey("X-Correlation-Id"))
-                context.Response.Headers["X-Correlation-Id"] = correlationId;
+            if (!context.Response.Headers.ContainsKey(_options.CorrelationIdHeader))
+                context.Response.Headers[_options.CorrelationIdHeader] = correlationId;
             return Task.CompletedTask;
         });
     }

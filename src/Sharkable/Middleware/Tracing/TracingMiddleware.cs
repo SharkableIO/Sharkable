@@ -11,13 +11,10 @@ namespace Sharkable;
 /// </summary>
 internal sealed class TracingMiddleware
 {
-    /// <summary>
-    /// The ActivitySource name used by Sharkable tracing. Reference this when
-    /// configuring OpenTelemetry: <c>b.AddSource(Sharkable.Tracing.ActivitySourceName)</c>.
-    /// </summary>
     internal const string ActivitySourceName = "Sharkable";
 
-    private static readonly ActivitySource Source = new(ActivitySourceName);
+    private static readonly ActivitySource Source = new(
+        Shark.SharkOption.TracingOptions?.ActivitySourceName ?? ActivitySourceName);
 
     private readonly RequestDelegate _next;
     private readonly ILogger<TracingMiddleware> _logger;

@@ -81,10 +81,17 @@ public static class SharkExtension
             else
                 services.TryAddSingleton<IDistributedRateLimitStore, MemoryRateLimitStore>();
         }
+        //register authorization (default enabled)
+        if (Shark.SharkOption.EnableAuthorization)
+        {
+            if (Shark.SharkOption.ConfigureAuthorization != null)
+                services.AddAuthorization(Shark.SharkOption.ConfigureAuthorization);
+            else
+                services.AddAuthorization();
+        }
         //register JWT auth
         if (Shark.SharkOption.JwtAuthority != null)
         {
-            services.AddAuthorization();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(opt =>
                 {

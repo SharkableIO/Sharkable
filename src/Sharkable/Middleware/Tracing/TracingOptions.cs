@@ -16,6 +16,13 @@ public sealed class TracingOptions
     public string ServiceName { get; set; } = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "sharkable";
 
     /// <summary>
+    /// The <see cref="ActivitySource"/> name used for Sharkable tracing spans.
+    /// Default is <c>"Sharkable"</c>. Set this to a custom value when you need
+    /// to filter or route traces by source name in OpenTelemetry.
+    /// </summary>
+    public string ActivitySourceName { get; set; } = "Sharkable";
+
+    /// <summary>
     /// Optional exporter for custom trace processing. Set to <c>null</c> to use
     /// the default no-op exporter (OpenTelemetry SDK hooks automatically via
     /// <see cref="System.Diagnostics.ActivitySource"/> when installed).

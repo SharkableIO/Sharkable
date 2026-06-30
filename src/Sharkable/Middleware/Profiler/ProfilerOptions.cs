@@ -17,4 +17,10 @@ public sealed class ProfilerOptions
     /// Default is 20.
     /// </summary>
     public int TopSlowRequests { get; set; } = 20;
+
+    /// <summary>
+    /// Maximum number of profiler entries kept in the ring buffer.
+    /// Default is 1000.
+    /// </summary>
+    public int MaxEntries { get; set; } = 1000;
 }

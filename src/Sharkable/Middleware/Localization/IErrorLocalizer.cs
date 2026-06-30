@@ -11,6 +11,27 @@ public sealed class ETagOptions
     /// Default excludes health check, OpenAPI, and profiler endpoints.
     /// </summary>
     public string[] ExcludePaths { get; set; } = ["/healthz", "/openapi", "/scalar", "/_sharkable"];
+
+    /// <summary>
+    /// HTTP methods eligible for ETag caching. Default is <c>GET, HEAD</c>.
+    /// </summary>
+    public HashSet<string> CacheableMethods { get; set; } = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "GET", "HEAD"
+    };
+
+    /// <summary>
+    /// The <c>Cache-Control</c> header value sent with ETagged responses.
+    /// Default is <c>"public, max-age=0, must-revalidate"</c>.
+    /// </summary>
+    public string CacheControlHeader { get; set; } = "public, max-age=0, must-revalidate";
+
+    /// <summary>
+    /// Predicate that determines whether a response status code should be cached.
+    /// Return <c>true</c> to skip caching. Default returns <c>true</c> for
+    /// status codes below 200 or 300 and above.
+    /// </summary>
+    public Func<int, bool> ShouldSkipStatus { get; set; } = static statusCode => statusCode is < 200 or >= 300;
 }
 
 /// <summary>

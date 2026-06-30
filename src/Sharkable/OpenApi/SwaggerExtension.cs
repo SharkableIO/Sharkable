@@ -86,14 +86,14 @@ internal static class OpenApiExtension
         {
             scalar.AddHttpAuthentication("bearer", bearer =>
             {
-                bearer.Token = "your-jwt-token";
+                bearer.Token = opt.ScalarJwtToken ?? "your-jwt-token";
             });
         }
         if (opt.ApiKeys is { Length: > 0 })
         {
             scalar.AddApiKeyAuthentication("apiKey", apiKey =>
             {
-                apiKey.Value = "your-api-key";
+                apiKey.Value = opt.ScalarApiKeyValue ?? "your-api-key";
             });
         }
     }

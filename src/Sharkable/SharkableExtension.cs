@@ -73,11 +73,12 @@ public static class SharkableExtension
                     Volatile.Write(ref InternalShark.IsShuttingDown, true);
 
                     var drainCts = new CancellationTokenSource(gsOptions.DrainTimeout);
+                    var pollingMs = Math.Max((int)gsOptions.DrainPollingInterval.TotalMilliseconds, 10);
                     while (!drainCts.IsCancellationRequested)
                     {
                         if (Volatile.Read(ref InternalShark.ActiveRequests) == 0)
                             break;
-                        Thread.Sleep(100);
+                        Thread.Sleep(pollingMs);
                     }
                 }
 
@@ -107,7 +108,8 @@ public static class SharkableExtension
         if (Shark.SharkOption.JwtAuthority != null)
         {
             app.UseAuthentication();
-            app.UseAuthorization();
+            if (Shark.SharkOption.EnableAuthorization)
+                app.UseAuthorization();
         }
 
         if (Shark.UseSharkOptions?.EnableExceptionHandler ?? true)

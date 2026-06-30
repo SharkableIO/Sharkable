@@ -20,13 +20,14 @@ internal static class ErrorLocalizerHelper
     /// </summary>
     internal static string ResolveCulture(HttpContext context)
     {
+        var defaultCulture = Shark.SharkOption.DefaultCulture ?? "en";
         var header = context.Request.Headers.AcceptLanguage.ToString();
         if (string.IsNullOrWhiteSpace(header))
-            return "en";
+            return defaultCulture;
 
         var comma = header.IndexOf(',');
         var lang = comma > 0 ? header[..comma].Trim() : header.Trim();
 
-        return string.IsNullOrWhiteSpace(lang) ? "en" : lang;
+        return string.IsNullOrWhiteSpace(lang) ? defaultCulture : lang;
     }
 }

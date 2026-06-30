@@ -93,4 +93,22 @@ public sealed class SharkRateLimiterOptions
     /// Default is 5 seconds.
     /// </summary>
     public TimeSpan AdaptiveAdjustmentInterval { get; set; } = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// GC pressure percentage above which permits are reduced.
+    /// Default is 80.
+    /// </summary>
+    public int AdaptiveGcHighThreshold { get; set; } = 80;
+
+    /// <summary>
+    /// GC pressure percentage below which permits are increased.
+    /// Default is 50.
+    /// </summary>
+    public int AdaptiveGcLowThreshold { get; set; } = 50;
+
+    /// <summary>
+    /// Fraction (1/N) by which permits are reduced each adjustment cycle.
+    /// Default is 10 (i.e. reduce by 1/10).
+    /// </summary>
+    public int AdaptiveReductionDivisor { get; set; } = 10;
 }

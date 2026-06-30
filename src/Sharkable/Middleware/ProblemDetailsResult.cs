@@ -16,10 +16,12 @@ internal static class ProblemDetailsResult
         if (Shark.SharkOption.UseProblemDetails)
         {
             ctx.Response.ContentType = "application/problem+json";
+            var typeFactory = Shark.SharkOption.ProblemDetailsTypeFactory;
+            var titleFactory = Shark.SharkOption.ProblemDetailsTitleFactory;
             var problem = new ProblemDetailsData
             {
-                type = $"https://httpstatuses.com/{statusCode}",
-                title = GetTitle(statusCode),
+                type = typeFactory != null ? typeFactory(statusCode) : $"https://httpstatuses.com/{statusCode}",
+                title = titleFactory != null ? titleFactory(statusCode) : GetTitle(statusCode),
                 status = statusCode,
                 detail = detail,
                 instance = ctx.Request.Path.Value ?? "/",

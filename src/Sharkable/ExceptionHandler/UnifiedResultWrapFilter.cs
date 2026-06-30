@@ -14,6 +14,7 @@ internal sealed class UnifiedResultWrapFilter : IEndpointFilter
             return result;
 
         var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
-        return factory.Create(result, null, 200);
+        var statusCode = context.HttpContext.Response.StatusCode;
+        return factory.Create(result, null, statusCode);
     }
 }

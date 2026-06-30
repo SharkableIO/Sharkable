@@ -64,12 +64,13 @@ internal sealed class AdaptiveLimitMonitor
         var current = Volatile.Read(ref CurrentLimit);
         int newLimit;
 
-        if (cpuPercent > _options.AdaptiveCpuHighThreshold || gcPressure > 80)
+        if (cpuPercent > _options.AdaptiveCpuHighThreshold || gcPressure > _options.AdaptiveGcHighThreshold)
         {
             // High load: gradually reduce permits
-            newLimit = Math.Max(_options.MinPermitLimit, current - (current / 10));
+            var divisor = Math.Max(_options.AdaptiveReductionDivisor, 1);
+            newLimit = Math.Max(_options.MinPermitLimit, current - (current / divisor));
         }
-        else if (cpuPercent < _options.AdaptiveCpuLowThreshold && gcPressure < 50)
+        else if (cpuPercent < _options.AdaptiveCpuLowThreshold && gcPressure < _options.AdaptiveGcLowThreshold)
         {
             // Low load: gradually increase permits toward base
             newLimit = Math.Min(_options.MaxPermitLimit, current + (current / 10 + 1));

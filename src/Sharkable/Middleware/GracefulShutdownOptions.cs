@@ -18,4 +18,16 @@ public sealed class GracefulShutdownOptions
     /// Default is 5 seconds.
     /// </summary>
     public TimeSpan HealthCheckGracePeriod { get; set; } = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// HTTP status code returned when the server is shutting down.
+    /// Default is 503.
+    /// </summary>
+    public int ShutdownStatusCode { get; set; } = 503;
+
+    /// <summary>
+    /// Polling interval for draining in-flight requests during shutdown.
+    /// Default is 100 milliseconds.
+    /// </summary>
+    public TimeSpan DrainPollingInterval { get; set; } = TimeSpan.FromMilliseconds(100);
 }

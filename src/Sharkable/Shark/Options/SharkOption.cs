@@ -97,6 +97,10 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public Action<IHealthChecksBuilder>? HealthChecksConfigure { get; set; }
     /// <summary>
+    /// Endpoint path for the health check endpoint. Default is <c>"/healthz"</c>.
+    /// </summary>
+    public string HealthCheckPath { get; set; } = "/healthz";
+    /// <summary>
     /// When <c>true</c>, wires the idempotency middleware into the pipeline.
     /// Requests carrying an <c>Idempotency-Key</c> header on an unsafe HTTP
     /// method are deduplicated and replayed. Default is <c>false</c>.
@@ -111,6 +115,10 @@ public sealed class SharkOption : ISharkOption
     /// When set, requests must include a valid <c>X-Api-Key</c> header.
     /// </summary>
     public string[]? ApiKeys { get; set; }
+    /// <summary>
+    /// Request header name for API key authentication. Default is <c>"X-Api-Key"</c>.
+    /// </summary>
+    public string ApiKeyHeaderName { get; set; } = "X-Api-Key";
     /// <summary>
     /// Configures JWT Bearer authentication with opinionated defaults.
     /// Calls <c>services.AddAuthentication().AddJwtBearer()</c> with the given authority and audiences.
@@ -127,6 +135,17 @@ public sealed class SharkOption : ISharkOption
     internal string? JwtAuthority { get; set; }
     internal string[]? JwtAudiences { get; set; }
     internal Action<JwtBearerOptions>? JwtConfigure { get; set; }
+    /// <summary>
+    /// When <c>true</c> (default), calls <c>services.AddAuthorization()</c> to register
+    /// authorization services. Set to <c>false</c> to disable entirely.
+    /// </summary>
+    public bool EnableAuthorization { get; set; } = true;
+    /// <summary>
+    /// Optional callback to configure <see cref="Microsoft.AspNetCore.Authorization.AuthorizationOptions"/>.
+    /// For example: add custom policies, default authorization policy, fallback policy, etc.
+    /// Ignored when <see cref="EnableAuthorization"/> is <c>false</c>.
+    /// </summary>
+    public Action<AuthorizationOptions>? ConfigureAuthorization { get; set; }
     /// <summary>
     /// Configures the OpenAPI document generation options.
     /// </summary>
@@ -284,12 +303,29 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public Func<IServiceProvider, IErrorLocalizer>? ErrorLocalizerFactory { get; set; }
     /// <summary>
+    /// Default culture used when the <c>Accept-Language</c> header is missing or empty.
+    /// Default is <c>"en"</c>.
+    /// </summary>
+    public string DefaultCulture { get; set; } = "en";
+    /// <summary>
     /// Pluggable authorization interceptor. Runs before every endpoint.
     /// Return <c>null</c> to allow; return a non-null <see cref="IResult"/>
     /// to reject. Use for claim-based RBAC, tenant-scoped access, or custom
     /// API-key validation logic.
     /// </summary>
     public Func<IServiceProvider, IAuthorizationInterceptor>? AuthorizationInterceptorFactory { get; set; }
+    /// <summary>
+    /// Custom factory for ProblemDetails <c>type</c> URI.
+    /// Receives the HTTP status code, returns the type URI.
+    /// Default: <c>https://httpstatuses.com/{code}</c>.
+    /// </summary>
+    public Func<int, string>? ProblemDetailsTypeFactory { get; set; }
+    /// <summary>
+    /// Custom factory for ProblemDetails <c>title</c> string.
+    /// Receives the HTTP status code, returns the title.
+    /// Default: standard English titles (e.g. 400 → "Bad Request").
+    /// </summary>
+    public Func<int, string>? ProblemDetailsTitleFactory { get; set; }
     /// <summary>
     /// When <c>true</c>, all error responses (401, 403, 429, 500, 503, etc.)
     /// are written in RFC 7807 ProblemDetails format instead of the Sharkable
@@ -321,4 +357,29 @@ public sealed class SharkOption : ISharkOption
     /// hosted service starts.
     /// </summary>
     public Action<ICronScheduler>? ConfigureCronJobs { get; set; }
+    /// <summary>
+    /// Pre-filled JWT token in the Scalar UI authentication dialog.
+    /// When set, replaces the default placeholder in Scalar's Bearer auth.
+    /// </summary>
+    public string? ScalarJwtToken { get; set; }
+    /// <summary>
+    /// Pre-filled API key value in the Scalar UI authentication dialog.
+    /// When set, replaces the default placeholder in Scalar's API Key auth.
+    /// </summary>
+    public string? ScalarApiKeyValue { get; set; }
+    /// <summary>
+    /// Regex pattern for stripping common suffixes from endpoint group names.
+    /// Default strips <c>Endpoint</c>, <c>Service</c>, <c>Controller</c>, etc.
+    /// </summary>
+    public string GroupNameSuffixPattern { get; set; } = "(endpoint|service|services|controller|controllers|apicontroller)(?=V?\\d*$)";
+    /// <summary>
+    /// Regex pattern for converting version prefixes in endpoint URLs.
+    /// Default converts <c>V1</c> → <c>@1</c>.
+    /// </summary>
+    public string VersionFormatPattern { get; set; } = @"V(\d+)";
+    /// <summary>
+    /// Replacement string for <see cref="VersionFormatPattern"/>.
+    /// Default is <c>@$1</c>.
+    /// </summary>
+    public string VersionFormatReplacement { get; set; } = @"@$1";
 }

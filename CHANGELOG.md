@@ -2,11 +2,43 @@
 
 All notable changes to Sharkable are documented here.
 
+## Unreleased
+
+### feat
+
+- Add `SharkOption.ETagOptions.CacheableMethods` / `CacheControlHeader` / `ShouldSkipStatus` — ETag method set, cache header, and cacheable status logic are now configurable
+- Add `SharkOption.ApiKeyHeaderName` — configurable API key request header
+- Add `GracefulShutdownOptions.ShutdownStatusCode` / `DrainPollingInterval` — configurable 503 status code and drain polling interval
+- Add `SharkOption.ProblemDetailsTypeFactory` / `ProblemDetailsTitleFactory` — delegates for customizing RFC 7807 `type` URI and `title`
+- Add `SharkOption.DefaultCulture` — configurable default locale for error localizer
+- Add `SharkRateLimiterOptions.AdaptiveGcHighThreshold` / `AdaptiveGcLowThreshold` / `AdaptiveReductionDivisor` — GC pressure thresholds and reduction factor for adaptive rate limiting
+- Add `ProfilerOptions.MaxEntries` — configurable profiler ring buffer size
+- Add `SharkIdempotencyOptions.RetryAfterSeconds` / `ShouldCacheStatus` — configurable Retry-After and cacheable status predicate
+- Add `SharkOption.HealthCheckPath` — configurable health check endpoint path
+- Add `TracingOptions.ActivitySourceName` — configurable `ActivitySource` name (separate from `ServiceName`)
+- Add `SharkOption.GroupNameSuffixPattern` / `VersionFormatPattern` / `VersionFormatReplacement` — customizable endpoint URL naming regexes
+- Remove hardcoded `"Sharkable"` ActivitySourceName in `TracingMiddleware` — now uses `TracingOptions.ActivitySourceName`
+- Add `HttpContext.Localize(string key)` extension method — easy localization in user endpoints
+- Add `LocalizationExtensions` — public scaffolding for endpoint-level error translation
+
+### docs
+
+- Add complete error localization guide with `IErrorLocalizer` implementation example, `HttpContext.Localize()` usage, and middleware integration pattern (EN + ZH)
+
+
 ## [0.5.1] — 2026-06-29
 
 ### fix
 
-- Fix `InvalidOperationException` when `UseAuthorization` is called without `AddAuthorization` — register `AddAuthorization` in `SharkExtension` when JWT is configured
+- Fix `InvalidOperationException` when `UseAuthorization` is called without `AddAuthorization` — register `AddAuthorization` by default (configurable via `EnableAuthorization`), with factory support via `ConfigureAuthorization` delegate
+- Fix `UnifiedResultWrapFilter` always wrapping with status 200 — now uses actual `HttpContext.Response.StatusCode`
+- Fix `AuditTrailMiddleware` response header hardcoded to `"X-Correlation-Id"` — now respects `AuditTrailOptions.CorrelationIdHeader`
+
+### feat
+
+- Add `SharkOption.EnableAuthorization` (default `true`) — allows users to opt out of authorization service registration
+- Add `SharkOption.ConfigureAuthorization` — delegate for customizing `AuthorizationOptions` (policies, fallback, etc.)
+- Add `SharkOption.ScalarJwtToken` / `SharkOption.ScalarApiKeyValue` — configure pre-filled credentials in Scalar UI
 
 ## [0.3.0] — 2026-06-27
 

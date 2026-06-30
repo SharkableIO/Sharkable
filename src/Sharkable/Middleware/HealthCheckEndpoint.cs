@@ -9,7 +9,8 @@ internal static class HealthCheckEndpoint
 {
     internal static void Map(WebApplication app)
     {
-        app.MapGet("/healthz", async (HealthCheckService healthCheck) =>
+        var path = Shark.SharkOption.HealthCheckPath ?? "/healthz";
+        app.MapGet(path, async (HealthCheckService healthCheck) =>
         {
             if (Volatile.Read(ref InternalShark.IsShuttingDown))
                 return Results.Json(new

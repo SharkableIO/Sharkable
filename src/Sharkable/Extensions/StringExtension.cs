@@ -10,8 +10,9 @@ internal static class StringExtension
     {
         if (string.IsNullOrWhiteSpace(str))
             return str;
-        string pattern = "(endpoint|service|services|controller|controllers|apicontroller)(?=V?\\d*$)";
-        return Regex.Replace(str, pattern, "", RegexOptions.IgnoreCase).GetVersionFormat();
+        var suffixPattern = Shark.SharkOption?.GroupNameSuffixPattern
+            ?? "(endpoint|service|services|controller|controllers|apicontroller)(?=V?\\d*$)";
+        return Regex.Replace(str, suffixPattern, "", RegexOptions.IgnoreCase).GetVersionFormat();
     }
    
     internal static string? ToCamelCase(this string? str)
@@ -86,8 +87,8 @@ internal static class StringExtension
         if (string.IsNullOrWhiteSpace(str))
             return str;
         
-        string pattern = @"V(\d+)";
-        string replacement = @"@$1";
+        var pattern = Shark.SharkOption?.VersionFormatPattern ?? @"V(\d+)";
+        var replacement = Shark.SharkOption?.VersionFormatReplacement ?? @"@$1";
 
         return Regex.Replace(str, pattern, replacement);
     }

@@ -63,7 +63,7 @@ internal sealed class SharkIdempotencyMiddleware
             switch (existing)
             {
                 case IdempotencyInFlight:
-                    context.Response.Headers["Retry-After"] = "1";
+                    context.Response.Headers["Retry-After"] = _options.RetryAfterSeconds.ToString();
                     await WriteUnified(context, 409, "idempotency_in_progress",
                         "An identical request is already in progress; retry after 1 second.");
                     return;
@@ -110,7 +110,7 @@ internal sealed class SharkIdempotencyMiddleware
             }
 
             // 5b. Successful (cacheable) responses -> store and forward.
-            if (ShouldCache(context.Response.StatusCode))
+            if (_options.ShouldCacheStatus(context.Response.StatusCode))
             {
                 buffer.Position = 0;
                 var bytes = buffer.ToArray();
@@ -140,9 +140,6 @@ internal sealed class SharkIdempotencyMiddleware
             }
         }
     }
-
-    private static bool ShouldCache(int status) =>
-        status >= 200 && status < 500 && status != 429;
 
     private async Task<string> ComputeFingerprint(HttpContext context)
     {

@@ -16,7 +16,9 @@ internal sealed class GracefulShutdownMiddleware
     {
         if (Volatile.Read(ref InternalShark.IsShuttingDown))
         {
-            context.Response.StatusCode = 503;
+            var gsOptions = Shark.SharkOption.GracefulShutdownOptions;
+            var statusCode = gsOptions?.ShutdownStatusCode ?? 503;
+            context.Response.StatusCode = statusCode;
             var localizer = ErrorLocalizerHelper.GetLocalizer();
             var culture = ErrorLocalizerHelper.ResolveCulture(context);
             await ProblemDetailsResult.WriteAsync(context, 503,
