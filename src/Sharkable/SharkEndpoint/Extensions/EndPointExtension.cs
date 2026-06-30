@@ -108,7 +108,7 @@ internal static class SharkEndPointExtension
             if (Shark.SharkOption.EnableValidation)
                 group.AddEndpointFilter<ValidationFilter>();
 
-            if (Shark.SharkOption.ApiKeys?.Length > 0)
+            if (Shark.SharkOption.ApiKeys?.Length > 0 && Shark.SharkOption.AuthorizationInterceptorFactory == null)
                 group.AddEndpointFilter<ApiKeyFilter>();
 
             if (Shark.SharkOption.AuthorizationInterceptorFactory != null)
