@@ -2,6 +2,13 @@
 
 All notable changes to Sharkable are documented here.
 
+## [0.5.4] — 2026-06-30
+
+### security
+
+- Add 100ms regex timeout to `FormatAsGroupName` / `GetVersionFormat` — prevent ReDoS via malicious `GroupNameSuffixPattern` / `VersionFormatPattern`
+- Add `SafeSoftDeleteField` validation in `AutoCrudGenerator` — reject non-alphanumeric field names to prevent SQL injection
+
 ## [0.5.3] — 2026-06-30
 
 ### feat
