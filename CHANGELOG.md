@@ -6,7 +6,74 @@ All notable changes to Sharkable are documented here.
 
 ### security
 
+- Add `MaxFingerprintBodySize` (default 64 KiB) to `SharkIdempotencyOptions` — prevent OOM via attacker-controlled `Content-Length` header in idempotency middleware fingerprinting. Fixed chunked-transfer bypass where all `Transfer-Encoding: chunked` requests hashed to the same fingerprint (now hashes body incrementally with `-1` sentinel for unknown length); setter rejects `<= 0`
+- Replace `Thread.Sleep` polling with `await Task.Delay` in graceful shutdown drain — prevent ApplicationStopping thread block (SHARK-SEC-003). Initial fix used `.GetAwaiter().GetResult()` on the drain task which still blocked the callback; corrected to true fire-and-forget so `ApplicationStopping` returns immediately.
+- Make `SagaExecutor.LockTtl` configurable; add `LockRenewalInterval` with periodic lock extension — prevent split-brain sagas when step duration exceeds lock TTL (SHARK-SEC-004, cross-repo with `Sharkable.Cache.Redis`). `ISagaStore.RenewLockAsync` converted from a required interface member to a default interface method (DIM) so existing third-party implementations keep compiling unchanged.
+- Replace unconditional `KeyDelete` in `RedisSagaStore.ReleaseLockAsync` and `RedisCronJobStore.ReleaseJobLockAsync` with check-and-delete Lua script — prevent split-brain when LockTtl expires mid-work (SHARK-SEC-005, cross-repo with `Sharkable.Cache.Redis`)
+- Add `ICronJobStore.RenewJobLockAsync` plus `CronScheduler.CronLockTtl` (default 10 min) and a background renewal task mirroring `SagaExecutor` — prevent split-brain cron jobs when job duration exceeds lock TTL (SHARK-SEC-005 follow-up, cross-repo with `Sharkable.Cache.Redis`)
+- **BREAKING**: Add `[CrudAllow]` attribute for explicit field allowlist on AutoCrud insertable/updateable — endpoints with `Create | Update` enabled and zero `[CrudAllow]` properties now throw `InvalidOperationException` at startup. Existing entities must mark every writable field with `[CrudAllow]`. Prevents mass-assignment privilege escalation (SHARK-SEC-006)
+- **BREAKING (SHARK-SEC-006 follow-up)**: Exclude the configured soft-delete column (`SqlSugarOptions.SoftDeleteFieldName`, default `"IsDeleted"`) from the `[CrudAllow]` allow-list even when explicitly marked — otherwise an attacker can revive soft-deleted rows by sending the field in a PUT body. Honors `[SugarColumn(ColumnName = "...")]` renames
+- **BREAKING (SHARK-SEC-006 follow-up)**: AutoCrud `POST /` and `PUT /{id}` now return the persisted row re-read from the database instead of the user-controlled request body — previous behavior silently hid server-side defaults (timestamps, identity-generated PK, server-set soft-delete state) from the client
+- Require API key on profiler endpoint `/_sharkable/profiler` by default; return 404 if no API keys configured (SHARK-SEC-015). Adds `SharkOption.ProfilerRequireApiKey` (default `true`); also caps the `top` slow-requests surface at 50 to bound data exposure
+- Require API key on cron admin endpoint `/_sharkable/jobs`; redact `LastError` field to its first 100 characters + `...` to prevent business-logic leakage (SHARK-SEC-016). Adds `SharkOption.CronAdminRequireApiKey` (default `true`); returns 404 if no API keys are configured
+- **BREAKING**: Make `CronScheduler.Register` async — eliminate sync-over-async deadlock risk with distributed stores (SHARK-SEC-017). `ICronScheduler.Register` is replaced by `RegisterAsync` returning `Task`; `SharkOption.ConfigureCronJobs` callback type changes from `Action<ICronScheduler>` to `Func<ICronScheduler, Task>` so the hosted service can await it without blocking on startup. Internal `await _store.LoadStateAsync(...)` replaces `.GetAwaiter().GetResult()`.
+- Add `SharkOption.RequireAuthenticatedByDefault` opt-in flag — enforce auth on framework endpoints via fallback policy (SHARK-SEC-011, closes both H-4 and H-6)
+- Add `ETagOptions.MaxResponseSize` (default 10 MiB) + counting stream + incremental hashing — prevent OOM via huge response bodies (SHARK-SEC-012)
+- Add `IMemoryCache` SizeLimit (100k) + periodic eviction sweep to `MemoryRateLimitStore` — prevent slow-loris DoS via unique path explosion (SHARK-SEC-013)
+- Add `IMemoryCache` SizeLimit (10k) + entry.Size tracking to `MemoryIdempotencyStore` — prevent TB-DoS via unique idempotency keys (SHARK-SEC-014)
+- Add JWT algorithm allowlist + `RequireSignedTokens` + `RequireExpirationTime` + reduce `ClockSkew` to 30s — prevent algorithm confusion attacks (SHARK-SEC-007)
+- Use `CryptographicOperations.FixedTimeEquals` for API key comparison — prevent timing oracle (SHARK-SEC-008)
+- Gate `ScalarJwtToken` / `ScalarApiKeyValue` to `IHostEnvironment.IsDevelopment()` — prevent token leakage to public `/scalar/v1` UI (SHARK-SEC-009)
+- Implement `AuditTrailMiddleware` header redaction per `RedactHeaders` list — credential-bearing headers (`Authorization`, `X-Api-Key`, `Cookie` by default) have their values replaced with `***` in audit log output. Header names preserved so reviewers see which credentials were presented (SHARK-SEC-010)
+- Redact RedisHealthCheck description — never expose topology or exception messages on public `/healthz` (SHARK-SEC-018)
+- Validate connection string at AddSharkableRedis — null-check + default `abortConnect=false` + optional TLS enforcement (SHARK-SEC-019)
+- Replace `JsonSerializer.Serialize<T>` with source-generated `JsonSerializerContext` in `RedisIdempotencyStore` — Cache.Redis is now AOT-compatible (SHARK-SEC-020 follow-up, cross-repo with `Sharkable.Cache.Redis`)
+- Remove auto-registration of `RedisHealthCheck` as `IHealthCheck` in `AddSharkableRedis` — `UseSharkableRedisHealthCheck()` is the only way to wire it (SHARK-SEC-021 follow-up, cross-repo with `Sharkable.Cache.Redis`)
+- Connection string: only override `abortConnect=false` when the key is absent — respect an explicit `abortConnect=true` (SHARK-SEC-019 follow-up, cross-repo with `Sharkable.Cache.Redis`)
+- Replace empty catch in RedisIdempotencyStore deserialization with typed exception handling + tombstone record — prevent silent double-execution on corruption (SHARK-SEC-020)
+- Add `UseSharkableRedisHealthCheck()` extension — explicit opt-in to wire health check into `/healthz` (SHARK-SEC-021)
+- Set TTL on RedisSagaStore progress records via `RedisStoreOptions.SagaProgressTtl` (default 7d) — prevent unbounded memory growth (SHARK-SEC-022)
+- Add `AutoCrudSqlSugar.AutoCrudRequireAuthorization` opt-in flag — auto-attach `.RequireAuthorization()` to generated CRUD endpoints. Default `false` for backward compat; production deployments MUST enable. (SHARK-SEC-023, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
+- Defense-in-depth: also exclude `SafeSoftDeleteField` from `[CrudAllow]` allow-list by case-insensitive name match — protects against entities whose C# property name matches the configured soft-delete column but lacks `[SugarColumn]` rename (SHARK-SEC-024, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
+- Add `AutoCrudSqlSugar.MaxPageNumber` (default 1M) + overflow check on `(page - 1) * pageSize` — prevent pagination DoS via `page=int.MaxValue` producing a negative OFFSET (SHARK-SEC-025, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
+- Redact `SqlSugarHealthCheck` description — never expose `dbType` or `ex.Message` on public `/healthz`; full diagnostic detail logged at `LogWarning` for operators only (SHARK-SEC-026, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
+- Escape SQL `LIKE` wildcards + cap filter value length (200) + cap `IN` array size (100) in AutoCrud search — prevent LIKE wildcard DoS and large-IN clause DoS (SHARK-SEC-027, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
+- Fix ETag `CountingResponseBody.FlushAsync` duplicate body write on over-cap responses (SHARK-SEC-012 follow-up)
+- Fix `MemoryRateLimitStore.IncrementAsync` non-atomic increment allowing concurrent bypass (SHARK-SEC-013 follow-up)
+- Replace `AuditTrailMiddleware.CaptureHeaders` `JsonSerializer.Serialize` with hand-rolled formatter — AOT-compatible (SHARK-SEC-010 follow-up)
+- Make JWT audience validation mandatory when `ConfigureJwt` is called — reject empty audience list at config time (SHARK-SEC-007 follow-up)
+- Strip assembly-qualified type name from `ExceptionHandlerOptions.GetErrorMessage` dev output — prevent fingerprinting of `Sharkable.X.Y, Version=1.0.0.0` over the wire (SHARK-SEC-M003)
+- Redact `JwtHealthCheck` description on `/healthz` — replace authority URL + `ex.Message` echoes with generic descriptions; full URL + exception now surface via `ILogger.LogWarning` for operators only (SHARK-SEC-M004)
+- Pin `CultureInfo.InvariantCulture` for `string.Format` in `HttpContext.Localize(key, args)` — prevent culture-dependent format-string growth attacks via malicious translations (SHARK-SEC-M005)
+- Implement `IDisposable` on `AdaptiveLimitMonitor` + wrap `Adjust()` in try/catch — prevent timer-callback exception tearing the process down + close the `Process` handle leak (SHARK-SEC-M010)
+- Cap `CronExpression.GetNext` iteration count at 2.2 M — bound CPU on non-matching patterns (e.g. `0 0 30 2 *`) that previously looped 2.1 M times per hosted-service tick (SHARK-SEC-M011)
+- Link `SharkCronHostedService` host stoppingToken to a per-job `CancellationTokenSource` — prevent orphaned long-running cron jobs surviving `app.StopAsync()` and tripping k8s termination grace periods (SHARK-SEC-M012)
+- Collapse `CronScheduler` three correlated dictionaries (`_jobs` / `_states` / `_expressions`) into one `Dictionary<string, JobEntry>` under a single lock — eliminate TOCTOU between `Register` and `GetDueJobsAsync` (SHARK-SEC-M013)
+- Bound `/healthz` aggregate `HealthCheckService.CheckHealthAsync` with a 10 s `CancellationTokenSource` — prevent a single hung check from keeping the endpoint open and tripping k8s probes (SHARK-SEC-M015)
+- `JwtHealthCheck` now accepts `IHttpClientFactory` via DI — reuse a pooled `HttpMessageHandler` instead of opening a new socket per probe (SHARK-SEC-M016)
+- Default rate-limit partition key includes the authenticated `User.Identity.Name` when present, falling back to `RemoteIpAddress` — prevent shared-NAT / proxy-IP DoS or IP-rotation bypass (SHARK-SEC-M017)
+- Invoke `JwtConfigure` BEFORE applying framework `TokenValidationParameters` defaults — user callbacks that mutate properties in place (the documented contract) now compose correctly; framework safety (algorithm allowlist, 30 s `ClockSkew`, `RequireSignedTokens`, `RequireExpirationTime`) is re-applied on the final instance regardless of user replacement (SHARK-SEC-M019)
+- Default `AuditTrailOptions.ForwardCorrelationId` to `false` + validate inbound correlation id against `[A-Za-z0-9._-]{1,128}` — prevent log injection via `X-Correlation-Id: foo\n[CRITICAL] admin login OK` (SHARK-SEC-M020)
+- Include the authenticated user identity (`User.Identity.Name` / `sub` claim) in `SharkIdempotencyMiddleware` fingerprint — prevent cross-user replay when two authenticated users share the same `Idempotency-Key` + body. Tests updated for the new signature (SHARK-SEC-M021)
+- Replace unbounded `MemoryStream` for the idempotency response body with a `CountingResponseBody` wrapper that throws `ResponseSizeExceededException` at `MaxResponseSize` — peak allocation is now bounded by the cap instead of by the attacker-controlled response size (SHARK-SEC-M008)
+- Expand `ConfigurationValidator` to validate header names (`CorrelationIdHeader`, `HeaderPrefix`, `ReplayedHeaderName`, `Idempotency-Key`, `ApiKeyHeaderName`) against `[A-Za-z0-9._-]+` — block CRLF-injection via appsettings.json. Try-compile regex patterns + validate RateLimiter / ETag / AuditTrail / Idempotency numeric/timespan ranges at startup (SHARK-SEC-M001, M002, L017)
+- Cap `AuditTrailMiddleware` query-string length at 4 KiB before the redact pass — prevent multi-MB `?x=` strings bloating every audit log line (SHARK-SEC-M009)
+- Default `JsonHelper` `HttpResponseExtension.WriteJsonAsync` to `WriteIndented=false` — compact JSON is ~2x smaller on the wire (SHARK-SEC-L001)
+- Enforce `SharkIdempotencyOptions.MinKeyLength = 16` (IETF draft) on `Idempotency-Key` — prevent attackers from pre-burning the short-key space (`a`, `b`, `aa`, ...) and filling the in-memory store (SHARK-SEC-L002)
+- `ApiKeyFilter` now injects `IOptionsMonitor<SharkOption>` and re-reads `ApiKeys` on every invocation — hot-reload via configuration change now takes effect immediately (SHARK-SEC-L003)
+- Add `[SharkOpenApiIgnore]` property attribute + schema transformer — properties carrying the marker are stripped from every generated OpenAPI schema, preventing `Password` / `RefreshToken` / `ApiSecret` from appearing in `/openapi/v1.json` (SHARK-SEC-L009)
+- Parse `ETagMiddleware` `If-None-Match` per RFC 9110 §13.1.2 — split comma-separated candidates, honor weak `W/"..."` prefix, and accept `*` wildcard. The previous `Trim('"')` on the whole header only worked for a single strong candidate (SHARK-SEC-L011)
+- Narrow the empty `catch {}` in `EndPointExtension` AutoCrud marker lookup to `TypeLoadException` / `TargetInvocationException` / `MissingMethodException` — anything else (OOM, MemberAccess, …) propagates so a real startup failure stays visible. Logs via `ILogger.LogDebug` (SHARK-SEC-L019, L022)
+- `SharkBackgroundService.LastError = ex.ToString()` instead of `ex.Message` — preserve inner exception stack so operators see the root cause (SHARK-SEC-L024)
+- `RedactingLogger` now redacts structurally by walking the `{OriginalFormat}` template and substituting `{Key}` placeholders — substring-search over-redaction (`password="p4ss"` + unrelated "the password is p4ss" both rewritten) and under-redaction (JSON-escaped values) fixed (SHARK-SEC-M006)
+- Cache compiled default-pattern `Regex` (`GroupNameSuffixRegex`, `VersionFormatRegex`) as static fields with `RegexOptions.Compiled` + 100 ms timeout — no re-parse per call (SHARK-SEC-L012)
+- Add `TenantOptions.AllowedHosts` + check in `TenantResolver.FromHost` — when set, mismatched inbound `Host` headers cannot be used to spoof the tenant (SHARK-SEC-L007)
+- `AuditLogBuffer` consumer logs a debug line on shutdown — distinguish graceful cancellation from a misbehaving loop (SHARK-SEC-L020)
 - Pin `Microsoft.OpenApi` to 2.7.5 — suppress NU1903 (CVE-2026-49451, circular schema stack overflow)
+
+### feat
+
+- Add `UnifiedResult<T>` AOT preservation — Source Generator auto-emits `typeof(UnifiedResult<T>)` for all endpoint return types
 
 ## [0.5.4] — 2026-06-30
 
@@ -137,78 +204,6 @@ All notable changes to Sharkable are documented here.
 
 - Enable idempotency middleware for end-to-end AOT verification
 - Doc fixes and roadmap
-
-## [Unreleased]
-
-### security
-
-- Add `MaxFingerprintBodySize` (default 64 KiB) to `SharkIdempotencyOptions` — prevent OOM via attacker-controlled `Content-Length` header in idempotency middleware fingerprinting. Fixed chunked-transfer bypass where all `Transfer-Encoding: chunked` requests hashed to the same fingerprint (now hashes body incrementally with `-1` sentinel for unknown length); setter rejects `<= 0`
-- Replace `Thread.Sleep` polling with `await Task.Delay` in graceful shutdown drain — prevent ApplicationStopping thread block (SHARK-SEC-003). Initial fix used `.GetAwaiter().GetResult()` on the drain task which still blocked the callback; corrected to true fire-and-forget so `ApplicationStopping` returns immediately.
-- Make `SagaExecutor.LockTtl` configurable; add `LockRenewalInterval` with periodic lock extension — prevent split-brain sagas when step duration exceeds lock TTL (SHARK-SEC-004, cross-repo with `Sharkable.Cache.Redis`). `ISagaStore.RenewLockAsync` converted from a required interface member to a default interface method (DIM) so existing third-party implementations keep compiling unchanged.
-- Replace unconditional `KeyDelete` in `RedisSagaStore.ReleaseLockAsync` and `RedisCronJobStore.ReleaseJobLockAsync` with check-and-delete Lua script — prevent split-brain when LockTtl expires mid-work (SHARK-SEC-005, cross-repo with `Sharkable.Cache.Redis`)
-- Add `ICronJobStore.RenewJobLockAsync` plus `CronScheduler.CronLockTtl` (default 10 min) and a background renewal task mirroring `SagaExecutor` — prevent split-brain cron jobs when job duration exceeds lock TTL (SHARK-SEC-005 follow-up, cross-repo with `Sharkable.Cache.Redis`)
-- **BREAKING**: Add `[CrudAllow]` attribute for explicit field allowlist on AutoCrud insertable/updateable — endpoints with `Create | Update` enabled and zero `[CrudAllow]` properties now throw `InvalidOperationException` at startup. Existing entities must mark every writable field with `[CrudAllow]`. Prevents mass-assignment privilege escalation (SHARK-SEC-006)
-- **BREAKING (SHARK-SEC-006 follow-up)**: Exclude the configured soft-delete column (`SqlSugarOptions.SoftDeleteFieldName`, default `"IsDeleted"`) from the `[CrudAllow]` allow-list even when explicitly marked — otherwise an attacker can revive soft-deleted rows by sending the field in a PUT body. Honors `[SugarColumn(ColumnName = "...")]` renames
-- **BREAKING (SHARK-SEC-006 follow-up)**: AutoCrud `POST /` and `PUT /{id}` now return the persisted row re-read from the database instead of the user-controlled request body — previous behavior silently hid server-side defaults (timestamps, identity-generated PK, server-set soft-delete state) from the client
-- Require API key on profiler endpoint `/_sharkable/profiler` by default; return 404 if no API keys configured (SHARK-SEC-015). Adds `SharkOption.ProfilerRequireApiKey` (default `true`); also caps the `top` slow-requests surface at 50 to bound data exposure
-- Require API key on cron admin endpoint `/_sharkable/jobs`; redact `LastError` field to its first 100 characters + `...` to prevent business-logic leakage (SHARK-SEC-016). Adds `SharkOption.CronAdminRequireApiKey` (default `true`); returns 404 if no API keys are configured
-- **BREAKING**: Make `CronScheduler.Register` async — eliminate sync-over-async deadlock risk with distributed stores (SHARK-SEC-017). `ICronScheduler.Register` is replaced by `RegisterAsync` returning `Task`; `SharkOption.ConfigureCronJobs` callback type changes from `Action<ICronScheduler>` to `Func<ICronScheduler, Task>` so the hosted service can await it without blocking on startup. Internal `await _store.LoadStateAsync(...)` replaces `.GetAwaiter().GetResult()`.
-- Add `SharkOption.RequireAuthenticatedByDefault` opt-in flag — enforce auth on framework endpoints via fallback policy (SHARK-SEC-011, closes both H-4 and H-6)
-- Add `ETagOptions.MaxResponseSize` (default 10 MiB) + counting stream + incremental hashing — prevent OOM via huge response bodies (SHARK-SEC-012)
-- Add `IMemoryCache` SizeLimit (100k) + periodic eviction sweep to `MemoryRateLimitStore` — prevent slow-loris DoS via unique path explosion (SHARK-SEC-013)
-- Add `IMemoryCache` SizeLimit (10k) + entry.Size tracking to `MemoryIdempotencyStore` — prevent TB-DoS via unique idempotency keys (SHARK-SEC-014)
-- Add JWT algorithm allowlist + `RequireSignedTokens` + `RequireExpirationTime` + reduce `ClockSkew` to 30s — prevent algorithm confusion attacks (SHARK-SEC-007)
-- Use `CryptographicOperations.FixedTimeEquals` for API key comparison — prevent timing oracle (SHARK-SEC-008)
-- Gate `ScalarJwtToken` / `ScalarApiKeyValue` to `IHostEnvironment.IsDevelopment()` — prevent token leakage to public `/scalar/v1` UI (SHARK-SEC-009)
-- Implement `AuditTrailMiddleware` header redaction per `RedactHeaders` list — credential-bearing headers (`Authorization`, `X-Api-Key`, `Cookie` by default) have their values replaced with `***` in audit log output. Header names preserved so reviewers see which credentials were presented (SHARK-SEC-010)
-- Redact RedisHealthCheck description — never expose topology or exception messages on public `/healthz` (SHARK-SEC-018)
-- Validate connection string at AddSharkableRedis — null-check + default `abortConnect=false` + optional TLS enforcement (SHARK-SEC-019)
-- Replace `JsonSerializer.Serialize<T>` with source-generated `JsonSerializerContext` in `RedisIdempotencyStore` — Cache.Redis is now AOT-compatible (SHARK-SEC-020 follow-up, cross-repo with `Sharkable.Cache.Redis`)
-- Remove auto-registration of `RedisHealthCheck` as `IHealthCheck` in `AddSharkableRedis` — `UseSharkableRedisHealthCheck()` is the only way to wire it (SHARK-SEC-021 follow-up, cross-repo with `Sharkable.Cache.Redis`)
-- Connection string: only override `abortConnect=false` when the key is absent — respect an explicit `abortConnect=true` (SHARK-SEC-019 follow-up, cross-repo with `Sharkable.Cache.Redis`)
-- Replace empty catch in RedisIdempotencyStore deserialization with typed exception handling + tombstone record — prevent silent double-execution on corruption (SHARK-SEC-020)
-- Add `UseSharkableRedisHealthCheck()` extension — explicit opt-in to wire health check into `/healthz` (SHARK-SEC-021)
-- Set TTL on RedisSagaStore progress records via `RedisStoreOptions.SagaProgressTtl` (default 7d) — prevent unbounded memory growth (SHARK-SEC-022)
-- Add `AutoCrudSqlSugar.AutoCrudRequireAuthorization` opt-in flag — auto-attach `.RequireAuthorization()` to generated CRUD endpoints. Default `false` for backward compat; production deployments MUST enable. (SHARK-SEC-023, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
-- Defense-in-depth: also exclude `SafeSoftDeleteField` from `[CrudAllow]` allow-list by case-insensitive name match — protects against entities whose C# property name matches the configured soft-delete column but lacks `[SugarColumn]` rename (SHARK-SEC-024, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
-- Add `AutoCrudSqlSugar.MaxPageNumber` (default 1M) + overflow check on `(page - 1) * pageSize` — prevent pagination DoS via `page=int.MaxValue` producing a negative OFFSET (SHARK-SEC-025, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
-- Redact `SqlSugarHealthCheck` description — never expose `dbType` or `ex.Message` on public `/healthz`; full diagnostic detail logged at `LogWarning` for operators only (SHARK-SEC-026, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
-- Escape SQL `LIKE` wildcards + cap filter value length (200) + cap `IN` array size (100) in AutoCrud search — prevent LIKE wildcard DoS and large-IN clause DoS (SHARK-SEC-027, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
-- Fix ETag `CountingResponseBody.FlushAsync` duplicate body write on over-cap responses (SHARK-SEC-012 follow-up)
-- Fix `MemoryRateLimitStore.IncrementAsync` non-atomic increment allowing concurrent bypass (SHARK-SEC-013 follow-up)
-- Replace `AuditTrailMiddleware.CaptureHeaders` `JsonSerializer.Serialize` with hand-rolled formatter — AOT-compatible (SHARK-SEC-010 follow-up)
-- Make JWT audience validation mandatory when `ConfigureJwt` is called — reject empty audience list at config time (SHARK-SEC-007 follow-up)
-- Strip assembly-qualified type name from `ExceptionHandlerOptions.GetErrorMessage` dev output — prevent fingerprinting of `Sharkable.X.Y, Version=1.0.0.0` over the wire (SHARK-SEC-M003)
-- Redact `JwtHealthCheck` description on `/healthz` — replace authority URL + `ex.Message` echoes with generic descriptions; full URL + exception now surface via `ILogger.LogWarning` for operators only (SHARK-SEC-M004)
-- Pin `CultureInfo.InvariantCulture` for `string.Format` in `HttpContext.Localize(key, args)` — prevent culture-dependent format-string growth attacks via malicious translations (SHARK-SEC-M005)
-- Implement `IDisposable` on `AdaptiveLimitMonitor` + wrap `Adjust()` in try/catch — prevent timer-callback exception tearing the process down + close the `Process` handle leak (SHARK-SEC-M010)
-- Cap `CronExpression.GetNext` iteration count at 2.2 M — bound CPU on non-matching patterns (e.g. `0 0 30 2 *`) that previously looped 2.1 M times per hosted-service tick (SHARK-SEC-M011)
-- Link `SharkCronHostedService` host stoppingToken to a per-job `CancellationTokenSource` — prevent orphaned long-running cron jobs surviving `app.StopAsync()` and tripping k8s termination grace periods (SHARK-SEC-M012)
-- Collapse `CronScheduler` three correlated dictionaries (`_jobs` / `_states` / `_expressions`) into one `Dictionary<string, JobEntry>` under a single lock — eliminate TOCTOU between `Register` and `GetDueJobsAsync` (SHARK-SEC-M013)
-- Bound `/healthz` aggregate `HealthCheckService.CheckHealthAsync` with a 10 s `CancellationTokenSource` — prevent a single hung check from keeping the endpoint open and tripping k8s probes (SHARK-SEC-M015)
-- `JwtHealthCheck` now accepts `IHttpClientFactory` via DI — reuse a pooled `HttpMessageHandler` instead of opening a new socket per probe (SHARK-SEC-M016)
-- Default rate-limit partition key includes the authenticated `User.Identity.Name` when present, falling back to `RemoteIpAddress` — prevent shared-NAT / proxy-IP DoS or IP-rotation bypass (SHARK-SEC-M017)
-- Invoke `JwtConfigure` BEFORE applying framework `TokenValidationParameters` defaults — user callbacks that mutate properties in place (the documented contract) now compose correctly; framework safety (algorithm allowlist, 30 s `ClockSkew`, `RequireSignedTokens`, `RequireExpirationTime`) is re-applied on the final instance regardless of user replacement (SHARK-SEC-M019)
-- Default `AuditTrailOptions.ForwardCorrelationId` to `false` + validate inbound correlation id against `[A-Za-z0-9._-]{1,128}` — prevent log injection via `X-Correlation-Id: foo\n[CRITICAL] admin login OK` (SHARK-SEC-M020)
-- Include the authenticated user identity (`User.Identity.Name` / `sub` claim) in `SharkIdempotencyMiddleware` fingerprint — prevent cross-user replay when two authenticated users share the same `Idempotency-Key` + body. Tests updated for the new signature (SHARK-SEC-M021)
-- Replace unbounded `MemoryStream` for the idempotency response body with a `CountingResponseBody` wrapper that throws `ResponseSizeExceededException` at `MaxResponseSize` — peak allocation is now bounded by the cap instead of by the attacker-controlled response size (SHARK-SEC-M008)
-- Expand `ConfigurationValidator` to validate header names (`CorrelationIdHeader`, `HeaderPrefix`, `ReplayedHeaderName`, `Idempotency-Key`, `ApiKeyHeaderName`) against `[A-Za-z0-9._-]+` — block CRLF-injection via appsettings.json. Try-compile regex patterns + validate RateLimiter / ETag / AuditTrail / Idempotency numeric/timespan ranges at startup (SHARK-SEC-M001, M002, L017)
-- Cap `AuditTrailMiddleware` query-string length at 4 KiB before the redact pass — prevent multi-MB `?x=` strings bloating every audit log line (SHARK-SEC-M009)
-- Default `JsonHelper` `HttpResponseExtension.WriteJsonAsync` to `WriteIndented=false` — compact JSON is ~2x smaller on the wire (SHARK-SEC-L001)
-- Enforce `SharkIdempotencyOptions.MinKeyLength = 16` (IETF draft) on `Idempotency-Key` — prevent attackers from pre-burning the short-key space (`a`, `b`, `aa`, ...) and filling the in-memory store (SHARK-SEC-L002)
-- `ApiKeyFilter` now injects `IOptionsMonitor<SharkOption>` and re-reads `ApiKeys` on every invocation — hot-reload via configuration change now takes effect immediately (SHARK-SEC-L003)
-- Add `[SharkOpenApiIgnore]` property attribute + schema transformer — properties carrying the marker are stripped from every generated OpenAPI schema, preventing `Password` / `RefreshToken` / `ApiSecret` from appearing in `/openapi/v1.json` (SHARK-SEC-L009)
-- Parse `ETagMiddleware` `If-None-Match` per RFC 9110 §13.1.2 — split comma-separated candidates, honor weak `W/"..."` prefix, and accept `*` wildcard. The previous `Trim('"')` on the whole header only worked for a single strong candidate (SHARK-SEC-L011)
-- Narrow the empty `catch {}` in `EndPointExtension` AutoCrud marker lookup to `TypeLoadException` / `TargetInvocationException` / `MissingMethodException` — anything else (OOM, MemberAccess, …) propagates so a real startup failure stays visible. Logs via `ILogger.LogDebug` (SHARK-SEC-L019, L022)
-- `SharkBackgroundService.LastError = ex.ToString()` instead of `ex.Message` — preserve inner exception stack so operators see the root cause (SHARK-SEC-L024)
-- `RedactingLogger` now redacts structurally by walking the `{OriginalFormat}` template and substituting `{Key}` placeholders — substring-search over-redaction (`password="p4ss"` + unrelated "the password is p4ss" both rewritten) and under-redaction (JSON-escaped values) fixed (SHARK-SEC-M006)
-- Cache compiled default-pattern `Regex` (`GroupNameSuffixRegex`, `VersionFormatRegex`) as static fields with `RegexOptions.Compiled` + 100 ms timeout — no re-parse per call (SHARK-SEC-L012)
-- Add `TenantOptions.AllowedHosts` + check in `TenantResolver.FromHost` — when set, mismatched inbound `Host` headers cannot be used to spoof the tenant (SHARK-SEC-L007)
-- `AuditLogBuffer` consumer logs a debug line on shutdown — distinguish graceful cancellation from a misbehaving loop (SHARK-SEC-L020)
-
-### feat
-
-- Add `UnifiedResult<T>` AOT preservation — Source Generator auto-emits `typeof(UnifiedResult<T>)` for all endpoint return types
 
 ## [0.5.0] — 2026-06-29
 
