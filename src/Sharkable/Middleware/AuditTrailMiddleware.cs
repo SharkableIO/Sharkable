@@ -179,13 +179,29 @@ internal sealed class AuditTrailMiddleware
             headers);
     }
 
+    /// <summary>
+    /// SHARK-SEC-M009: cap the query-string length before redacting so a
+    /// multi-MB query (e.g. <c>?x=&lt;10MB-of-data&gt;</c>) cannot bloat
+    /// every log line. Values past the cap are truncated to
+    /// <c>MaxQueryStringLogLength</c> with an ellipsis marker so reviewers
+    /// can still see the prefix + which params were redacted.
+    /// </summary>
+    internal const int MaxQueryStringLogLength = 4_096;
+
     private string? RedactQueryString(string? queryString)
     {
-        if (string.IsNullOrEmpty(queryString) || _options.RedactQueryParams.Length == 0)
-            return queryString;
+        if (string.IsNullOrEmpty(queryString))
+            return TruncateQueryString(queryString);
+
+        // Cap first so the per-key redaction pass can't be tricked into
+        // allocating large intermediate strings.
+        var capped = TruncateQueryString(queryString);
+
+        if (_options.RedactQueryParams.Length == 0)
+            return capped;
 
         var redacted = new HashSet<string>(_options.RedactQueryParams, StringComparer.OrdinalIgnoreCase);
-        var query = System.Web.HttpUtility.ParseQueryString(queryString);
+        var query = System.Web.HttpUtility.ParseQueryString(capped!.TrimStart('?'));
         var modified = false;
 
         foreach (var key in query.AllKeys)
@@ -197,6 +213,13 @@ internal sealed class AuditTrailMiddleware
             }
         }
 
-        return modified ? $"?{query}" : queryString;
+        return modified ? $"?{query}" : capped;
+    }
+
+    private static string? TruncateQueryString(string? queryString)
+    {
+        if (string.IsNullOrEmpty(queryString)) return queryString;
+        if (queryString.Length <= MaxQueryStringLogLength) return queryString;
+        return queryString[..MaxQueryStringLogLength] + "...[truncated]";
     }
 }
