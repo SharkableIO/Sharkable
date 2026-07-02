@@ -32,6 +32,17 @@ public sealed class ETagOptions
     /// status codes below 200 or 300 and above.
     /// </summary>
     public Func<int, bool> ShouldSkipStatus { get; set; } = static statusCode => statusCode is < 200 or >= 300;
+
+    /// <summary>
+    /// Maximum response body size (bytes) the middleware will buffer and hash
+    /// for ETag generation. When a response exceeds this cap the middleware
+    /// stops buffering, skips ETag generation, and forwards the response
+    /// unmodified (HTTP 200, no <c>ETag</c> header). Default is 10 MiB
+    /// (<c>10 * 1024 * 1024</c>). Increase for endpoints that legitimately
+    /// return larger payloads (and pair with [ResponseCache] or a CDN for
+    /// server-side caching).
+    /// </summary>
+    public long MaxResponseSize { get; set; } = 10L * 1024 * 1024;
 }
 
 /// <summary>
