@@ -1,24 +1,23 @@
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 
 namespace Sharkable;
 
 internal sealed class ApiKeyFilter : IEndpointFilter
 {
-    /// <summary>
-    /// SHA-256 digests of every valid API key, pre-computed once at construction.
-    /// Comparing fixed-length hashes via <see cref="CryptographicOperations.FixedTimeEquals"/>
-    /// avoids leaking the position of the first mismatching byte (SHARK-SEC-008).
-    /// </summary>
-    private readonly byte[][] _validKeyHashes;
+    private readonly IOptionsMonitor<SharkOption> _options;
 
-    public ApiKeyFilter()
+    /// <summary>
+    /// SHARK-SEC-L003: accept <see cref="IOptionsMonitor{SharkOption}"/> so
+    /// the filter re-reads <c>ApiKeys</c> on every invocation. The previous
+    /// implementation captured the key list once in the constructor and was
+    /// permanently stale after hot-reload via configuration changes.
+    /// </summary>
+    public ApiKeyFilter(IOptionsMonitor<SharkOption> options)
     {
-        var keys = Shark.SharkOption.ApiKeys ?? [];
-        _validKeyHashes = new byte[keys.Length][];
-        for (var i = 0; i < keys.Length; i++)
-            _validKeyHashes[i] = SHA256.HashData(Encoding.UTF8.GetBytes(keys[i]));
+        _options = options;
     }
 
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
@@ -26,7 +25,10 @@ internal sealed class ApiKeyFilter : IEndpointFilter
         if (context.HttpContext.GetEndpoint()?.Metadata.GetMetadata<IAllowAnonymous>() != null)
             return await next(context);
 
-        if (!context.HttpContext.Request.Headers.TryGetValue(Shark.SharkOption.ApiKeyHeaderName, out var apiKey))
+        var opt = _options.CurrentValue;
+        var keys = opt.ApiKeys ?? [];
+
+        if (!context.HttpContext.Request.Headers.TryGetValue(opt.ApiKeyHeaderName, out var apiKey))
         {
             context.HttpContext.Response.StatusCode = 401;
             await ProblemDetailsResult.WriteAsync(context.HttpContext, 401, "Missing or invalid API key");
@@ -37,9 +39,10 @@ internal sealed class ApiKeyFilter : IEndpointFilter
         // constant time so attackers can't recover key bytes via timing.
         var candidateHash = SHA256.HashData(Encoding.UTF8.GetBytes(apiKey.ToString()));
         var matched = false;
-        for (var i = 0; i < _validKeyHashes.Length; i++)
+        for (var i = 0; i < keys.Length; i++)
         {
-            if (CryptographicOperations.FixedTimeEquals(candidateHash, _validKeyHashes[i]))
+            var keyHash = SHA256.HashData(Encoding.UTF8.GetBytes(keys[i]));
+            if (CryptographicOperations.FixedTimeEquals(candidateHash, keyHash))
                 matched = true;
         }
 
