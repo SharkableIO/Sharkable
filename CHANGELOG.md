@@ -171,6 +171,7 @@ All notable changes to Sharkable are documented here.
 - Fix ETag `CountingResponseBody.FlushAsync` duplicate body write on over-cap responses (SHARK-SEC-012 follow-up)
 - Fix `MemoryRateLimitStore.IncrementAsync` non-atomic increment allowing concurrent bypass (SHARK-SEC-013 follow-up)
 - Replace `AuditTrailMiddleware.CaptureHeaders` `JsonSerializer.Serialize` with hand-rolled formatter — AOT-compatible (SHARK-SEC-010 follow-up)
+- Make JWT audience validation mandatory when `ConfigureJwt` is called — reject empty audience list at config time (SHARK-SEC-007 follow-up)
 
 ### feat
 

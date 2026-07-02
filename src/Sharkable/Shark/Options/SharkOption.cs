@@ -124,10 +124,28 @@ public sealed class SharkOption : ISharkOption
     /// Calls <c>services.AddAuthentication().AddJwtBearer()</c> with the given authority and audiences.
     /// </summary>
     /// <param name="authority">The trusted token authority (issuer) URL.</param>
-    /// <param name="audiences">Accepted audience values.</param>
+    /// <param name="audiences">
+    /// Accepted audience values. <b>Must contain at least one non-empty entry.</b>
+    /// An empty (or all-whitespace) audience list throws <see cref="InvalidOperationException"/>
+    /// at startup — passing one would silently disable audience validation and accept tokens
+    /// minted for any audience (SHARK-SEC-007 follow-up).
+    /// </param>
     /// <param name="configure">Optional additional <see cref="JwtBearerOptions"/> configuration.</param>
     public void ConfigureJwt(string authority, string[] audiences, Action<JwtBearerOptions>? configure = null)
     {
+        if (string.IsNullOrWhiteSpace(authority))
+            throw new ArgumentException("Authority cannot be null or whitespace.", nameof(authority));
+        if (audiences is null || audiences.Length == 0)
+            throw new InvalidOperationException(
+                "JWT audience list cannot be empty. Audiences cannot be empty when JWT auth is enabled " +
+                "(SHARK-SEC-007). Specify at least one audience, e.g. " +
+                "opt.ConfigureJwt(authority: \"https://issuer\", audiences: new[] { \"api://default\" }).");
+        for (var i = 0; i < audiences.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(audiences[i]))
+                throw new InvalidOperationException(
+                    $"JWT audience at index {i} is null or whitespace (SHARK-SEC-007). All audience entries must be non-empty.");
+        }
         JwtAuthority = authority;
         JwtAudiences = audiences;
         JwtConfigure = configure;

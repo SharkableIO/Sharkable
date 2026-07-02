@@ -134,7 +134,11 @@ public static class SharkExtension
                     opt.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = true,
-                        ValidateAudience = Shark.SharkOption.JwtAudiences?.Length > 0,
+                        // SHARK-SEC-007 follow-up: ConfigureJwt now guarantees a non-empty
+                        // audience list, so always validate audience. Tokens with any other
+                        // audience are rejected. (Defense-in-depth: ConfigurationValidator
+                        // and the Create call site both fail closed if the list is empty.)
+                        ValidateAudience = true,
                         ValidateIssuerSigningKey = true,
                         ValidateLifetime = true,
                         RequireSignedTokens = true,
@@ -161,8 +165,7 @@ public static class SharkExtension
                         // so a stolen token expires within a smaller clock-drift window.
                         ClockSkew = TimeSpan.FromSeconds(30),
                     };
-                    if (Shark.SharkOption.JwtAudiences?.Length > 0)
-                        opt.TokenValidationParameters.ValidAudiences = Shark.SharkOption.JwtAudiences;
+                    opt.TokenValidationParameters.ValidAudiences = Shark.SharkOption.JwtAudiences!;
 
                     // Let user configure first (OnTokenValidated, custom claims, etc.)
                     Shark.SharkOption.JwtConfigure?.Invoke(opt);
