@@ -10,6 +10,28 @@ namespace Sharkable;
 /// </summary>
 internal sealed class JwtHealthCheck : IHealthCheck
 {
+    private readonly IHttpClientFactory? _httpClientFactory;
+    private readonly ILogger<JwtHealthCheck>? _logger;
+
+    /// <summary>
+    /// Resolved by the Microsoft.Extensions.DependencyInjection health-check
+    /// infrastructure when <see cref="IServiceProvider"/> is available.
+    /// </summary>
+    public JwtHealthCheck() { }
+
+    /// <summary>
+    /// SHARK-SEC-M016: when DI is available we accept an
+    /// <see cref="IHttpClientFactory"/> so the check reuses a pooled
+    /// <see cref="HttpClient"/> across calls. Without the factory the
+    /// fallback path opens a fresh socket per probe — k8s liveness probes
+    /// every 5s would exhaust sockets on the OIDC provider.
+    /// </summary>
+    public JwtHealthCheck(IHttpClientFactory httpClientFactory, ILogger<JwtHealthCheck> logger)
+    {
+        _httpClientFactory = httpClientFactory;
+        _logger = logger;
+    }
+
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
@@ -24,15 +46,24 @@ internal sealed class JwtHealthCheck : IHealthCheck
         // topology and exception internals to any anonymous caller.
         // Return generic descriptions; the full URL and exception details
         // are surfaced via structured logging below.
-        var logger = InternalShark.ServiceProvider?.GetService<ILoggerFactory>()
+        var logger = _logger ?? InternalShark.ServiceProvider?.GetService<ILoggerFactory>()
             ?.CreateLogger<JwtHealthCheck>();
 
         try
         {
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            using var probeCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            probeCts.CancelAfter(TimeSpan.FromSeconds(5));
+
+            // SHARK-SEC-M016: prefer the IHttpClientFactory-injected client
+            // (shared sockets, handler lifetime managed). Fall back to a
+            // short-lived client only when the type is constructed without
+            // DI (some test hosts do not register the factory).
+            var http = _httpClientFactory?.CreateClient("sharkable.jwt-authority")
+                       ?? new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+
             var response = await http.GetAsync(
                 $"{authority.TrimEnd('/')}/.well-known/openid-configuration",
-                cancellationToken);
+                probeCts.Token);
 
             if (response.IsSuccessStatusCode)
             {
