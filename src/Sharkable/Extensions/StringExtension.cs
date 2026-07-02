@@ -8,15 +8,46 @@ internal static class StringExtension
 {
     private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(100);
 
+    // SHARK-SEC-L012: cache the default-pattern compiled regex instances so
+    // we don't re-parse on every call. Custom patterns set via SharkOption
+    // are still compiled per call but are validated once at startup by
+    // ConfigurationValidator so the runtime path is bounded.
+    private static readonly Regex DefaultGroupNameSuffixRegex = new(
+        @"(endpoint|service|services|controller|controllers|apicontroller)(?=V?\d*$)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled,
+        RegexTimeout);
+    private static readonly Regex DefaultVersionFormatRegex = new(
+        @"V(\d+)",
+        RegexOptions.Compiled,
+        RegexTimeout);
+
     internal static string? FormatAsGroupName(this string? str)
     {
         if (string.IsNullOrWhiteSpace(str))
             return str;
-        var suffixPattern = Shark.SharkOption?.GroupNameSuffixPattern
-            ?? "(endpoint|service|services|controller|controllers|apicontroller)(?=V?\\d*$)";
+        var configured = Shark.SharkOption?.GroupNameSuffixPattern;
+        Regex suffixRegex;
+        if (string.IsNullOrEmpty(configured) ||
+            configured == DefaultGroupNameSuffixRegex.ToString())
+        {
+            suffixRegex = DefaultGroupNameSuffixRegex;
+        }
+        else
+        {
+            try
+            {
+                suffixRegex = new Regex(configured, RegexOptions.IgnoreCase, RegexTimeout);
+            }
+            catch (ArgumentException)
+            {
+                // Pattern validated at startup; defensive fallback if a
+                // user mutates the option at runtime.
+                return str;
+            }
+        }
         try
         {
-            var result = Regex.Replace(str, suffixPattern, "", RegexOptions.IgnoreCase, RegexTimeout);
+            var result = suffixRegex.Replace(str, "");
             return result.GetVersionFormat();
         }
         catch (RegexMatchTimeoutException)
@@ -24,7 +55,7 @@ internal static class StringExtension
             return str;
         }
     }
-   
+
     internal static string? ToCamelCase(this string? str)
     {
         if (string.IsNullOrEmpty(str))
@@ -96,13 +127,31 @@ internal static class StringExtension
     {
         if (string.IsNullOrWhiteSpace(str))
             return str;
-        
-        var pattern = Shark.SharkOption?.VersionFormatPattern ?? @"V(\d+)";
+
+        var configured = Shark.SharkOption?.VersionFormatPattern;
         var replacement = Shark.SharkOption?.VersionFormatReplacement ?? @"@$1";
+
+        Regex regex;
+        if (string.IsNullOrEmpty(configured) ||
+            configured == DefaultVersionFormatRegex.ToString())
+        {
+            regex = DefaultVersionFormatRegex;
+        }
+        else
+        {
+            try
+            {
+                regex = new Regex(configured, RegexOptions.None, RegexTimeout);
+            }
+            catch (ArgumentException)
+            {
+                return str;
+            }
+        }
 
         try
         {
-            return Regex.Replace(str, pattern, replacement, RegexOptions.None, RegexTimeout);
+            return regex.Replace(str, replacement);
         }
         catch (RegexMatchTimeoutException)
         {
