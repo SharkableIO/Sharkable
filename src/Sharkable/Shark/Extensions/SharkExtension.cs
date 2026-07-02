@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 
@@ -57,8 +58,16 @@ public static class SharkExtension
         //register idempotency
         if (Shark.SharkOption.EnableIdempotency)
         {
-            services.AddMemoryCache();
-            services.AddSingleton(Shark.SharkOption.IdempotencyOptions ?? new SharkIdempotencyOptions());
+            var idempotencyOptions = Shark.SharkOption.IdempotencyOptions ?? new SharkIdempotencyOptions();
+            services.AddSingleton(idempotencyOptions);
+            // SHARK-SEC-014: configure IMemoryCache with SizeLimit so the cache
+            // evicts LRU entries instead of growing unbounded under random
+            // Idempotency-Key probes.
+            services.AddSingleton<IMemoryCache>(_ =>
+                new MemoryCache(new MemoryCacheOptions
+                {
+                    SizeLimit = idempotencyOptions.MaxEntries,
+                }));
             if (Shark.SharkOption.IdempotencyStoreFactory != null)
                 services.AddSingleton(Shark.SharkOption.IdempotencyStoreFactory);
             else
