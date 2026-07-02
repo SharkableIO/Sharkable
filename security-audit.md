@@ -73,3 +73,35 @@ of in-flight requests.
 - `ApplicationStopping.Register` returns immediately (no thread blocking)
 - `Task.Delay` honors `drainCts` and exits the loop on cancel
 - Long-running endpoints (>5 min) no longer cause SIGKILL cascade
+
+## SHARK-SEC-004: Saga `LockTtl` hard-coded and never renewed (split-brain)
+
+| Field | Value |
+|---|---|
+| **ID** | SHARK-SEC-004 |
+| **Severity** | High |
+| **Introduced in** | v0.5.0 (distributed transactions / SAGA) |
+| **Fixed in** | Unreleased (next release) |
+| **CWE** | [CWE-662: Improper Synchronization](https://cwe.mitre.org/data/definitions/662.html) |
+| **Cross-repo** | Companion change in `Sharkable.Cache.Redis` (C-2) |
+
+### Description
+`SagaExecutor.LockTtl` was hard-coded to 5 minutes and there was no renewal path. Any
+saga whose steps ran longer than 5 minutes would see its Redis (or other TTL-based)
+distributed lock expire mid-flight; another node could then `TryAcquireLockAsync` the
+same `sagaId` and start a parallel execution, producing split-brain — duplicate side
+effects and double-charges. The unconditional `KeyDelete` semantics in
+`Sharkable.Cache.Redis` (also being fixed in parallel) made the collision even more
+likely because a check-then-delete race window opened on every crash-recovery.
+
+### Fix
+- Made `LockTtl` configurable via a new `SagaExecutor(ISagaStore, ILogger, TimeSpan lockTtl)` constructor overload. Default remains 5 minutes.
+- Added `SagaExecutor.LockRenewalInterval` (default `LockTtl / 3`) which triggers periodic `ISagaStore.RenewLockAsync` while work is in progress.
+- Added `ISagaStore.RenewLockAsync(sagaId, ttl)` to the contract. `MemorySagaStore.RenewLockAsync` is a documented no-op (in-process locks survive process lifetime); `RedisSagaStore` (cross-repo) overrides it to call `StringSetAsync(_lockPrefix + sagaId, token, LockTtl)`.
+- Wrapped the step loop in a `Task` that renews the lock at `LockRenewalInterval` until the linked cancellation token fires.
+
+### Verification
+- Saga execution with step duration `> LockTtl` no longer expires its lock.
+- `MemorySagaStore` continues to behave identically (locks held until released or process exit).
+- Cancellation / step failure / compensation all trigger `renewCts.Cancel()` and a clean `ReleaseLockAsync` in the `finally` block.
+- Redis-based deployments require the cross-repo companion fix in `Sharkable.Cache.Redis` for renewal to actually extend TTL.

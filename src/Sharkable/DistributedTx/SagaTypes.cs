@@ -63,6 +63,18 @@ public interface ISagaStore
     Task<bool> TryAcquireLockAsync(string sagaId, TimeSpan ttl);
 
     /// <summary>
+    /// Extends the TTL of an already-held distributed lock. Called periodically
+    /// by <see cref="SagaExecutor"/> while saga steps are in progress so that
+    /// long-running steps do not cause the lock to expire and split-brain
+    /// execution. Stores that do not support TTL renewal (in-process) should
+    /// return <see cref="Task.CompletedTask"/>.
+    /// </summary>
+    /// <param name="sagaId">The saga whose lock should be renewed.</param>
+    /// <param name="ttl">The new TTL to apply. Typically equal to the original
+    /// <c>LockTtl</c> so the renewal cadence is consistent.</param>
+    Task RenewLockAsync(string sagaId, TimeSpan ttl);
+
+    /// <summary>
     /// Releases the distributed lock for the given saga ID.
     /// </summary>
     Task ReleaseLockAsync(string sagaId);

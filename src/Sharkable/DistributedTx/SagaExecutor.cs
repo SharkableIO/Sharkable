@@ -14,14 +14,44 @@ public sealed class SagaExecutor
     private readonly ILogger<SagaExecutor> _logger;
 
     /// <summary>
-    /// Default lock TTL for saga execution.
+    /// Distributed lock TTL applied when the saga lock is acquired and on each renewal.
     /// </summary>
+    /// <remarks>
+    /// MUST exceed the 99.99th-percentile total step duration of the deployment.
+    /// If a saga's steps run longer than <c>LockTtl</c>, the lock will expire while
+    /// the saga is still executing, allowing a second instance to acquire the same
+    /// lock and produce split-brain execution. Use <see cref="LockRenewalInterval"/>
+    /// (default <c>LockTtl / 3</c>) so that long-running steps keep the lock alive.
+    /// </remarks>
     public TimeSpan LockTtl { get; set; } = TimeSpan.FromMinutes(5);
 
+    /// <summary>
+    /// Interval between automatic lock TTL renewals while a saga is in progress.
+    /// </summary>
+    /// <remarks>
+    /// Defaults to <c>LockTtl / 3</c> so that at least two renewals occur before
+    /// TTL expiry even if one renewal is lost. Set to <see cref="TimeSpan.Zero"/>
+    /// to disable renewal (only safe when every saga completes well within <c>LockTtl</c>).
+    /// </remarks>
+    public TimeSpan LockRenewalInterval { get; set; }
+
     public SagaExecutor(ISagaStore store, ILogger<SagaExecutor> logger)
+        : this(store, logger, TimeSpan.FromMinutes(5))
+    {
+    }
+
+    /// <summary>
+    /// Creates a <see cref="SagaExecutor"/> with a custom lock TTL.
+    /// </summary>
+    /// <param name="store">The saga store used for locks and progress persistence.</param>
+    /// <param name="logger">Logger for saga lifecycle diagnostics.</param>
+    /// <param name="lockTtl">Distributed lock TTL; see <see cref="LockTtl"/>.</param>
+    public SagaExecutor(ISagaStore store, ILogger<SagaExecutor> logger, TimeSpan lockTtl)
     {
         _store = store;
         _logger = logger;
+        LockTtl = lockTtl;
+        LockRenewalInterval = TimeSpan.FromTicks(lockTtl.Ticks / 3);
     }
 
     /// <summary>
@@ -40,6 +70,9 @@ public sealed class SagaExecutor
             return new SagaResult(false, "Saga is already executing");
         }
 
+        using var renewCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var renewalTask = StartLockRenewalAsync(sagaId, renewCts.Token);
+
         try
         {
             var resumeFrom = await _store.LoadProgressAsync(sagaId, ct);
@@ -47,7 +80,34 @@ public sealed class SagaExecutor
         }
         finally
         {
+            renewCts.Cancel();
+            try { await renewalTask; } catch (OperationCanceledException) { }
             await _store.ReleaseLockAsync(sagaId);
+        }
+    }
+
+    /// <summary>
+    /// Background loop that periodically renews the saga lock until the linked
+    /// cancellation token fires. Returns immediately if renewal is disabled.
+    /// </summary>
+    private async Task StartLockRenewalAsync(string sagaId, CancellationToken ct)
+    {
+        if (LockRenewalInterval <= TimeSpan.Zero) return;
+
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                await Task.Delay(LockRenewalInterval, ct);
+                await _store.RenewLockAsync(sagaId, LockTtl);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Saga {SagaId} lock renewal failed", sagaId);
         }
     }
 
