@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
 namespace Sharkable;
@@ -105,18 +104,29 @@ internal sealed class AuditTrailMiddleware
 
     private string CaptureHeaders(IHeaderDictionary headers)
     {
+        // SHARK-SEC-010 + SHARK-SEC-010 follow-up: hand-rolled JSON formatter
+        // replaces JsonSerializer.Serialize<Dictionary<string,string>> so the
+        // path emits no IL2026 / IL3050 (reflection-based serialization is not
+        // AOT-trim-safe). Header names configured in RedactHeaders have their
+        // value replaced with "***" before being written to the audit log.
         if (headers.Count == 0)
             return "{}";
 
-        var dict = new Dictionary<string, string>(headers.Count, StringComparer.OrdinalIgnoreCase);
+        var sb = new StringBuilder();
+        sb.Append('{');
+        var first = true;
         foreach (var entry in headers)
         {
-            // SHARK-SEC-010: header names configured in RedactHeaders have their
-            // value replaced with "***" before being written to the audit log.
-            var value = _redactHeaders.Contains(entry.Key) ? "***" : entry.Value.ToString();
-            dict[entry.Key] = value;
+            if (!first) sb.Append(',');
+            first = false;
+            sb.Append('"').Append(entry.Key.Replace("\"", "\\\"")).Append("\":\"");
+            var value = _redactHeaders.Contains(entry.Key)
+                ? "***"
+                : entry.Value.ToString().Replace("\\", "\\\\").Replace("\"", "\\\"");
+            sb.Append(value).Append('"');
         }
-        return JsonSerializer.Serialize(dict);
+        sb.Append('}');
+        return sb.ToString();
     }
 
     private void LogRequest(string method, string path, string? query, string headers, int statusCode, long elapsedMs, string correlationId)
