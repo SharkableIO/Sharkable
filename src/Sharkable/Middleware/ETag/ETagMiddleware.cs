@@ -71,8 +71,8 @@ internal sealed class ETagMiddleware
         context.Response.Headers["ETag"] = etag;
         context.Response.Headers["Cache-Control"] = _options.CacheControlHeader;
 
-        if (context.Request.Headers.TryGetValue("If-None-Match", out var ifNoneMatch) &&
-            ifNoneMatch.ToString().Trim('"') == hashHex)
+        if (context.Request.Headers.TryGetValue("If-None-Match", out var ifNoneMatch)
+            && MatchesIfNoneMatch(ifNoneMatch, hashHex))
         {
             context.Response.StatusCode = 304;
             context.Response.ContentLength = 0;
@@ -80,6 +80,40 @@ internal sealed class ETagMiddleware
         }
 
         await counting.FlushAsync(context.RequestAborted);
+    }
+
+    /// <summary>
+    /// SHARK-SEC-L011: properly compare <c>If-None-Match</c> against the
+    /// generated ETag per RFC 9110 §13.1.2 — handle weak ETags
+    /// (<c>W/"..."</c>) by ignoring the W/ prefix on both sides, and split
+    /// the comma-separated list of candidate tags. The previous
+    /// implementation used <c>Trim('"')</c> on the entire header value,
+    /// which only worked for a single strong candidate and silently
+    /// returned the wrong answer for weak / multi-value headers.
+    /// </summary>
+    private static bool MatchesIfNoneMatch(Microsoft.Extensions.Primitives.StringValues headerValue, string strongHex)
+    {
+        var strongEtag = "\"" + strongHex + "\"";
+        foreach (var raw in headerValue)
+        {
+            if (raw == null) continue;
+            foreach (var part in raw.Split(','))
+            {
+                var candidate = part.Trim();
+                if (candidate.Length == 0) continue;
+
+                // Weak comparison per RFC 9110 §8.8.3.2: weak comparison
+                // ignores the W/ prefix on both sides. The middleware only
+                // emits strong ETags today, so this matches both.
+                var normalized = candidate.StartsWith("W/", StringComparison.Ordinal)
+                    ? candidate[2..]
+                    : candidate;
+                if (normalized == strongEtag) return true;
+                // Also accept '*' as a wildcard match per RFC 9110 §13.1.2.
+                if (normalized == "*") return true;
+            }
+        }
+        return false;
     }
 
     private bool ShouldSkip(string path)
