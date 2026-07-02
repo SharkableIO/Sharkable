@@ -86,51 +86,27 @@ internal sealed class SharkIdempotencyMiddleware
         }
 
         // 5. We own the in-flight slot. Execute downstream with response buffering.
+        // SHARK-SEC-M008: use a counting stream wrapper around a bounded
+        // MemoryStream so the peak allocation is capped at MaxResponseSize
+        // bytes. The previous MemoryStream grew unbounded; the post-hoc
+        // Length > MaxResponseSize check could only react after OOM had
+        // already occurred. The wrapper throws ResponseSizeExceededException
+        // (caught in the finally block) the moment the cap is hit.
         var originalBody = context.Response.Body;
         await using var buffer = new MemoryStream();
-        context.Response.Body = buffer;
+        await using var counting = new CountingResponseBody(buffer, _options.MaxResponseSize);
+        context.Response.Body = counting;
+        var limitExceeded = false;
         try
         {
             await _next(context);
-
-            // 5a. Oversize response -> 500, do not cache.
-            if (buffer.Length > _options.MaxResponseSize)
-            {
-                _logger.LogWarning(
-                    "Idempotency response for key {Key} exceeds {Max} bytes; " +
-                    "rejecting and releasing in-flight slot.",
-                    key, _options.MaxResponseSize);
-                await _store.ReleaseAsync(key);
-                context.Response.StatusCode = 500;
-                context.Response.Body = originalBody;
-                await WriteUnified(context, 500, "idempotency_response_too_large",
-                    $"Response body exceeded {_options.MaxResponseSize} bytes; " +
-                    "idempotent replay is not available for this response.");
-                return;
-            }
-
-            // 5b. Successful (cacheable) responses -> store and forward.
-            if (_options.ShouldCacheStatus(context.Response.StatusCode))
-            {
-                buffer.Position = 0;
-                var bytes = buffer.ToArray();
-                await buffer.CopyToAsync(originalBody);
-
-                var record = new IdempotencyRecord(
-                    key,
-                    await ComputeFingerprint(context),
-                    context.Response.StatusCode,
-                    context.Response.ContentType ?? "application/octet-stream",
-                    bytes,
-                    DateTimeOffset.UtcNow);
-                await _store.StoreAsync(key, record, _options.Ttl);
-            }
-            else
-            {
-                // 429 or 5xx: do not cache. Release slot and forward body.
-                await _store.ReleaseAsync(key);
-                await buffer.CopyToAsync(originalBody);
-            }
+        }
+        catch (ResponseSizeExceededException)
+        {
+            // SHARK-SEC-M008: the response body exceeded the cap. Discard
+            // what we buffered, release the in-flight slot, and emit a 500
+            // explaining why the response cannot be cached.
+            limitExceeded = true;
         }
         finally
         {
@@ -138,6 +114,43 @@ internal sealed class SharkIdempotencyMiddleware
             {
                 context.Response.Body = originalBody;
             }
+        }
+
+        if (limitExceeded)
+        {
+            _logger.LogWarning(
+                "Idempotency response for key {Key} exceeds {Max} bytes; " +
+                "rejecting and releasing in-flight slot.",
+                key, _options.MaxResponseSize);
+            await _store.ReleaseAsync(key);
+            context.Response.StatusCode = 500;
+            await WriteUnified(context, 500, "idempotency_response_too_large",
+                $"Response body exceeded {_options.MaxResponseSize} bytes; " +
+                "idempotent replay is not available for this response.");
+            return;
+        }
+
+        // 5a. Successful (cacheable) responses -> store and forward.
+        if (_options.ShouldCacheStatus(context.Response.StatusCode))
+        {
+            var bytes = buffer.ToArray();
+            await buffer.CopyToAsync(originalBody);
+
+            var record = new IdempotencyRecord(
+                key,
+                await ComputeFingerprint(context),
+                context.Response.StatusCode,
+                context.Response.ContentType ?? "application/octet-stream",
+                bytes,
+                DateTimeOffset.UtcNow);
+            await _store.StoreAsync(key, record, _options.Ttl);
+        }
+        else
+        {
+            // 429 or 5xx: do not cache. Release slot and forward body.
+            await _store.ReleaseAsync(key);
+            buffer.Position = 0;
+            await buffer.CopyToAsync(originalBody);
         }
     }
 
@@ -205,5 +218,72 @@ internal sealed class SharkIdempotencyMiddleware
         context.Response.StatusCode = status;
         context.Response.ContentType = "application/json";
         return context.Response.WriteAsJsonAsync(result, result.GetType());
+    }
+
+    /// <summary>
+    /// Wraps the idempotency response-body buffer so the total number of
+    /// bytes written can be capped. Once the count exceeds
+    /// <see cref="SharkIdempotencyOptions.MaxResponseSize"/>, every further
+    /// write throws <see cref="ResponseSizeExceededException"/> so the
+    /// downstream pipeline can react immediately rather than after the
+    /// response has already exhausted memory (SHARK-SEC-M008).
+    /// </summary>
+    private sealed class CountingResponseBody : Stream
+    {
+        private readonly MemoryStream _inner;
+        private readonly long _maxBytes;
+        private long _bytesWritten;
+
+        public CountingResponseBody(MemoryStream inner, long maxBytes)
+        {
+            _inner = inner;
+            _maxBytes = maxBytes;
+        }
+
+        public override bool CanRead => false;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush() => _inner.Flush();
+        public override Task FlushAsync(CancellationToken cancellationToken) => _inner.FlushAsync(cancellationToken);
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            _bytesWritten += count;
+            if (_bytesWritten > _maxBytes)
+                throw new ResponseSizeExceededException();
+            _inner.Write(buffer, offset, count);
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            _bytesWritten += buffer.Length;
+            if (_bytesWritten > _maxBytes)
+                return ValueTask.FromException(new ResponseSizeExceededException());
+            return _inner.WriteAsync(buffer, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Thrown by <see cref="CountingResponseBody"/> when the idempotency
+    /// response exceeds the configured cap. Caught by
+    /// <see cref="SharkIdempotencyMiddleware"/> to reject the request and
+    /// release the in-flight slot without caching the over-cap body
+    /// (SHARK-SEC-M008).
+    /// </summary>
+    public sealed class ResponseSizeExceededException : Exception
+    {
+        public ResponseSizeExceededException()
+            : base("Idempotency response body exceeded the configured MaxResponseSize cap.") { }
     }
 }
