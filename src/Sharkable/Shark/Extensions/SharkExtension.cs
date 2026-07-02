@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 
@@ -84,10 +85,34 @@ public static class SharkExtension
         //register authorization (default enabled)
         if (Shark.SharkOption.EnableAuthorization)
         {
-            if (Shark.SharkOption.ConfigureAuthorization != null)
-                services.AddAuthorization(Shark.SharkOption.ConfigureAuthorization);
+            var userConfigure = Shark.SharkOption.ConfigureAuthorization;
+            var requireAuthByDefault = Shark.SharkOption.RequireAuthenticatedByDefault;
+            if (userConfigure != null)
+            {
+                services.AddAuthorization(options =>
+                {
+                    userConfigure(options);
+                    if (requireAuthByDefault)
+                    {
+                        options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                            .RequireAuthenticatedUser()
+                            .Build();
+                    }
+                });
+            }
+            else if (requireAuthByDefault)
+            {
+                services.AddAuthorization(options =>
+                {
+                    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                        .RequireAuthenticatedUser()
+                        .Build();
+                });
+            }
             else
+            {
                 services.AddAuthorization();
+            }
         }
         //register JWT auth
         if (Shark.SharkOption.JwtAuthority != null)
@@ -102,6 +127,29 @@ public static class SharkExtension
                         ValidateAudience = Shark.SharkOption.JwtAudiences?.Length > 0,
                         ValidateIssuerSigningKey = true,
                         ValidateLifetime = true,
+                        RequireSignedTokens = true,
+                        RequireExpirationTime = true,
+                        // SHARK-SEC-007: allowlist signing algorithms to prevent algorithm-confusion attacks
+                        // (e.g. an attacker swapping RS256 for HS256 and signing with the public key).
+                        ValidAlgorithms = new[]
+                        {
+                            SecurityAlgorithms.RsaSha256,
+                            SecurityAlgorithms.RsaSha384,
+                            SecurityAlgorithms.RsaSha512,
+                            SecurityAlgorithms.RsaSsaPssSha256,
+                            SecurityAlgorithms.RsaSsaPssSha384,
+                            SecurityAlgorithms.RsaSsaPssSha512,
+                            SecurityAlgorithms.EcdsaSha256,
+                            SecurityAlgorithms.EcdsaSha384,
+                            SecurityAlgorithms.EcdsaSha512,
+                            SecurityAlgorithms.HmacSha256,
+                            SecurityAlgorithms.HmacSha384,
+                            SecurityAlgorithms.HmacSha512,
+                        },
+                        NameClaimType = JwtRegisteredClaimNames.Sub,
+                        // SHARK-SEC-007 (M-18): tighten from the 5-minute default to 30s
+                        // so a stolen token expires within a smaller clock-drift window.
+                        ClockSkew = TimeSpan.FromSeconds(30),
                     };
                     if (Shark.SharkOption.JwtAudiences?.Length > 0)
                         opt.TokenValidationParameters.ValidAudiences = Shark.SharkOption.JwtAudiences;

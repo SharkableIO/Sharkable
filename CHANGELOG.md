@@ -144,6 +144,7 @@ All notable changes to Sharkable are documented here.
 - **BREAKING**: Add `[CrudAllow]` attribute for explicit field allowlist on AutoCrud insertable/updateable — endpoints with `Create | Update` enabled and zero `[CrudAllow]` properties now throw `InvalidOperationException` at startup. Existing entities must mark every writable field with `[CrudAllow]`. Prevents mass-assignment privilege escalation (SHARK-SEC-006)
 - **BREAKING (SHARK-SEC-006 follow-up)**: Exclude the configured soft-delete column (`SqlSugarOptions.SoftDeleteFieldName`, default `"IsDeleted"`) from the `[CrudAllow]` allow-list even when explicitly marked — otherwise an attacker can revive soft-deleted rows by sending the field in a PUT body. Honors `[SugarColumn(ColumnName = "...")]` renames
 - **BREAKING (SHARK-SEC-006 follow-up)**: AutoCrud `POST /` and `PUT /{id}` now return the persisted row re-read from the database instead of the user-controlled request body — previous behavior silently hid server-side defaults (timestamps, identity-generated PK, server-set soft-delete state) from the client
+- Add JWT algorithm allowlist + `RequireSignedTokens` + `RequireExpirationTime` + reduce `ClockSkew` to 30s — prevent algorithm confusion attacks (SHARK-SEC-007)
 
 ### feat
 
