@@ -144,6 +144,9 @@ All notable changes to Sharkable are documented here.
 - **BREAKING**: Add `[CrudAllow]` attribute for explicit field allowlist on AutoCrud insertable/updateable — endpoints with `Create | Update` enabled and zero `[CrudAllow]` properties now throw `InvalidOperationException` at startup. Existing entities must mark every writable field with `[CrudAllow]`. Prevents mass-assignment privilege escalation (SHARK-SEC-006)
 - **BREAKING (SHARK-SEC-006 follow-up)**: Exclude the configured soft-delete column (`SqlSugarOptions.SoftDeleteFieldName`, default `"IsDeleted"`) from the `[CrudAllow]` allow-list even when explicitly marked — otherwise an attacker can revive soft-deleted rows by sending the field in a PUT body. Honors `[SugarColumn(ColumnName = "...")]` renames
 - **BREAKING (SHARK-SEC-006 follow-up)**: AutoCrud `POST /` and `PUT /{id}` now return the persisted row re-read from the database instead of the user-controlled request body — previous behavior silently hid server-side defaults (timestamps, identity-generated PK, server-set soft-delete state) from the client
+- Require API key on profiler endpoint `/_sharkable/profiler` by default; return 404 if no API keys configured (SHARK-SEC-015). Adds `SharkOption.ProfilerRequireApiKey` (default `true`); also caps the `top` slow-requests surface at 50 to bound data exposure
+- Require API key on cron admin endpoint `/_sharkable/jobs`; redact `LastError` field to its first 100 characters + `...` to prevent business-logic leakage (SHARK-SEC-016). Adds `SharkOption.CronAdminRequireApiKey` (default `true`); returns 404 if no API keys are configured
+- **BREAKING**: Make `CronScheduler.Register` async — eliminate sync-over-async deadlock risk with distributed stores (SHARK-SEC-017). `ICronScheduler.Register` is replaced by `RegisterAsync` returning `Task`; `SharkOption.ConfigureCronJobs` callback type changes from `Action<ICronScheduler>` to `Func<ICronScheduler, Task>` so the hosted service can await it without blocking on startup. Internal `await _store.LoadStateAsync(...)` replaces `.GetAwaiter().GetResult()`.
 - Add JWT algorithm allowlist + `RequireSignedTokens` + `RequireExpirationTime` + reduce `ClockSkew` to 30s — prevent algorithm confusion attacks (SHARK-SEC-007)
 - Use `CryptographicOperations.FixedTimeEquals` for API key comparison — prevent timing oracle (SHARK-SEC-008)
 - Gate `ScalarJwtToken` / `ScalarApiKeyValue` to `IHostEnvironment.IsDevelopment()` — prevent token leakage to public `/scalar/v1` UI (SHARK-SEC-009)
@@ -152,6 +155,11 @@ All notable changes to Sharkable are documented here.
 - Replace empty catch in RedisIdempotencyStore deserialization with typed exception handling + tombstone record — prevent silent double-execution on corruption (SHARK-SEC-020)
 - Add `UseSharkableRedisHealthCheck()` extension — explicit opt-in to wire health check into `/healthz` (SHARK-SEC-021)
 - Set TTL on RedisSagaStore progress records via `RedisStoreOptions.SagaProgressTtl` (default 7d) — prevent unbounded memory growth (SHARK-SEC-022)
+- Add `AutoCrudSqlSugar.AutoCrudRequireAuthorization` opt-in flag — auto-attach `.RequireAuthorization()` to generated CRUD endpoints. Default `false` for backward compat; production deployments MUST enable. (SHARK-SEC-023, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
+- Defense-in-depth: also exclude `SafeSoftDeleteField` from `[CrudAllow]` allow-list by case-insensitive name match — protects against entities whose C# property name matches the configured soft-delete column but lacks `[SugarColumn]` rename (SHARK-SEC-024, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
+- Add `AutoCrudSqlSugar.MaxPageNumber` (default 1M) + overflow check on `(page - 1) * pageSize` — prevent pagination DoS via `page=int.MaxValue` producing a negative OFFSET (SHARK-SEC-025, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
+- Redact `SqlSugarHealthCheck` description — never expose `dbType` or `ex.Message` on public `/healthz`; full diagnostic detail logged at `LogWarning` for operators only (SHARK-SEC-026, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
+- Escape SQL `LIKE` wildcards + cap filter value length (200) + cap `IN` array size (100) in AutoCrud search — prevent LIKE wildcard DoS and large-IN clause DoS (SHARK-SEC-027, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
 
 ### feat
 
