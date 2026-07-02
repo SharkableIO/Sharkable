@@ -1,3 +1,5 @@
+using System.Reflection;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
@@ -14,6 +16,14 @@ internal static class OpenApiExtension
             services.AddOpenApi(options =>
             {
                 Shark.SharkOption.OpenApiConfigure?.Invoke(options);
+
+                // SHARK-SEC-L009: install the schema transformer that strips
+                // properties marked [SharkOpenApiIgnore] from every schema
+                // in the generated document. Without this transformer a
+                // response DTO containing a Password/RefreshToken/ApiSecret
+                // property would expose those fields in the public
+                // /openapi/v1.json — which any anonymous browser can read.
+                options.AddSchemaTransformer(RemoveSensitiveProperties);
 
                 if (Shark.SharkOption.EnableAutoWrap)
                 {
@@ -49,6 +59,46 @@ internal static class OpenApiExtension
             });
         }
         return services;
+    }
+
+    /// <summary>
+    /// Schema transformer that removes any property marked
+    /// <see cref="SharkOpenApiIgnoreAttribute"/> from the generated
+    /// OpenAPI schema. Honors both <c>JsonIgnoreCondition.Always</c> /
+    /// <c>[JsonIgnore]</c> via System.Text.Json (already wired by
+    /// Microsoft.OpenApi's built-in pipeline) plus the framework-specific
+    /// <see cref="SharkOpenApiIgnoreAttribute"/> for callers who do not
+    /// want a System.Text.Json dependency (SHARK-SEC-L009).
+    /// </summary>
+    private static Task<OpenApiSchema> RemoveSensitiveProperties(
+        OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (schema.Properties == null || schema.Properties.Count == 0)
+            return Task.FromResult(schema);
+
+        var type = context.JsonTypeInfo.Type;
+        if (type == null) return Task.FromResult(schema);
+
+        foreach (var member in type.GetMembers(BindingFlags.Public | BindingFlags.Instance))
+        {
+            var ignoreAttr = member.GetCustomAttribute<SharkOpenApiIgnoreAttribute>();
+            if (ignoreAttr == null) continue;
+
+            var jsonName = member.Name;
+            if (member.GetCustomAttribute<System.Text.Json.Serialization.JsonPropertyNameAttribute>() is { } jpna)
+                jsonName = jpna.Name;
+
+            if (schema.Properties.ContainsKey(jsonName))
+                schema.Properties.Remove(jsonName);
+
+            if (!string.IsNullOrEmpty(schema.Required?.Count > 0 ? null : null)
+                && schema.Required?.Remove(jsonName) == true)
+            {
+                // best-effort: schema may or may not track Required separately.
+            }
+        }
+
+        return Task.FromResult(schema);
     }
 
     private static OpenApiSchema DefaultUnifiedResultSchema(OpenApiSchema original)
