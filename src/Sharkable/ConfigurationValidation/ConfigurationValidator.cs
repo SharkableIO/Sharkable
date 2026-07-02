@@ -8,38 +8,38 @@ namespace Sharkable;
 /// catching common misconfigurations before the application runs.
 /// </summary>
 internal static class ConfigurationValidator
+{
+    /// <summary>
+    /// Maximum <see cref="SharkIdempotencyOptions.MaxEntries"/> value before
+    /// a startup warning is logged. Configurations above this threshold
+    /// are almost always misconfigurations (e.g. someone passed
+    /// <c>int.MaxValue</c>) and risk memory exhaustion under attack.
+    /// </summary>
+    private const long IdempotencyMaxEntriesWarningThreshold = 1_000_000;
+
+    /// <summary>
+    /// Runs all validation rules against the current <see cref="SharkOption"/>.
+    /// Returns an empty list when no issues are found.
+    /// </summary>
+    internal static List<string> Validate()
     {
-        /// <summary>
-        /// Maximum <see cref="SharkIdempotencyOptions.MaxEntries"/> value before
-        /// a startup warning is logged. Configurations above this threshold
-        /// are almost always misconfigurations (e.g. someone passed
-        /// <c>int.MaxValue</c>) and risk memory exhaustion under attack.
-        /// </summary>
-        private const long IdempotencyMaxEntriesWarningThreshold = 1_000_000;
+        var errors = new List<string>();
+        var warnings = new List<string>();
+        var opt = Shark.SharkOption;
 
-        /// <summary>
-        /// Runs all validation rules against the current <see cref="SharkOption"/>.
-        /// Returns an empty list when no issues are found.
-        /// </summary>
-        internal static List<string> Validate()
+        ValidateJwt(opt, errors);
+        ValidateMultiTenant(opt, errors);
+        ValidateIdempotency(opt, errors, warnings);
+        ValidateSaga(opt, errors);
+
+        if (warnings.Count > 0)
         {
-            var errors = new List<string>();
-            var warnings = new List<string>();
-            var opt = Shark.SharkOption;
-
-            ValidateJwt(opt, errors);
-            ValidateMultiTenant(opt, errors);
-            ValidateIdempotency(opt, errors, warnings);
-            ValidateSaga(opt, errors);
-
-            if (warnings.Count > 0)
-            {
-                foreach (var warning in warnings)
-                    Console.Error.WriteLine($"[Sharkable warning] {warning}");
-            }
-
-            return errors;
+            foreach (var warning in warnings)
+                Console.Error.WriteLine($"[Sharkable warning] {warning}");
         }
+
+        return errors;
+    }
 
     private static void ValidateJwt(SharkOption opt, List<string> errors)
     {
