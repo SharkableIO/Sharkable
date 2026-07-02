@@ -40,12 +40,27 @@ public sealed class SharkRateLimiterOptions
     /// <summary>
     /// Generates the default rate limit key from the HTTP context.
     /// Can be overridden via <see cref="KeyGenerator"/>.
+    /// <para>
+    /// SHARK-SEC-M017: includes the authenticated user identity (when present)
+    /// so a single malicious client cannot bypass per-user limits by sharing
+    /// a source IP with legitimate traffic. Behind a reverse proxy/CDN,
+    /// <c>RemoteIpAddress</c> is the proxy address, so deployers should also
+    /// configure <c>ForwardedHeadersMiddleware</c> with a <c>KnownProxies</c>
+    /// allowlist — that is the only way the framework can trust the source
+    /// IP for unauthenticated traffic.
+    /// </para>
     /// </summary>
     public string DefaultKeyGenerator(HttpContext context)
     {
-        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         var path = context.Request.Path.Value ?? "/";
-        return $"rate:{ip}:{path}";
+        // Prefer the authenticated principal name; fall back to the remote IP.
+        // Using the user identity as the partition key prevents one attacker
+        // from starving legitimate users when they share a NAT / proxy IP.
+        var partition = context.User?.Identity?.IsAuthenticated == true
+            && !string.IsNullOrEmpty(context.User.Identity.Name)
+                ? "u:" + context.User.Identity.Name
+                : "ip:" + (context.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+        return $"rate:{partition}:{path}";
     }
 
     // --- Adaptive rate limiting ---
