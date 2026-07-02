@@ -8,9 +8,14 @@ namespace Sharkable;
 /// </summary>
 public sealed class CronScheduler : ICronScheduler
 {
-    private readonly Dictionary<string, CronJob> _jobs = [];
-    private readonly Dictionary<string, CronJobState> _states = [];
-    private readonly Dictionary<string, CronExpression> _expressions = [];
+    // SHARK-SEC-M013: collapse the previous three correlated dictionaries
+    // (jobs / states / expressions) into a single JobEntry record under
+    // one lock. The previous design had TOCTOU gaps where Register could
+    // mutate _expressions and _jobs but a concurrent GetDueJobsAsync
+    // could read the partial state between the two writes.
+    private sealed record JobEntry(CronJob Job, CronJobState State, CronExpression Expression);
+
+    private readonly Dictionary<string, JobEntry> _entries = [];
     private readonly ICronJobStore _store;
     private readonly ILogger<CronScheduler> _logger;
 
@@ -36,7 +41,7 @@ public sealed class CronScheduler : ICronScheduler
 
     internal IReadOnlyCollection<CronJob> Jobs
     {
-        get { lock (_jobs) return _jobs.Values.ToList(); }
+        get { lock (_entries) return _entries.Values.Select(e => e.Job).ToList(); }
     }
 
     public async Task RegisterAsync(CronJob job)
@@ -49,9 +54,6 @@ public sealed class CronScheduler : ICronScheduler
             _logger.LogError(ex, "Cron job {Name} has invalid expression: {Cron}", job.Name, job.Cron);
             return;
         }
-
-        lock (_expressions) _expressions[job.Name] = expr;
-        lock (_jobs) _jobs[job.Name] = job;
 
         // SHARK-SEC-017: await the store directly instead of blocking via
         // .GetAwaiter().GetResult(). The sync-over-async form previously used
@@ -68,7 +70,9 @@ public sealed class CronScheduler : ICronScheduler
         state.Description = job.Options.Description ?? "";
         state.Cron = job.Cron;
 
-        lock (_states) _states[job.Name] = state;
+        // Single dictionary insert under one lock — readers see the fully
+        // initialized (Job, State, Expression) tuple atomically.
+        lock (_entries) _entries[job.Name] = new JobEntry(job, state, expr);
     }
 
     internal async Task<List<(CronJob Job, CronJobState State, bool LockHeld)>> GetDueJobsAsync()
@@ -76,22 +80,18 @@ public sealed class CronScheduler : ICronScheduler
         var now = DateTimeOffset.UtcNow;
         var due = new List<(CronJob, CronJobState, bool)>();
 
-        CronJob[] jobs;
-        lock (_jobs) jobs = _jobs.Values.ToArray();
+        JobEntry[] snapshot;
+        lock (_entries) snapshot = _entries.Values.ToArray();
 
-        foreach (var job in jobs)
+        foreach (var entry in snapshot)
         {
-            CronJobState? state;
-            lock (_states) state = _states.GetValueOrDefault(job.Name);
-            if (state == null) continue;
+            var job = entry.Job;
+            var state = entry.State;
+            var expr = entry.Expression;
 
             if (state.Paused) continue;
             if (state.IsRunning && job.Options.Concurrency == CronJobConcurrency.SkipIfRunning)
                 continue;
-
-            CronExpression? expr;
-            lock (_expressions) _expressions.TryGetValue(job.Name, out expr);
-            if (expr == null) continue;
 
             var next = expr.GetNext(now - TimeSpan.FromSeconds(1));
             if (next == null) continue;
@@ -203,13 +203,12 @@ public sealed class CronScheduler : ICronScheduler
 
     public async Task<CronJobState?> TriggerAsync(string name)
     {
-        CronJob? job;
-        lock (_jobs) _jobs.TryGetValue(name, out job);
-        if (job == null) return null;
+        JobEntry? entry;
+        lock (_entries) _entries.TryGetValue(name, out entry);
+        if (entry == null) return null;
 
-        CronJobState? state;
-        lock (_states) _states.TryGetValue(name, out state);
-        if (state == null) return null;
+        var job = entry.Job;
+        var state = entry.State;
 
         _ = Task.Run(async () => await ExecuteJobAsync(job, state, lockHeld: false));
         return state;
@@ -217,18 +216,22 @@ public sealed class CronScheduler : ICronScheduler
 
     public Task PauseAsync(string name)
     {
-        lock (_states) { if (_states.TryGetValue(name, out var s)) s.Paused = true; }
+        lock (_entries) { if (_entries.TryGetValue(name, out var e)) e.State.Paused = true; }
         return Task.CompletedTask;
     }
 
     public Task ResumeAsync(string name)
     {
-        lock (_states) { if (_states.TryGetValue(name, out var s)) s.Paused = false; }
+        lock (_entries) { if (_entries.TryGetValue(name, out var e)) e.State.Paused = false; }
         return Task.CompletedTask;
     }
 
     public Task<IReadOnlyList<CronJobState>> ListAsync()
     {
-        lock (_states) return Task.FromResult<IReadOnlyList<CronJobState>>(_states.Values.ToList());
+        lock (_entries)
+        {
+            return Task.FromResult<IReadOnlyList<CronJobState>>(
+                _entries.Values.Select(e => e.State).ToList());
+        }
     }
 }
