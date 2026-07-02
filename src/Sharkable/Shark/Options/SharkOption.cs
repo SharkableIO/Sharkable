@@ -379,6 +379,18 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public Action<ICronScheduler>? ConfigureCronJobs { get; set; }
     /// <summary>
+    /// When <c>true</c> (default), the <c>/_sharkable/jobs</c> admin endpoint
+    /// requires a valid API key from <see cref="ApiKeys"/> sent via
+    /// <see cref="ApiKeyHeaderName"/>. If no API keys are configured at all the
+    /// endpoint responds <c>404</c> so its existence is not leaked to
+    /// unauthenticated probes. The endpoint also redacts each job's
+    /// <c>LastError</c> field to its first 100 characters plus <c>"..."</c> to
+    /// prevent business-logic leakage via error text (SHARK-SEC-016). Set
+    /// <c>false</c> to opt out of the gate (not recommended in production — the
+    /// endpoint exposes cron job names, run counts, paused status and errors).
+    /// </summary>
+    public bool CronAdminRequireApiKey { get; set; } = true;
+    /// <summary>
     /// Pre-filled JWT token in the Scalar UI authentication dialog.
     /// When set, replaces the default placeholder in Scalar's Bearer auth.
     /// </summary>
