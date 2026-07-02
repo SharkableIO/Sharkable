@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Sharkable;
 
 /// <summary>
@@ -35,7 +37,12 @@ public static class LocalizationExtensions
     public static string Localize(this HttpContext context, string key, params object[] args)
     {
         var msg = context.Localize(key);
-        return args.Length > 0 ? string.Format(msg, args) : msg;
+        // SHARK-SEC-M005: pass InvariantCulture so the localized template's
+        // format specifiers (e.g. "{0:N0}", "{0:C}") cannot inject culture-
+        // dependent expansion or be used as a memory growth vector. The
+        // translated template is still resolved per-request via culture;
+        // only the final formatting step pins the invariant provider.
+        return args.Length > 0 ? string.Format(CultureInfo.InvariantCulture, msg, args) : msg;
     }
 
     /// <summary>
