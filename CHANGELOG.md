@@ -74,6 +74,11 @@ All notable changes to Sharkable are documented here.
 ### feat
 
 - Add `UnifiedResult<T>` AOT preservation — Source Generator auto-emits `typeof(UnifiedResult<T>)` for all endpoint return types
+
+## [Unreleased]
+
+### feat
+
 - Upgrade `Scalar.AspNetCore` to 2.16.8
 
 ### fix
