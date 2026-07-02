@@ -67,7 +67,10 @@ of in-flight requests.
 ### Fix
 - Moved polling loop into `Task.Run(async () => ...)` so `ApplicationStopping` returns immediately
 - Replaced `Thread.Sleep` with `await Task.Delay(..., drainCts.Token)`
+- Fire-and-forget via `_ = Task.Run(...)` — the callback MUST NOT block the shutdown thread
 - `OperationCanceledException` swallowed to avoid shutdown-time noise
+
+> **Note:** Initial implementation chained `.GetAwaiter().GetResult()` on the `Task.Run`, which is sync-over-async and still blocked the `ApplicationStopping` callback thread for the full `DrainTimeout` window. Corrected to fire-and-forget so the callback returns immediately. The host no longer waits for the drain to finish; in-flight requests are covered by the deployment's shutdown grace period (e.g. k8s `terminationGracePeriodSeconds`).
 
 ### Verification
 - `ApplicationStopping.Register` returns immediately (no thread blocking)

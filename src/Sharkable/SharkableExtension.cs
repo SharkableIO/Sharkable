@@ -74,7 +74,11 @@ public static class SharkableExtension
                     Volatile.Write(ref InternalShark.IsShuttingDown, true);
                 }
 
-                Task.Run(async () =>
+                // Fire-and-forget: returning sync from this callback is required so
+                // ApplicationStopping can continue. We deliberately do NOT await
+                // (and do NOT call .GetAwaiter().GetResult()) — that would still block
+                // the shutdown thread. The k8s grace period covers in-flight requests.
+                _ = Task.Run(async () =>
                 {
                     try
                     {
@@ -100,7 +104,7 @@ public static class SharkableExtension
                     }
 
                     InternalShark.AuditLogBuffer?.FlushRemaining();
-                }).GetAwaiter().GetResult();
+                });
             });
 
             if (gsOptions != null)
