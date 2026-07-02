@@ -168,6 +168,7 @@ All notable changes to Sharkable are documented here.
 - Add `AutoCrudSqlSugar.MaxPageNumber` (default 1M) + overflow check on `(page - 1) * pageSize` — prevent pagination DoS via `page=int.MaxValue` producing a negative OFFSET (SHARK-SEC-025, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
 - Redact `SqlSugarHealthCheck` description — never expose `dbType` or `ex.Message` on public `/healthz`; full diagnostic detail logged at `LogWarning` for operators only (SHARK-SEC-026, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
 - Escape SQL `LIKE` wildcards + cap filter value length (200) + cap `IN` array size (100) in AutoCrud search — prevent LIKE wildcard DoS and large-IN clause DoS (SHARK-SEC-027, cross-repo with `Sharkable.AutoCrud.SqlSugar`)
+- Fix ETag `CountingResponseBody.FlushAsync` duplicate body write on over-cap responses (SHARK-SEC-012 follow-up)
 
 ### feat
 

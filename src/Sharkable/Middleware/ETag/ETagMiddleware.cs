@@ -141,10 +141,19 @@ internal sealed class ETagMiddleware
 
         public override async Task FlushAsync(CancellationToken cancellationToken)
         {
-            await _spool.FlushAsync(cancellationToken);
+            // SHARK-SEC-012 follow-up: only flush the un-flushed portion of the spool,
+            // then truncate it. The previous implementation copied from position 0 on
+            // every call and disposed the spool, which duplicated pre-cap bytes on
+            // any response that flushed more than once and threw on writes after the
+            // first flush.
+            if (_spool.Length == 0)
+            {
+                await _inner.FlushAsync(cancellationToken);
+                return;
+            }
             _spool.Position = 0;
             await _spool.CopyToAsync(_inner, cancellationToken);
-            await _spool.DisposeAsync();
+            _spool.SetLength(0);
             await _inner.FlushAsync(cancellationToken);
         }
 
