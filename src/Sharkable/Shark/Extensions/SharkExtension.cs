@@ -131,21 +131,40 @@ public static class SharkExtension
                 .AddJwtBearer(opt =>
                 {
                     opt.Authority = Shark.SharkOption.JwtAuthority;
-                    opt.TokenValidationParameters = new TokenValidationParameters
+
+                    // SHARK-SEC-M019: invoke the user's JwtConfigure callback
+                    // BEFORE we install framework defaults. The previous order
+                    // installed the framework TokenValidationParameters first,
+                    // then called the user callback — which meant any user code
+                    // that replaced opt.TokenValidationParameters (e.g. to add a
+                    // custom IssuerValidator) silently wiped the framework's
+                    // security defaults (algorithm allowlist, RequireSignedTokens,
+                    // ClockSkew=30s, etc.). Now the user callback can mutate the
+                    // properties in place (the documented contract) or replace
+                    // the instance; in either case we apply framework safety
+                    // properties on the final instance below.
+                    Shark.SharkOption.JwtConfigure?.Invoke(opt);
+
+                    opt.TokenValidationParameters ??= new TokenValidationParameters();
+
+                    var tvp = opt.TokenValidationParameters;
+                    tvp.ValidateIssuer = true;
+                    // SHARK-SEC-007 follow-up: ConfigureJwt now guarantees a non-empty
+                    // audience list, so always validate audience. Tokens with any other
+                    // audience are rejected. (Defense-in-depth: ConfigurationValidator
+                    // and the Create call site both fail closed if the list is empty.)
+                    tvp.ValidateAudience = true;
+                    tvp.ValidateIssuerSigningKey = true;
+                    tvp.ValidateLifetime = true;
+                    tvp.RequireSignedTokens = true;
+                    tvp.RequireExpirationTime = true;
+                    // SHARK-SEC-007: allowlist signing algorithms to prevent algorithm-confusion attacks
+                    // (e.g. an attacker swapping RS256 for HS256 and signing with the public key).
+                    // Only apply the default allowlist if the user has not already configured one —
+                    // honor explicit opt-outs.
+                    if (tvp.ValidAlgorithms == null || !tvp.ValidAlgorithms.Any())
                     {
-                        ValidateIssuer = true,
-                        // SHARK-SEC-007 follow-up: ConfigureJwt now guarantees a non-empty
-                        // audience list, so always validate audience. Tokens with any other
-                        // audience are rejected. (Defense-in-depth: ConfigurationValidator
-                        // and the Create call site both fail closed if the list is empty.)
-                        ValidateAudience = true,
-                        ValidateIssuerSigningKey = true,
-                        ValidateLifetime = true,
-                        RequireSignedTokens = true,
-                        RequireExpirationTime = true,
-                        // SHARK-SEC-007: allowlist signing algorithms to prevent algorithm-confusion attacks
-                        // (e.g. an attacker swapping RS256 for HS256 and signing with the public key).
-                        ValidAlgorithms = new[]
+                        tvp.ValidAlgorithms = new[]
                         {
                             SecurityAlgorithms.RsaSha256,
                             SecurityAlgorithms.RsaSha384,
@@ -159,16 +178,16 @@ public static class SharkExtension
                             SecurityAlgorithms.HmacSha256,
                             SecurityAlgorithms.HmacSha384,
                             SecurityAlgorithms.HmacSha512,
-                        },
-                        NameClaimType = JwtRegisteredClaimNames.Sub,
-                        // SHARK-SEC-007 (M-18): tighten from the 5-minute default to 30s
-                        // so a stolen token expires within a smaller clock-drift window.
-                        ClockSkew = TimeSpan.FromSeconds(30),
-                    };
-                    opt.TokenValidationParameters.ValidAudiences = Shark.SharkOption.JwtAudiences!;
-
-                    // Let user configure first (OnTokenValidated, custom claims, etc.)
-                    Shark.SharkOption.JwtConfigure?.Invoke(opt);
+                        };
+                    }
+                    tvp.ValidAudiences = Shark.SharkOption.JwtAudiences!;
+                    tvp.NameClaimType = JwtRegisteredClaimNames.Sub;
+                    // SHARK-SEC-007 (M-18): tighten from the 5-minute default to 30s
+                    // so a stolen token expires within a smaller clock-drift window.
+                    // Only apply the override when the user did not explicitly set it
+                    // (IdentityModel's default is 5 minutes; treat that as 'unset').
+                    if (tvp.ClockSkew == TimeSpan.FromMinutes(5))
+                        tvp.ClockSkew = TimeSpan.FromSeconds(30);
 
                     // Save user's handlers so we can chain with Sharkable defaults
                     var userOnChallenge = opt.Events.OnChallenge;
