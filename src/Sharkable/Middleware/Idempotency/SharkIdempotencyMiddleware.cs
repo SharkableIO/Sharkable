@@ -143,35 +143,28 @@ internal sealed class SharkIdempotencyMiddleware
 
     private async Task<string> ComputeFingerprint(HttpContext context)
     {
-        // For fingerprint we use the buffered request body; if no body was read,
-        // we fall back to an empty span. The path is context.Request.Path.
-        // Note: this middleware does not pre-buffer the request body. We rely on
-        // the body being re-readable (set by upstream middleware such as
-        // EnableBuffering). If the body is not seekable and not yet consumed,
-        // we treat it as empty (known limitation; see §8 of the spec).
-        var bodyLength = (int)(context.Request.ContentLength ?? 0);
-        byte[] body = bodyLength > 0
-            ? await ReadBodyBytes(context.Request.Body, bodyLength)
-            : Array.Empty<byte>();
-        return IdempotencyFingerprint.Compute(
+        var contentLength = context.Request.ContentLength;
+
+        if (contentLength is null or <= 0)
+        {
+            return IdempotencyFingerprint.Compute(
+                context.Request.Method,
+                context.Request.Path,
+                ReadOnlySpan<byte>.Empty);
+        }
+
+        var body = context.Request.Body;
+        if (body.CanSeek) body.Position = 0;
+
+        var maxBodySize = _options.MaxFingerprintBodySize;
+        var bytesToHash = contentLength.Value > maxBodySize ? maxBodySize : (int)contentLength.Value;
+
+        return await IdempotencyFingerprint.ComputeAsync(
             context.Request.Method,
             context.Request.Path,
-            body);
-    }
-
-    private static async Task<byte[]> ReadBodyBytes(Stream body, int length)
-    {
-        if (body.CanSeek) body.Position = 0;
-        var buf = new byte[length];
-        int read = 0;
-        while (read < length)
-        {
-            int n = await body.ReadAsync(buf.AsMemory(read, length - read));
-            if (n == 0) break;
-            read += n;
-        }
-        if (read < length) Array.Resize(ref buf, read);
-        return buf;
+            body,
+            bytesToHash,
+            contentLength.Value);
     }
 
     private async Task Replay(HttpContext context, IdempotencyRecord record)

@@ -29,6 +29,13 @@ public sealed class SharkIdempotencyOptions
     /// <summary>Request header name. Default is <c>"Idempotency-Key"</c>.</summary>
     public string HeaderName { get; set; } = "Idempotency-Key";
 
+    /// <summary>
+    /// Maximum body size (in bytes) used when computing the idempotency fingerprint.
+    /// Bodies larger than this are hashed incrementally up to this limit.
+    /// Default is 64 KiB. Prevents OOM from attacker-controlled <c>Content-Length</c> values.
+    /// </summary>
+    public int MaxFingerprintBodySize { get; set; } = 65_536;
+
     /// <summary>Response header set on replays. Default is <c>"X-Idempotent-Replayed"</c>.</summary>
     public string ReplayedHeaderName { get; set; } = "X-Idempotent-Replayed";
 
