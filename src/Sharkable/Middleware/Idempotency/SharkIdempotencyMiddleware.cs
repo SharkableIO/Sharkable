@@ -146,11 +146,21 @@ internal sealed class SharkIdempotencyMiddleware
         var contentLength = context.Request.ContentLength;
         var maxBodySize = _options.MaxFingerprintBodySize;
 
+        // SHARK-SEC-M021: include the authenticated user identity in the
+        // fingerprint so a replayed response cannot leak across users when
+        // they happen to share an Idempotency-Key + body. Unauthenticated
+        // requests fall back to the stable literal "<anon>" so anonymous
+        // requests still de-duplicate within the same key+body bucket.
+        var userId = context.User?.Identity?.IsAuthenticated == true
+            ? (context.User.Identity.Name ?? context.User.FindFirst("sub")?.Value ?? "<auth>")
+            : "<anon>";
+
         // Content-Length: 0 (or negative) — no body. Use the empty-body path so its
         // fingerprint stays distinct from any chunked request.
         if (contentLength is not null && contentLength.Value <= 0)
         {
             return IdempotencyFingerprint.Compute(
+                userId,
                 context.Request.Method,
                 context.Request.Path,
                 ReadOnlySpan<byte>.Empty);
@@ -170,6 +180,7 @@ internal sealed class SharkIdempotencyMiddleware
             bytesToHash = (int)contentLength.Value;
 
         return await IdempotencyFingerprint.ComputeAsync(
+            userId,
             context.Request.Method,
             context.Request.Path,
             body,
