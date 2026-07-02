@@ -16,6 +16,15 @@ internal sealed class JwtHealthCheck : IHealthCheck
         if (string.IsNullOrEmpty(authority))
             return HealthCheckResult.Unhealthy("JWT authority is not configured");
 
+        // SHARK-SEC-M004: /healthz is publicly readable and the previous
+        // implementation echoed the authority URL (and ex.Message on
+        // failure) into the JSON description, leaking the OIDC issuer
+        // topology and exception internals to any anonymous caller.
+        // Return generic descriptions; the full URL and exception details
+        // are surfaced via structured logging below.
+        var logger = InternalShark.ServiceProvider?.GetService<ILoggerFactory>()
+            ?.CreateLogger<JwtHealthCheck>();
+
         try
         {
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
@@ -24,15 +33,20 @@ internal sealed class JwtHealthCheck : IHealthCheck
                 cancellationToken);
 
             if (response.IsSuccessStatusCode)
-                return HealthCheckResult.Healthy($"JWT authority reachable: {authority}");
+            {
+                logger?.LogDebug("JWT authority reachable: {Authority}", authority);
+                return HealthCheckResult.Healthy("JWT authority reachable");
+            }
 
-            return HealthCheckResult.Degraded(
-                $"JWT authority returned {response.StatusCode}: {authority}");
+            logger?.LogWarning(
+                "JWT authority returned {StatusCode}: {Authority}",
+                response.StatusCode, authority);
+            return HealthCheckResult.Degraded("JWT authority probe failed");
         }
         catch (Exception ex)
         {
-            return HealthCheckResult.Unhealthy(
-                $"JWT authority unreachable ({authority}): {ex.Message}");
+            logger?.LogWarning(ex, "JWT authority unreachable: {Authority}", authority);
+            return HealthCheckResult.Unhealthy("JWT authority unreachable");
         }
     }
 }
