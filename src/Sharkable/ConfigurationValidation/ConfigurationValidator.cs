@@ -8,23 +8,38 @@ namespace Sharkable;
 /// catching common misconfigurations before the application runs.
 /// </summary>
 internal static class ConfigurationValidator
-{
-    /// <summary>
-    /// Runs all validation rules against the current <see cref="SharkOption"/>.
-    /// Returns an empty list when no issues are found.
-    /// </summary>
-    internal static List<string> Validate()
     {
-        var errors = new List<string>();
-        var opt = Shark.SharkOption;
+        /// <summary>
+        /// Maximum <see cref="SharkIdempotencyOptions.MaxEntries"/> value before
+        /// a startup warning is logged. Configurations above this threshold
+        /// are almost always misconfigurations (e.g. someone passed
+        /// <c>int.MaxValue</c>) and risk memory exhaustion under attack.
+        /// </summary>
+        private const long IdempotencyMaxEntriesWarningThreshold = 1_000_000;
 
-        ValidateJwt(opt, errors);
-        ValidateMultiTenant(opt, errors);
-        ValidateIdempotency(opt, errors);
-        ValidateSaga(opt, errors);
+        /// <summary>
+        /// Runs all validation rules against the current <see cref="SharkOption"/>.
+        /// Returns an empty list when no issues are found.
+        /// </summary>
+        internal static List<string> Validate()
+        {
+            var errors = new List<string>();
+            var warnings = new List<string>();
+            var opt = Shark.SharkOption;
 
-        return errors;
-    }
+            ValidateJwt(opt, errors);
+            ValidateMultiTenant(opt, errors);
+            ValidateIdempotency(opt, errors, warnings);
+            ValidateSaga(opt, errors);
+
+            if (warnings.Count > 0)
+            {
+                foreach (var warning in warnings)
+                    Console.Error.WriteLine($"[Sharkable warning] {warning}");
+            }
+
+            return errors;
+        }
 
     private static void ValidateJwt(SharkOption opt, List<string> errors)
     {
@@ -47,7 +62,7 @@ internal static class ConfigurationValidator
             errors.Add("Multi-tenant is configured but ResolveTenant delegate is not set. Provide it via: opt.ConfigureMultiTenant(cfg => cfg.ResolveTenant = ctx => ...)");
     }
 
-    private static void ValidateIdempotency(SharkOption opt, List<string> errors)
+    private static void ValidateIdempotency(SharkOption opt, List<string> errors, List<string> warnings)
     {
         if (!opt.EnableIdempotency)
             return;
@@ -60,6 +75,13 @@ internal static class ConfigurationValidator
             errors.Add(
                 "Idempotency is enabled but MaxFingerprintBodySize must be > 0. " +
                 "Set it via: opt.ConfigureIdempotency(o => o.MaxFingerprintBodySize = 65536).");
+
+        if (opts.MaxEntries > IdempotencyMaxEntriesWarningThreshold)
+            warnings.Add(
+                $"IdempotencyOptions.MaxEntries = {opts.MaxEntries} exceeds the 1,000,000 safety threshold. " +
+                "Values this large are almost always misconfigurations and risk memory exhaustion under " +
+                "Idempotency-Key flooding. Recommended cap is 10,000 (default) to 100,000 for high-traffic APIs. " +
+                "Set it via: opt.ConfigureIdempotency(o => o.MaxEntries = 10_000).");
     }
 
     private static void ValidateSaga(SharkOption opt, List<string> errors)
