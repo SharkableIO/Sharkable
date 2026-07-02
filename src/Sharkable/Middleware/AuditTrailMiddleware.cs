@@ -86,10 +86,40 @@ internal sealed class AuditTrailMiddleware
         if (_options.ForwardCorrelationId &&
             context.Request.Headers.TryGetValue(_options.CorrelationIdHeader, out var existing))
         {
-            return existing.ToString();
+            // SHARK-SEC-M020: validate the inbound value against a strict
+            // safe-character pattern (alphanumerics + dot/underscore/dash,
+            // 1-128 chars). Anything else — including CR/LF, log format
+            // placeholders, or anything that could smuggle a forged log
+            // line — is rejected and replaced with a fresh UUID. The
+            // IETF draft "The Trace Context" recommends similar bounds.
+            var candidate = existing.ToString();
+            if (IsSafeCorrelationId(candidate))
+                return candidate;
         }
 
         return Guid.NewGuid().ToString("N");
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> when <paramref name="value"/> consists only of
+    /// <c>[A-Za-z0-9._-]</c> characters and is between 1 and 128 characters
+    /// long. Anything else (whitespace, control characters, log-format
+    /// placeholders, etc.) is rejected to prevent log injection.
+    /// </summary>
+    private static bool IsSafeCorrelationId(string value)
+    {
+        if (string.IsNullOrEmpty(value) || value.Length > 128) return false;
+        for (var i = 0; i < value.Length; i++)
+        {
+            var c = value[i];
+            var safe =
+                (c >= '0' && c <= '9') ||
+                (c >= 'A' && c <= 'Z') ||
+                (c >= 'a' && c <= 'z') ||
+                c == '.' || c == '_' || c == '-';
+            if (!safe) return false;
+        }
+        return true;
     }
 
     private void SetResponseCorrelationId(HttpContext context, string correlationId)

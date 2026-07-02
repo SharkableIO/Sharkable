@@ -60,8 +60,16 @@ public sealed class AuditTrailOptions
     /// <summary>
     /// When <c>true</c>, reuses an incoming <c>CorrelationIdHeader</c> value if present;
     /// otherwise generates a new UUID. Response header is always set.
+    /// <para>
+    /// SHARK-SEC-M020: defaults to <c>false</c> so an attacker cannot inject
+    /// log lines via the header (e.g. <c>X-Correlation-Id: foo\n[CRITICAL]
+    /// admin login OK</c>). When enabled, the value is also validated
+    /// against <see cref="AuditTrailMiddleware"/>'s safe-character pattern
+    /// (alphanumerics, dot, underscore, dash) and a fresh UUID is generated
+    /// when the supplied value fails validation.
+    /// </para>
     /// </summary>
-    public bool ForwardCorrelationId { get; set; } = true;
+    public bool ForwardCorrelationId { get; set; } = false;
 
     /// <summary>
     /// Maximum log entries to buffer before flushing. Default is <c>1</c> (flush immediately).
