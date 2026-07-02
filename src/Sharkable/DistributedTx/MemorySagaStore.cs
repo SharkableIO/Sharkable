@@ -25,16 +25,6 @@ public sealed class MemorySagaStore : ISagaStore
     }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// No-op: in-process locks survive until <see cref="ReleaseLockAsync"/>
-    /// or <see cref="DeleteAsync"/> is called, so renewal is unnecessary.
-    /// </remarks>
-    public Task RenewLockAsync(string sagaId, TimeSpan ttl)
-    {
-        return Task.CompletedTask;
-    }
-
-    /// <inheritdoc />
     public Task ReleaseLockAsync(string sagaId)
     {
         _locks.TryRemove(sagaId, out _);

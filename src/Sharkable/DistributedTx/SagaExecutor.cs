@@ -35,6 +35,11 @@ public sealed class SagaExecutor
     /// </remarks>
     public TimeSpan LockRenewalInterval { get; set; }
 
+    /// <summary>
+    /// Creates a <see cref="SagaExecutor"/> with the default lock TTL (5 minutes).
+    /// </summary>
+    /// <param name="store">The saga store used for locks and progress persistence.</param>
+    /// <param name="logger">Logger for saga lifecycle diagnostics.</param>
     public SagaExecutor(ISagaStore store, ILogger<SagaExecutor> logger)
         : this(store, logger, TimeSpan.FromMinutes(5))
     {

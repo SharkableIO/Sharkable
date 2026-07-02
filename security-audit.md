@@ -105,11 +105,14 @@ likely because a check-then-delete race window opened on every crash-recovery.
 ### Fix
 - Made `LockTtl` configurable via a new `SagaExecutor(ISagaStore, ILogger, TimeSpan lockTtl)` constructor overload. Default remains 5 minutes.
 - Added `SagaExecutor.LockRenewalInterval` (default `LockTtl / 3`) which triggers periodic `ISagaStore.RenewLockAsync` while work is in progress.
-- Added `ISagaStore.RenewLockAsync(sagaId, ttl)` to the contract. `MemorySagaStore.RenewLockAsync` is a documented no-op (in-process locks survive process lifetime); `RedisSagaStore` (cross-repo) overrides it to call `StringSetAsync(_lockPrefix + sagaId, token, LockTtl)`.
+- Added `ISagaStore.RenewLockAsync(sagaId, ttl)` to the contract. Implemented as a **default interface method** (DIM, requires C# 8 / net8.0+) returning `Task.CompletedTask` so existing third-party `ISagaStore` implementations continue to compile without modification. `MemorySagaStore` uses the default; `RedisSagaStore` (cross-repo) overrides it to call `StringSetAsync(_lockPrefix + sagaId, token, LockTtl)`.
 - Wrapped the step loop in a `Task` that renews the lock at `LockRenewalInterval` until the linked cancellation token fires.
+
+> **Note:** Initial implementation added `RenewLockAsync` as a required interface member, breaking compile for any third-party `ISagaStore` implementer. Converted to a default interface method so `ISagaStore` is backward-compatible — old implementations keep working without source changes (they just don't get renewal, which is fine for in-process stores).
 
 ### Verification
 - Saga execution with step duration `> LockTtl` no longer expires its lock.
 - `MemorySagaStore` continues to behave identically (locks held until released or process exit).
+- Existing third-party `ISagaStore` implementations compiled against Sharkable v0.5.4 continue to compile against the patched library unchanged.
 - Cancellation / step failure / compensation all trigger `renewCts.Cancel()` and a clean `ReleaseLockAsync` in the `finally` block.
 - Redis-based deployments require the cross-repo companion fix in `Sharkable.Cache.Redis` for renewal to actually extend TTL.
