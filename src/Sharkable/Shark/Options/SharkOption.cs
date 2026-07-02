@@ -284,6 +284,16 @@ public sealed class SharkOption : ISharkOption
     }
     internal ProfilerOptions? ProfilerOptions { get; set; }
     /// <summary>
+    /// When <c>true</c> (default), the <c>/_sharkable/profiler</c> endpoint
+    /// requires a valid API key from <see cref="ApiKeys"/> sent via
+    /// <see cref="ApiKeyHeaderName"/>. If no API keys are configured at all the
+    /// endpoint responds <c>404</c> so its existence is not leaked to
+    /// unauthenticated probes (SHARK-SEC-015). Set <c>false</c> to opt out of
+    /// the gate (not recommended in production — the endpoint surfaces paths,
+    /// status codes, latencies and memory deltas for every observed request).
+    /// </summary>
+    public bool ProfilerRequireApiKey { get; set; } = true;
+    /// <summary>
     /// Enables automatic ETag generation and 304 Not Modified responses for
     /// GET/HEAD requests. Excludes health check, OpenAPI, and profiler paths
     /// by default.
