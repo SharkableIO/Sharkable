@@ -46,3 +46,30 @@ Remote denial of service via memory exhaustion. No authentication required — t
 |---|---|
 | 2026-06-30 | Vulnerability discovered during review of idempotency middleware resource usage |
 | 2026-06-30 | Fix implemented and committed |
+
+## SHARK-SEC-003: Shutdown drain `Thread.Sleep` blocks `ApplicationStopping` thread
+
+| Field | Value |
+|---|---|
+| **ID** | SHARK-SEC-003 |
+| **Severity** | Critical |
+| **Introduced in** | v0.5.0 (graceful shutdown drain) |
+| **Fixed in** | Unreleased (next release) |
+| **CWE** | [CWE-400: Uncontrolled Resource Consumption](https://cwe.mitre.org/data/definitions/400.html) |
+
+### Description
+`SharkableExtension.cs` registered a sync `ApplicationStopping` callback that polled
+`InternalShark.ActiveRequests` with `Thread.Sleep`. The polling thread was held by the
+callback for up to `DrainTimeout` (default 30 s), preventing graceful shutdown from
+returning and causing k8s `terminationGracePeriodSeconds` violations with abrupt SIGKILL
+of in-flight requests.
+
+### Fix
+- Moved polling loop into `Task.Run(async () => ...)` so `ApplicationStopping` returns immediately
+- Replaced `Thread.Sleep` with `await Task.Delay(..., drainCts.Token)`
+- `OperationCanceledException` swallowed to avoid shutdown-time noise
+
+### Verification
+- `ApplicationStopping.Register` returns immediately (no thread blocking)
+- `Task.Delay` honors `drainCts` and exits the loop on cancel
+- Long-running endpoints (>5 min) no longer cause SIGKILL cascade

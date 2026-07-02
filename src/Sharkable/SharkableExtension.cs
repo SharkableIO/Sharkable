@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace  Microsoft.Extensions.DependencyInjection;
 
@@ -71,18 +72,35 @@ public static class SharkableExtension
                 if (gsOptions != null)
                 {
                     Volatile.Write(ref InternalShark.IsShuttingDown, true);
-
-                    var drainCts = new CancellationTokenSource(gsOptions.DrainTimeout);
-                    var pollingMs = Math.Max((int)gsOptions.DrainPollingInterval.TotalMilliseconds, 10);
-                    while (!drainCts.IsCancellationRequested)
-                    {
-                        if (Volatile.Read(ref InternalShark.ActiveRequests) == 0)
-                            break;
-                        Thread.Sleep(pollingMs);
-                    }
                 }
 
-                InternalShark.AuditLogBuffer?.FlushRemaining();
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        if (gsOptions != null)
+                        {
+                            using var drainCts = new CancellationTokenSource(gsOptions.DrainTimeout);
+                            var pollingMs = Math.Max(
+                                (int)gsOptions.DrainPollingInterval.TotalMilliseconds, 10);
+
+                            while (!drainCts.IsCancellationRequested)
+                            {
+                                if (Volatile.Read(ref InternalShark.ActiveRequests) == 0)
+                                    break;
+                                await Task.Delay(pollingMs, drainCts.Token);
+                            }
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                    InternalShark.AuditLogBuffer?.FlushRemaining();
+                }).GetAwaiter().GetResult();
             });
 
             if (gsOptions != null)
