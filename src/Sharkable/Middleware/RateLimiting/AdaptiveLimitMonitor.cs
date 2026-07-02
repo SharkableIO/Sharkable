@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace Sharkable;
 
@@ -7,13 +8,15 @@ namespace Sharkable;
 /// effective rate limit up or down. Managed as an internal singleton
 /// started by the middleware when adaptive mode is enabled.
 /// </summary>
-internal sealed class AdaptiveLimitMonitor
+internal sealed class AdaptiveLimitMonitor : IDisposable
 {
     private readonly SharkRateLimiterOptions _options;
-    private readonly Process _process;
+    private Process? _process;
+    private readonly ILogger? _logger;
     private TimeSpan _lastTotalProcessorTime;
     private DateTime _lastSampleAt;
     private Timer? _timer;
+    private bool _disposed;
 
     /// <summary>
     /// The current dynamically-adjusted permit limit. Read by the middleware
@@ -24,28 +27,84 @@ internal sealed class AdaptiveLimitMonitor
     internal AdaptiveLimitMonitor(SharkRateLimiterOptions options)
     {
         _options = options;
-        _process = Process.GetCurrentProcess();
-        _lastTotalProcessorTime = _process.TotalProcessorTime;
+        // SHARK-SEC-M010: acquire the Process handle lazily on Start() and
+        // dispose it on shutdown so the monitor does not leak the handle for
+        // the lifetime of the process (the audit's L-16 concern).
+        _lastTotalProcessorTime = TimeSpan.Zero;
         _lastSampleAt = DateTime.UtcNow;
         CurrentLimit = options.BasePermitLimit;
+        _logger = InternalShark.ServiceProvider?.GetService<ILoggerFactory>()
+            ?.CreateLogger<AdaptiveLimitMonitor>();
     }
 
     internal void Start()
     {
-        if (_timer != null) return;
-        _timer = new Timer(_ => Adjust(), null,
+        if (_timer != null || _disposed) return;
+
+        try
+        {
+            _process = Process.GetCurrentProcess();
+            _lastTotalProcessorTime = _process.TotalProcessorTime;
+        }
+        catch (Exception ex)
+        {
+            // Running in restricted environments (e.g. some sandboxes) can
+            // throw on Process.GetCurrentProcess(). Without a process handle
+            // the monitor still works for the GC-pressure branch — the CPU
+            // branch will simply report 0.
+            _logger?.LogWarning(ex, "AdaptiveLimitMonitor could not acquire process handle");
+        }
+
+        _timer = new Timer(_ => AdjustSafely(), null,
             TimeSpan.Zero, _options.AdaptiveAdjustmentInterval);
     }
 
-    internal void Stop() => _timer?.Dispose();
+    /// <summary>
+    /// Stops the adaptive monitor and releases the timer + process handle.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        var timer = _timer;
+        _timer = null;
+        timer?.Dispose();
+
+        var process = _process;
+        _process = null;
+        if (process != null)
+        {
+            try { process.Dispose(); }
+            catch { /* best-effort cleanup */ }
+        }
+    }
+
+    private void AdjustSafely()
+    {
+        // SHARK-SEC-M010: a timer callback that throws is promoted to the
+        // process-wide unhandled exception handler and can tear the process
+        // down under .NET 10. Wrap Adjust() so a transient failure is
+        // logged and the timer keeps firing on the next interval.
+        try
+        {
+            Adjust();
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "AdaptiveLimitMonitor adjustment failed");
+        }
+    }
 
     private void Adjust()
     {
         var now = DateTime.UtcNow;
-        var elapsedCpu = _process.TotalProcessorTime - _lastTotalProcessorTime;
+        var elapsedCpu = _process != null
+            ? _process.TotalProcessorTime - _lastTotalProcessorTime
+            : TimeSpan.Zero;
         var elapsedTime = now - _lastSampleAt;
 
-        _lastTotalProcessorTime = _process.TotalProcessorTime;
+        if (_process != null)
+            _lastTotalProcessorTime = _process.TotalProcessorTime;
         _lastSampleAt = now;
 
         if (elapsedTime.TotalMilliseconds <= 0)
