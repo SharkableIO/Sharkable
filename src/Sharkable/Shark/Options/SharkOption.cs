@@ -147,6 +147,17 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public Action<AuthorizationOptions>? ConfigureAuthorization { get; set; }
     /// <summary>
+    /// When <c>true</c>, installs a fallback authorization policy that requires an
+    /// authenticated user on every endpoint unless it is explicitly marked
+    /// <c>[AllowAnonymous]</c> or carries an <c>[Authorize]</c> attribute (which
+    /// only ADDS requirements — it does not opt out of the fallback). Opt-in to
+    /// close the gap where framework-mapped endpoints (MapGet, MapPost, etc.)
+    /// bypass Sharkable's <c>AuthorizationInterceptorFilter</c> and therefore
+    /// accept anonymous traffic by default. Default is <c>false</c> to preserve
+    /// backward compatibility. Ignored when <see cref="EnableAuthorization"/> is <c>false</c>.
+    /// </summary>
+    public bool RequireAuthenticatedByDefault { get; set; } = false;
+    /// <summary>
     /// Configures the OpenAPI document generation options.
     /// </summary>
     public void ConfigureOpenApi(Action<OpenApiOptions>? options)
