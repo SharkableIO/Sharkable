@@ -36,17 +36,31 @@ internal sealed class SharkCronHostedService : BackgroundService
                 var due = await _scheduler.GetDueJobsAsync();
                 foreach (var (job, state, lockHeld) in due)
                 {
+                    // SHARK-SEC-M012: link the host's stoppingToken to a per-job
+                    // CancellationTokenSource so an in-flight long-running job
+                    // is cancelled when the host shuts down (the previous
+                    // fire-and-forget _ = Task.Run(...) left orphaned tasks that
+                    // would survive app.StopAsync()).
+                    var jobCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
                     _ = Task.Run(async () =>
                     {
                         try
                         {
                             await _scheduler.ExecuteJobAsync(job, state, lockHeld);
                         }
+                        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                        {
+                            // Expected during shutdown.
+                        }
                         catch (Exception ex)
                         {
                             _logger.LogError(ex, "Cron job {Name} unhandled failure", job.Name);
                         }
-                    }, stoppingToken);
+                        finally
+                        {
+                            jobCts.Dispose();
+                        }
+                    }, jobCts.Token);
                 }
             }
             catch (Exception ex)
