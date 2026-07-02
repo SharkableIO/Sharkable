@@ -45,28 +45,20 @@ public sealed class MemoryRateLimitStore : IDistributedRateLimitStore
     /// <inheritdoc />
     public Task<long> IncrementAsync(string key, TimeSpan window)
     {
-        var now = DateTime.UtcNow;
-        var existing = _cache.Get<RateLimitEntry>(key);
-
-        long count;
-        DateTime expiresAt;
-        if (existing is null || existing.ExpiresAt <= now)
+        // SHARK-SEC-013 follow-up: store the counter as a single-element long[]
+        // so that concurrent callers share the same boxed value and can increment
+        // atomically via Interlocked. GetOrCreate serializes factory invocation,
+        // guaranteeing all callers observe a single, stable reference that they
+        // then mutate in place — preventing the under-counting race where two
+        // concurrent calls each computed count = 1 from a stale null read.
+        var counter = _cache.GetOrCreate(key, entry =>
         {
-            count = 1;
-            expiresAt = now.Add(window);
-        }
-        else
-        {
-            count = existing.Count + 1;
-            expiresAt = existing.ExpiresAt;
-        }
-
-        using var entry = _cache.CreateEntry(key);
-        entry.Size = EntrySize;
-        entry.AbsoluteExpirationRelativeToNow = window;
-        entry.Value = new RateLimitEntry(count, expiresAt);
-
-        return Task.FromResult(count);
+            entry.Size = EntrySize;
+            entry.AbsoluteExpirationRelativeToNow = window;
+            return new long[1];
+        })!;
+        var newCount = Interlocked.Increment(ref counter[0]);
+        return Task.FromResult(newCount);
     }
 
     /// <inheritdoc />
@@ -75,6 +67,4 @@ public sealed class MemoryRateLimitStore : IDistributedRateLimitStore
         _cache.Remove(key);
         return Task.CompletedTask;
     }
-
-    private sealed record RateLimitEntry(long Count, DateTime ExpiresAt);
 }
