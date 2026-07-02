@@ -84,6 +84,13 @@ internal sealed class AuditLogBuffer : IDisposable
             buffer.Add(entry);
         if (buffer.Count > 0)
             FlushBatch(buffer);
+
+        // SHARK-SEC-L020: a debug-level log so operators can tell whether
+        // the consumer exited cleanly (graceful shutdown) vs. an
+        // unrelated cancellation hit the loop. The exception is
+        // swallowed by design here — cancellation on graceful shutdown
+        // is the trigger for draining the channel.
+        _logger.LogDebug("AuditLogBuffer consumer exiting (cancellation token fired)");
     }
 
     private void FlushBatch(List<AuditLogEntry> batch)
