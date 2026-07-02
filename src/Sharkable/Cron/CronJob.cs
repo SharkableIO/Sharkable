@@ -19,7 +19,13 @@ public sealed record CronJob(
 public interface ICronScheduler
 {
     /// <summary>Registers a cron job from configuration.</summary>
-    void Register(CronJob job);
+    /// <remarks>
+    /// Awaits the underlying <see cref="ICronJobStore"/> call so distributed
+    /// stores (Redis, PostgreSQL) are loaded without sync-over-async blocking
+    /// (SHARK-SEC-017). Replace any calls to the legacy synchronous
+    /// <c>Register</c> overload with <c>await RegisterAsync</c>.
+    /// </remarks>
+    Task RegisterAsync(CronJob job);
 
     /// <summary>Manually triggers a job immediately, regardless of its cron schedule.</summary>
     Task<CronJobState?> TriggerAsync(string name);

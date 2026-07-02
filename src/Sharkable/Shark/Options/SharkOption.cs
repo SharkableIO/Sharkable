@@ -375,9 +375,12 @@ public sealed class SharkOption : ISharkOption
     /// <summary>
     /// Callback for registering cron jobs. Invoked during
     /// <c>AddShark()</c> so that jobs can be registered before the
-    /// hosted service starts.
+    /// hosted service starts. Returns a <see cref="Task"/> so callers can
+    /// <c>await</c> <see cref="ICronScheduler.RegisterAsync"/> without
+    /// forcing sync-over-async inside the host startup loop
+    /// (SHARK-SEC-017).
     /// </summary>
-    public Action<ICronScheduler>? ConfigureCronJobs { get; set; }
+    public Func<ICronScheduler, Task>? ConfigureCronJobs { get; set; }
     /// <summary>
     /// When <c>true</c> (default), the <c>/_sharkable/jobs</c> admin endpoint
     /// requires a valid API key from <see cref="ApiKeys"/> sent via

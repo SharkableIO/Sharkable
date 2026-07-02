@@ -19,12 +19,14 @@ internal sealed class SharkCronHostedService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // Invoke user-registered cron jobs
+        // Invoke user-registered cron jobs (SHARK-SEC-017: await the async
+        // callback so RegisterAsync's distributed-store IO does not block the
+        // host startup loop)
         var configureAction = Shark.SharkOption.ConfigureCronJobs;
         if (configureAction != null)
         {
             foreach (var job in _scheduler.Jobs.ToList()) { } // force registration sync
-            configureAction(_scheduler);
+            await configureAction(_scheduler);
         }
 
         while (!stoppingToken.IsCancellationRequested)

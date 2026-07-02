@@ -39,7 +39,7 @@ public sealed class CronScheduler : ICronScheduler
         get { lock (_jobs) return _jobs.Values.ToList(); }
     }
 
-    public void Register(CronJob job)
+    public async Task RegisterAsync(CronJob job)
     {
         // Parse cron first — fail fast before any state mutation
         CronExpression expr;
@@ -53,8 +53,11 @@ public sealed class CronScheduler : ICronScheduler
         lock (_expressions) _expressions[job.Name] = expr;
         lock (_jobs) _jobs[job.Name] = job;
 
-        // Load persisted state from store (survives restarts), or create fresh
-        var existing = _store.LoadStateAsync(job.Name).GetAwaiter().GetResult();
+        // SHARK-SEC-017: await the store directly instead of blocking via
+        // .GetAwaiter().GetResult(). The sync-over-async form previously used
+        // here deadlocks under contention with distributed stores (Redis,
+        // PostgreSQL) whose IO completions need the thread pool.
+        var existing = await _store.LoadStateAsync(job.Name);
         var state = existing ?? new CronJobState
         {
             Name = job.Name,
