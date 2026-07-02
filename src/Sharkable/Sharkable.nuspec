@@ -16,7 +16,7 @@
     <tags>minimalapi aot framework toolkit</tags>
     <dependencies>
       <dependency id="Microsoft.AspNetCore.OpenApi" version="10.0.7" />
-      <dependency id="Scalar.AspNetCore" version="2.14.14" />
+      <dependency id="Scalar.AspNetCore" version="2.16.8" />
       <dependency id="FluentValidation" version="12.1.1" />
       <dependency id="Microsoft.OpenApi" version="2.7.5" />
     </dependencies>
@@ -24,5 +24,6 @@
    <files>
     <file src="README.md" target="docs\" />
     <file src="sharkable.jpg" target="\" />
+    <file src="bin\$configuration$\net10.0\Sharkable.xml" target="\" />
   </files>
 </package>
