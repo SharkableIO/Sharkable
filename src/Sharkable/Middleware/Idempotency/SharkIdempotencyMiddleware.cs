@@ -44,7 +44,7 @@ internal sealed class SharkIdempotencyMiddleware
         if (!_options.IsValidKey(key))
         {
             await WriteUnified(context, 400, "invalid_idempotency_key",
-                $"Key must be 1..{_options.MaxKeyLength} printable ASCII characters.");
+                $"Key must be {SharkIdempotencyOptions.MinKeyLength}..{_options.MaxKeyLength} printable ASCII characters.");
             return;
         }
 

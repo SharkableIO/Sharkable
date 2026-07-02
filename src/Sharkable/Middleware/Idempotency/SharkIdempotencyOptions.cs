@@ -81,15 +81,25 @@ public sealed class SharkIdempotencyOptions
     };
 
     /// <summary>
+    /// Minimum length of an accepted <c>Idempotency-Key</c> value.
+    /// SHARK-SEC-L002: IETF draft-ietf-httpapi-idempotency-key-header recommends
+    /// ≥ 16 characters of entropy; shorter keys let an attacker pre-burn the
+    /// keyspace (<c>a</c>, <c>b</c>, <c>aa</c>, <c>ab</c>, ...) and fill the
+    /// in-memory store before legitimate callers arrive.
+    /// </summary>
+    public const int MinKeyLength = 16;
+
+    /// <summary>
     /// Validates an <c>Idempotency-Key</c> value: non-empty after trim,
-    /// length &lt;= <see cref="MaxKeyLength"/>, and printable ASCII only.
+    /// length between <see cref="MinKeyLength"/> and <see cref="MaxKeyLength"/>
+    /// inclusive, and printable ASCII only.
     /// </summary>
     /// <param name="key">The candidate key value (the raw header value).</param>
     /// <returns><c>true</c> if the key passes all checks; <c>false</c> otherwise.</returns>
     public bool IsValidKey(string key)
     {
         if (string.IsNullOrWhiteSpace(key)) return false;
-        if (key.Length > MaxKeyLength) return false;
+        if (key.Length < MinKeyLength || key.Length > MaxKeyLength) return false;
         foreach (var c in key)
         {
             if (c < 0x20 || c > 0x7E) return false;

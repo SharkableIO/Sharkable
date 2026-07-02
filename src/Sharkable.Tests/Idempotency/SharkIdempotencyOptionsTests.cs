@@ -57,6 +57,27 @@ public class SharkIdempotencyOptionsTests
     public void IsValidKey_RejectsControlChars()
     {
         var o = new SharkIdempotencyOptions();
-        Assert.False(o.IsValidKey("abc\x01def"));
+        Assert.False(o.IsValidKey("abcdef\x01ghijklmnopqrst"));
+    }
+
+    [Theory]
+    [InlineData("a")]
+    [InlineData("short")]
+    [InlineData("fifteen-chars")]
+    [InlineData("123456789012345")] // 15 chars
+    public void IsValidKey_RejectsShorterThanMinimum(string key)
+    {
+        // SHARK-SEC-L002: IETF draft recommends ≥ 16 chars to prevent
+        // keyspace pre-burning.
+        var o = new SharkIdempotencyOptions();
+        Assert.False(o.IsValidKey(key));
+    }
+
+    [Fact]
+    public void IsValidKey_AcceptsExactlyMinimumLength()
+    {
+        var o = new SharkIdempotencyOptions();
+        var key = "1234567890123456"; // 16 chars
+        Assert.True(o.IsValidKey(key));
     }
 }
