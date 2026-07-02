@@ -7,6 +7,18 @@ namespace Sharkable;
 /// </summary>
 public sealed class CronExpression
 {
+    /// <summary>
+    /// SHARK-SEC-M011: hard cap on the number of minute-iterations
+    /// <see cref="GetNext"/> will perform before returning <c>null</c>.
+    /// A pattern that can never match (e.g. <c>0 0 30 2 *</c> — Feb 30
+    /// does not exist) would otherwise loop up to ~2.1 M times before
+    /// yielding, burning CPU on every tick of
+    /// <c>SharkCronHostedService</c>. 4 years of minutes is 2,102,400;
+    /// we cap at that count to preserve the existing semantics while
+    /// preventing the runaway case.
+    /// </summary>
+    internal const int MaxIterations = 2_200_000;
+
     private readonly ulong[] _fields = new ulong[6];
     private readonly string _original;
 
@@ -37,7 +49,9 @@ public sealed class CronExpression
     /// <summary>
     /// Returns the next occurrence strictly after <paramref name="after"/>,
     /// or <c>null</c> if no future match exists within a reasonable search
-    /// window (～4 years).
+    /// window (~4 years). Iteration is capped at <see cref="MaxIterations"/>
+    /// minute-steps so a non-matching pattern cannot burn CPU on every tick
+    /// (SHARK-SEC-M011).
     /// </summary>
     public DateTimeOffset? GetNext(DateTimeOffset after)
     {
@@ -46,7 +60,7 @@ public sealed class CronExpression
         dt = dt.AddSeconds(1);
 
         var limit = dt.AddYears(4);
-        while (dt <= limit)
+        for (var i = 0; i < MaxIterations && dt <= limit; i++)
         {
             if (Matches(dt))
                 return dt;
