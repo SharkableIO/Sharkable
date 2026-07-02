@@ -147,6 +147,10 @@ All notable changes to Sharkable are documented here.
 - Require API key on profiler endpoint `/_sharkable/profiler` by default; return 404 if no API keys configured (SHARK-SEC-015). Adds `SharkOption.ProfilerRequireApiKey` (default `true`); also caps the `top` slow-requests surface at 50 to bound data exposure
 - Require API key on cron admin endpoint `/_sharkable/jobs`; redact `LastError` field to its first 100 characters + `...` to prevent business-logic leakage (SHARK-SEC-016). Adds `SharkOption.CronAdminRequireApiKey` (default `true`); returns 404 if no API keys are configured
 - **BREAKING**: Make `CronScheduler.Register` async — eliminate sync-over-async deadlock risk with distributed stores (SHARK-SEC-017). `ICronScheduler.Register` is replaced by `RegisterAsync` returning `Task`; `SharkOption.ConfigureCronJobs` callback type changes from `Action<ICronScheduler>` to `Func<ICronScheduler, Task>` so the hosted service can await it without blocking on startup. Internal `await _store.LoadStateAsync(...)` replaces `.GetAwaiter().GetResult()`.
+- Add `SharkOption.RequireAuthenticatedByDefault` opt-in flag — enforce auth on framework endpoints via fallback policy (SHARK-SEC-011, closes both H-4 and H-6)
+- Add `ETagOptions.MaxResponseSize` (default 10 MiB) + counting stream + incremental hashing — prevent OOM via huge response bodies (SHARK-SEC-012)
+- Add `IMemoryCache` SizeLimit (100k) + periodic eviction sweep to `MemoryRateLimitStore` — prevent slow-loris DoS via unique path explosion (SHARK-SEC-013)
+- Add `IMemoryCache` SizeLimit (10k) + entry.Size tracking to `MemoryIdempotencyStore` — prevent TB-DoS via unique idempotency keys (SHARK-SEC-014)
 - Add JWT algorithm allowlist + `RequireSignedTokens` + `RequireExpirationTime` + reduce `ClockSkew` to 30s — prevent algorithm confusion attacks (SHARK-SEC-007)
 - Use `CryptographicOperations.FixedTimeEquals` for API key comparison — prevent timing oracle (SHARK-SEC-008)
 - Gate `ScalarJwtToken` / `ScalarApiKeyValue` to `IHostEnvironment.IsDevelopment()` — prevent token leakage to public `/scalar/v1` UI (SHARK-SEC-009)
