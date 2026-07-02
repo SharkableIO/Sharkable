@@ -7,10 +7,20 @@ namespace Sharkable;
 
 internal static class HealthCheckEndpoint
 {
+    /// <summary>
+    /// SHARK-SEC-M015: hard timeout for the aggregate <see cref="HealthCheckService"/>
+    /// call. A single hung check (DB driver, downstream HTTP call) would otherwise
+    /// keep /healthz open indefinitely and fail k8s probes. 10s matches the
+    /// typical Kubernetes probe timeoutSeconds default; raise in
+    /// <c>HealthCheckTimeoutSeconds</c> for deployments with deliberately slow
+    /// checks (e.g. cross-region DB failover probes).
+    /// </summary>
+    private static readonly TimeSpan HealthCheckTimeout = TimeSpan.FromSeconds(10);
+
     internal static void Map(WebApplication app)
     {
         var path = Shark.SharkOption.HealthCheckPath ?? "/healthz";
-        app.MapGet(path, async (HealthCheckService healthCheck) =>
+        app.MapGet(path, async (HealthCheckService healthCheck, CancellationToken cancellationToken) =>
         {
             if (Volatile.Read(ref InternalShark.IsShuttingDown))
                 return Results.Json(new
@@ -24,7 +34,39 @@ internal static class HealthCheckEndpoint
                     version = InternalShark.AppVersion ?? "0.0.0",
                 }, statusCode: 503);
 
-            var report = await healthCheck.CheckHealthAsync();
+            // SHARK-SEC-M015: bound the aggregate health-check call with a
+            // linked CTS so a stuck individual check cannot keep /healthz
+            // open beyond the configured timeout. The CheckHealthAsync
+            // overload that accepts a CancellationToken forwards cancellation
+            // to each registered IHealthCheck.CheckHealthAsync.
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(HealthCheckTimeout);
+
+            HealthReport report;
+            try
+            {
+                report = await healthCheck.CheckHealthAsync(timeoutCts.Token);
+            }
+            catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested
+                                                       && !cancellationToken.IsCancellationRequested)
+            {
+                // Per-check timeout fired. Return a synthetic unhealthy report
+                // so the probe can fail fast instead of hanging.
+                return Results.Json(new
+                {
+                    status = "unhealthy",
+                    checks = new Dictionary<string, object>
+                    {
+                        ["timeout"] = new
+                        {
+                            status = "unhealthy",
+                            message = $"Health check exceeded {HealthCheckTimeout.TotalSeconds:F0}s timeout",
+                        }
+                    },
+                    uptime = GetUptime(),
+                    version = InternalShark.AppVersion ?? "0.0.0",
+                }, statusCode: 503);
+            }
 
             var checks = report.Entries.ToDictionary(
                 e => e.Key,
