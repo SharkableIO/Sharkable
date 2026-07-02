@@ -7,9 +7,18 @@ namespace Sharkable;
 /// <see cref="IMemoryCache"/>. Single-instance only; for distributed
 /// scenarios implement <see cref="IIdempotencyStore"/> with Redis or
 /// similar.
+///
+/// The injected <see cref="IMemoryCache"/> MUST have
+/// <see cref="MemoryCacheOptions.SizeLimit"/> set to bound the total
+/// number of distinct idempotency keys. Each entry records its cost via
+/// <c>entry.Size</c> (completed records charge <c>Body.Length + 256</c>,
+/// in-flight markers charge 256) so the cap reflects realistic memory
+/// pressure. Without a configured <c>SizeLimit</c>, an attacker sending
+/// random unique <c>Idempotency-Key</c> headers can exhaust process memory.
 /// </summary>
 public sealed class MemoryIdempotencyStore : IIdempotencyStore
 {
+    private const int MarkerSize = 256;
     private readonly IMemoryCache _cache;
     private readonly object _reservationLock = new();
 
@@ -33,6 +42,7 @@ public sealed class MemoryIdempotencyStore : IIdempotencyStore
             var marker = new InFlightMarker();
             var actual = _cache.GetOrCreate<object>(key, entry =>
             {
+                entry.Size = MarkerSize;
                 entry.AbsoluteExpirationRelativeToNow = inFlightTtl;
                 return marker;
             });
@@ -56,6 +66,7 @@ public sealed class MemoryIdempotencyStore : IIdempotencyStore
     public Task StoreAsync(string key, IdempotencyRecord record, TimeSpan ttl)
     {
         using var entry = _cache.CreateEntry(key);
+        entry.Size = record.Body.Length + MarkerSize;
         entry.AbsoluteExpirationRelativeToNow = ttl;
         entry.Value = record;
         return Task.CompletedTask;
