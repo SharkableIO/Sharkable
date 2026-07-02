@@ -147,6 +147,11 @@ All notable changes to Sharkable are documented here.
 - Add JWT algorithm allowlist + `RequireSignedTokens` + `RequireExpirationTime` + reduce `ClockSkew` to 30s — prevent algorithm confusion attacks (SHARK-SEC-007)
 - Use `CryptographicOperations.FixedTimeEquals` for API key comparison — prevent timing oracle (SHARK-SEC-008)
 - Gate `ScalarJwtToken` / `ScalarApiKeyValue` to `IHostEnvironment.IsDevelopment()` — prevent token leakage to public `/scalar/v1` UI (SHARK-SEC-009)
+- Redact RedisHealthCheck description — never expose topology or exception messages on public `/healthz` (SHARK-SEC-018)
+- Validate connection string at AddSharkableRedis — null-check + default `abortConnect=false` + optional TLS enforcement (SHARK-SEC-019)
+- Replace empty catch in RedisIdempotencyStore deserialization with typed exception handling + tombstone record — prevent silent double-execution on corruption (SHARK-SEC-020)
+- Add `UseSharkableRedisHealthCheck()` extension — explicit opt-in to wire health check into `/healthz` (SHARK-SEC-021)
+- Set TTL on RedisSagaStore progress records via `RedisStoreOptions.SagaProgressTtl` (default 7d) — prevent unbounded memory growth (SHARK-SEC-022)
 
 ### feat
 
