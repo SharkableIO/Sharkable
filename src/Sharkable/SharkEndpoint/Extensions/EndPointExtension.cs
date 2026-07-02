@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Sharkable;
@@ -172,6 +174,8 @@ internal static class SharkEndPointExtension
             var crudGenerator = app.Services.GetService<IAutoCrudGenerator>();
             if (crudGenerator != null)
             {
+                var crudLogger = app.Services.GetService<ILoggerFactory>()
+                    ?.CreateLogger("Sharkable.AutoCrud");
                 foreach (var (_, classType) in endpoints)
                 {
                     var entityInterface = classType.GetInterfaces()
@@ -182,10 +186,35 @@ internal static class SharkEndPointExtension
                     var operations = CrudOperations.All;
                     try
                     {
+                        // SHARK-SEC-L019 / L022: only swallow the specific
+                        // exceptions that signal "this endpoint type does
+                        // not implement IAutoCrudEntityMarker" — previously
+                        // the empty catch {} also hid TypeLoadException
+                        // (missing dependency), MemberAccessException
+                        // (visibility mismatch), and even OutOfMemoryException
+                        // under contention. Anything else propagates so the
+                        // startup failure is visible.
                         if (Activator.CreateInstance(classType) is IAutoCrudEntityMarker marker)
                             operations = marker.GetOperations();
                     }
-                    catch { }
+                    catch (TypeLoadException ex)
+                    {
+                        crudLogger?.LogDebug(ex,
+                            "Endpoint type {Type} does not implement IAutoCrudEntityMarker (missing dependency); using CrudOperations.All",
+                            classType.FullName);
+                    }
+                    catch (TargetInvocationException ex) when (ex.InnerException is not null)
+                    {
+                        crudLogger?.LogWarning(ex.InnerException,
+                            "AutoCrud marker construction for {Type} threw; falling back to CrudOperations.All",
+                            classType.FullName);
+                    }
+                    catch (MissingMethodException ex)
+                    {
+                        crudLogger?.LogWarning(ex,
+                            "AutoCrud marker type {Type} has no public parameterless constructor; falling back to CrudOperations.All",
+                            classType.FullName);
+                    }
 
                     crudGenerator.GenerateRoutes(group, entityType, classType, operations);
                 }
