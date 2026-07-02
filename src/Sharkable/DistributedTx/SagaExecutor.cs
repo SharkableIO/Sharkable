@@ -185,7 +185,7 @@ public sealed class SagaExecutor
             if (!stepResult.Success)
             {
                 _logger.LogError("Saga {SagaId} step {Index} failed: {Error}", sagaId, i, stepResult.Error);
-                return await CompensateAsync(sagaId, saga, completedCount, ct, stepResult.Error);
+                return await CompensateAsync(sagaId, saga, completedCount, ct, stepResult.Error ?? "Unknown error");
             }
 
             await _store.SaveProgressAsync(sagaId, i, ct);
