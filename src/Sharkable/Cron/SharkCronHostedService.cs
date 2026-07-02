@@ -32,13 +32,13 @@ internal sealed class SharkCronHostedService : BackgroundService
             try
             {
                 var due = await _scheduler.GetDueJobsAsync();
-                foreach (var (job, state) in due)
+                foreach (var (job, state, lockHeld) in due)
                 {
                     _ = Task.Run(async () =>
                     {
                         try
                         {
-                            await _scheduler.ExecuteJobAsync(job, state);
+                            await _scheduler.ExecuteJobAsync(job, state, lockHeld);
                         }
                         catch (Exception ex)
                         {

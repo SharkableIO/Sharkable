@@ -15,6 +15,13 @@ public sealed class MemoryCronJobStore : ICronJobStore
     public Task<bool> TryAcquireJobLockAsync(string jobName, TimeSpan ttl)
         => Task.FromResult(_locks.TryAdd(jobName, 0));
 
+    /// <summary>
+    /// No-op: in-process locks survive until <see cref="ReleaseJobLockAsync"/>
+    /// is called, so TTL renewal is unnecessary.
+    /// </summary>
+    public Task RenewJobLockAsync(string jobName, TimeSpan ttl)
+        => Task.CompletedTask;
+
     public Task ReleaseJobLockAsync(string jobName)
     {
         _locks.TryRemove(jobName, out _);
