@@ -71,15 +71,22 @@ public abstract class SharkBackgroundService : BackgroundService, IHealthCheck
                 {
                     break;
                 }
-                catch (Exception ex)
+catch (Exception ex)
+            {
+                // SHARK-SEC-L024: preserve the full stack trace for the
+                // LastError so operators can diagnose failures without
+                // attaching a debugger. Previously LastError was set to
+                // ex.Message, which discards the inner exception (the
+                // actual cause for 9 out of 10 wrapper-style exceptions
+                // such as TargetInvocationException, AggregateException,
+                // etc.).
+                LastError = ex.ToString();
+                if (attempt < _maxRetries)
                 {
-                    LastError = ex.Message;
-                    if (attempt < _maxRetries)
-                    {
-                        try { await Task.Delay(_retryDelay, stoppingToken); }
-                        catch (OperationCanceledException) { break; }
-                    }
+                    try { await Task.Delay(_retryDelay, stoppingToken); }
+                    catch (OperationCanceledException) { break; }
                 }
+            }
             }
 
             LastRunAt = DateTimeOffset.UtcNow;
