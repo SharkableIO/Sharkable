@@ -30,8 +30,14 @@ public sealed class AuditTrailOptions
     public string[] ExcludePaths { get; set; } = [];
 
     /// <summary>
-    /// Request header names whose values should be redacted in logs (e.g. <c>"Authorization"</c>, <c>"X-Api-Key"</c>).
-    /// Matched case-insensitively.
+    /// Request header names whose values should be redacted in audit log output
+    /// (e.g. <c>"Authorization"</c>, <c>"X-Api-Key"</c>, <c>"Cookie"</c>).
+    /// Matched case-insensitively against the incoming request headers.
+    /// Redacted headers have their value replaced with <c>"***"</c> in the log
+    /// entry while the header name itself is preserved so reviewers can see
+    /// which credentials were presented. Defaults cover the common
+    /// credential-bearing headers — extend the list to add application-specific
+    /// secrets (SHARK-SEC-010).
     /// </summary>
     public string[] RedactHeaders { get; set; } = ["Authorization", "X-Api-Key", "Cookie"];
 

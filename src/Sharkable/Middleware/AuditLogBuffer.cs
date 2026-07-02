@@ -98,8 +98,8 @@ internal sealed class AuditLogBuffer : IDisposable
                 continue;
 
             _logger.Log(level,
-                "HTTP {Method} {Path}{Query} responded {StatusCode} in {ElapsedMs}ms [CorrelationId: {CorrelationId}]",
-                entry.Method, entry.Path, entry.Query, entry.StatusCode, entry.ElapsedMs, entry.CorrelationId);
+                "HTTP {Method} {Path}{Query} responded {StatusCode} in {ElapsedMs}ms [CorrelationId: {CorrelationId}] Headers={Headers}",
+                entry.Method, entry.Path, entry.Query, entry.StatusCode, entry.ElapsedMs, entry.CorrelationId, entry.Headers);
         }
     }
 
@@ -116,6 +116,7 @@ internal readonly record struct AuditLogEntry(
     string Method,
     string Path,
     string? Query,
+    string Headers,
     int StatusCode,
     long ElapsedMs,
     string CorrelationId);

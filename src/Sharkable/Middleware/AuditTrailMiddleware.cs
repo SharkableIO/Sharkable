@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
 namespace Sharkable;
@@ -10,12 +11,14 @@ internal sealed class AuditTrailMiddleware
     private readonly ILogger<AuditTrailMiddleware> _logger;
     private readonly AuditTrailOptions _options;
     private readonly AuditLogBuffer? _buffer;
+    private readonly HashSet<string> _redactHeaders;
 
     public AuditTrailMiddleware(RequestDelegate next, ILogger<AuditTrailMiddleware> logger)
     {
         _next = next;
         _logger = logger;
         _options = Shark.SharkOption.AuditTrailOptions!;
+        _redactHeaders = new HashSet<string>(_options.RedactHeaders, StringComparer.OrdinalIgnoreCase);
         _buffer = _options.AsyncWrite
             ? new AuditLogBuffer(_options, _logger)
             : null;
@@ -48,6 +51,7 @@ internal sealed class AuditTrailMiddleware
             var query = _options.IncludeQueryString
                 ? RedactQueryString(context.Request.QueryString.Value)
                 : null;
+            var headers = CaptureHeaders(context.Request.Headers);
 
             if (_buffer != null)
             {
@@ -55,13 +59,14 @@ internal sealed class AuditTrailMiddleware
                     context.Request.Method,
                     path,
                     query,
+                    headers,
                     statusCode,
                     stopwatch.ElapsedMilliseconds,
                     correlationId));
             }
             else
             {
-                LogRequest(context.Request.Method, path, query, statusCode, stopwatch.ElapsedMilliseconds, correlationId);
+                LogRequest(context.Request.Method, path, query, headers, statusCode, stopwatch.ElapsedMilliseconds, correlationId);
             }
         }
     }
@@ -98,7 +103,23 @@ internal sealed class AuditTrailMiddleware
         });
     }
 
-    private void LogRequest(string method, string path, string? query, int statusCode, long elapsedMs, string correlationId)
+    private string CaptureHeaders(IHeaderDictionary headers)
+    {
+        if (headers.Count == 0)
+            return "{}";
+
+        var dict = new Dictionary<string, string>(headers.Count, StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in headers)
+        {
+            // SHARK-SEC-010: header names configured in RedactHeaders have their
+            // value replaced with "***" before being written to the audit log.
+            var value = _redactHeaders.Contains(entry.Key) ? "***" : entry.Value.ToString();
+            dict[entry.Key] = value;
+        }
+        return JsonSerializer.Serialize(dict);
+    }
+
+    private void LogRequest(string method, string path, string? query, string headers, int statusCode, long elapsedMs, string correlationId)
     {
         var logLevel = statusCode >= 500 ? _options.ErrorLogLevel
                      : statusCode >= 400 ? _options.WarningLogLevel
@@ -108,13 +129,14 @@ internal sealed class AuditTrailMiddleware
             return;
 
         _logger.Log(logLevel,
-            "HTTP {Method} {Path}{Query} responded {StatusCode} in {ElapsedMs}ms [CorrelationId: {CorrelationId}]",
+            "HTTP {Method} {Path}{Query} responded {StatusCode} in {ElapsedMs}ms [CorrelationId: {CorrelationId}] Headers={Headers}",
             method,
             path,
             query,
             statusCode,
             elapsedMs,
-            correlationId);
+            correlationId,
+            headers);
     }
 
     private string? RedactQueryString(string? queryString)
