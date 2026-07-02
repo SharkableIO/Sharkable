@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 
@@ -82,19 +84,45 @@ internal static class OpenApiExtension
 
     private static void ApplyAutoAuth(SharkOption opt, ScalarOptions scalar)
     {
+        // SHARK-SEC-009: never pre-fill tokens in non-Development environments
+        // — the Scalar UI bundle is served from /scalar/v1 to any caller, and
+        // baking a JWT/API key into it would leak it to anyone who can reach
+        // the documentation page.
+        var isDevelopment = InternalShark.HostEnvironment?.IsDevelopment() ?? false;
+
         if (opt.JwtAuthority is not null)
         {
             scalar.AddHttpAuthentication("bearer", bearer =>
             {
-                bearer.Token = opt.ScalarJwtToken ?? "your-jwt-token";
+                bearer.Token = isDevelopment ? (opt.ScalarJwtToken ?? "your-jwt-token") : "";
             });
+            if (!isDevelopment && !string.IsNullOrEmpty(opt.ScalarJwtToken))
+                WarnLeakedCredential("ScalarJwtToken");
         }
         if (opt.ApiKeys is { Length: > 0 })
         {
             scalar.AddApiKeyAuthentication("apiKey", apiKey =>
             {
-                apiKey.Value = opt.ScalarApiKeyValue ?? "your-api-key";
+                apiKey.Value = isDevelopment ? (opt.ScalarApiKeyValue ?? "your-api-key") : "";
             });
+            if (!isDevelopment && !string.IsNullOrEmpty(opt.ScalarApiKeyValue))
+                WarnLeakedCredential("ScalarApiKeyValue");
         }
+    }
+
+    private static void WarnLeakedCredential(string propertyName)
+    {
+        var envName = InternalShark.HostEnvironment?.EnvironmentName ?? "<unknown>";
+        var message = $"[Sharkable] {propertyName} is set but the current environment " +
+                      $"('{envName}') is not Development. The value will NOT be embedded in the " +
+                      $"Scalar UI served at /scalar/v1 to avoid leaking credentials. " +
+                      $"Set {propertyName} only in Development, or gate it via " +
+                      $"IHostEnvironment.IsDevelopment().";
+
+        var logger = InternalShark.ServiceProvider?.GetService<ILoggerFactory>()?.CreateLogger("Sharkable");
+        if (logger != null)
+            logger.LogWarning(message);
+        else
+            Console.WriteLine(message);
     }
 }
