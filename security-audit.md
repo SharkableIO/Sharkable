@@ -116,3 +116,5 @@ likely because a check-then-delete race window opened on every crash-recovery.
 - Existing third-party `ISagaStore` implementations compiled against Sharkable v0.5.4 continue to compile against the patched library unchanged.
 - Cancellation / step failure / compensation all trigger `renewCts.Cancel()` and a clean `ReleaseLockAsync` in the `finally` block.
 - Redis-based deployments require the cross-repo companion fix in `Sharkable.Cache.Redis` for renewal to actually extend TTL.
+- `SagaExecutor.LockTtl` setter rejects negative values and rejects `value <= LockRenewalInterval` (which would defeat renewal).
+- `SagaExecutor.LockRenewalInterval` setter rejects negative values and rejects `value >= LockTtl` (which would defeat renewal). `TimeSpan.Zero` remains valid on both to disable the renewal protocol.

@@ -23,7 +23,27 @@ public sealed class SagaExecutor
     /// lock and produce split-brain execution. Use <see cref="LockRenewalInterval"/>
     /// (default <c>LockTtl / 3</c>) so that long-running steps keep the lock alive.
     /// </remarks>
-    public TimeSpan LockTtl { get; set; } = TimeSpan.FromMinutes(5);
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when set to a negative value, or to a value &lt;= <see cref="LockRenewalInterval"/>
+    /// (which would defeat the renewal protocol — the lock would expire before the
+    /// first renewal fires).
+    /// </exception>
+    public TimeSpan LockTtl
+    {
+        get => _lockTtl;
+        set
+        {
+            if (value < TimeSpan.Zero)
+                throw new ArgumentOutOfRangeException(nameof(value),
+                    "LockTtl must be >= TimeSpan.Zero.");
+            if (value != TimeSpan.Zero && _lockRenewalInterval != TimeSpan.Zero && value <= _lockRenewalInterval)
+                throw new ArgumentOutOfRangeException(nameof(value),
+                    $"LockTtl ({value}) must be greater than LockRenewalInterval ({_lockRenewalInterval}) so the renewal protocol is effective.");
+            _lockTtl = value;
+        }
+    }
+
+    private TimeSpan _lockTtl = TimeSpan.FromMinutes(5);
 
     /// <summary>
     /// Interval between automatic lock TTL renewals while a saga is in progress.
@@ -33,7 +53,27 @@ public sealed class SagaExecutor
     /// TTL expiry even if one renewal is lost. Set to <see cref="TimeSpan.Zero"/>
     /// to disable renewal (only safe when every saga completes well within <c>LockTtl</c>).
     /// </remarks>
-    public TimeSpan LockRenewalInterval { get; set; }
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when set to a negative value, or to a value &gt;= <see cref="LockTtl"/>
+    /// (which would defeat the renewal protocol — the lock would expire before the
+    /// first renewal fires).
+    /// </exception>
+    public TimeSpan LockRenewalInterval
+    {
+        get => _lockRenewalInterval;
+        set
+        {
+            if (value < TimeSpan.Zero)
+                throw new ArgumentOutOfRangeException(nameof(value),
+                    "LockRenewalInterval must be >= TimeSpan.Zero.");
+            if (value != TimeSpan.Zero && _lockTtl != TimeSpan.Zero && value >= _lockTtl)
+                throw new ArgumentOutOfRangeException(nameof(value),
+                    $"LockRenewalInterval ({value}) must be less than LockTtl ({_lockTtl}) so the renewal protocol is effective.");
+            _lockRenewalInterval = value;
+        }
+    }
+
+    private TimeSpan _lockRenewalInterval;
 
     /// <summary>
     /// Creates a <see cref="SagaExecutor"/> with the default lock TTL (5 minutes).
