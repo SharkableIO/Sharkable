@@ -2,6 +2,16 @@
 
 All notable changes to Sharkable are documented here.
 
+## [Unreleased]
+
+### feat
+
+- Upgrade `Scalar.AspNetCore` to 2.16.8
+
+### fix
+
+- Null-coalesce `stepResult.Error` in `SagaExecutor` — fix CS8604 nullable warning in `CompensateAsync` call
+
 ## [0.5.5] — 2026-07-03
 
 ### security
@@ -74,16 +84,6 @@ All notable changes to Sharkable are documented here.
 ### feat
 
 - Add `UnifiedResult<T>` AOT preservation — Source Generator auto-emits `typeof(UnifiedResult<T>)` for all endpoint return types
-
-## [Unreleased]
-
-### feat
-
-- Upgrade `Scalar.AspNetCore` to 2.16.8
-
-### fix
-
-- Null-coalesce `stepResult.Error` in `SagaExecutor` — fix CS8604 nullable warning in `CompensateAsync` call
 
 ## [0.5.4] — 2026-06-30
 
