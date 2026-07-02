@@ -111,4 +111,15 @@ public sealed class SharkRateLimiterOptions
     /// Default is 10 (i.e. reduce by 1/10).
     /// </summary>
     public int AdaptiveReductionDivisor { get; set; } = 10;
+
+    /// <summary>
+    /// Maximum number of distinct rate limit keys retained by the in-process
+    /// <see cref="MemoryRateLimitStore"/>. Each entry accounts for ~256 bytes
+    /// of cache size. When the cap is reached the cache evicts
+    /// least-recently-used entries; this prevents a slow-loris attacker from
+    /// exhausting memory by probing unique URLs in a tight loop. Default is
+    /// 100,000. Set to <c>-1</c> to disable the cap (not recommended for
+    /// untrusted traffic).
+    /// </summary>
+    public long MaxEntries { get; set; } = 100_000;
 }

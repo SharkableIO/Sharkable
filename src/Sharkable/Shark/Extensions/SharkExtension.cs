@@ -65,13 +65,14 @@ public static class SharkExtension
                 services.TryAddSingleton<IIdempotencyStore, MemoryIdempotencyStore>();
         }
         //register distributed rate limiter
+        var rateLimitMaxEntries = Shark.SharkOption.RateLimitingOptions?.MaxEntries ?? 100_000;
         if (Shark.SharkOption.RateLimitingOptions != null)
         {
             services.AddSingleton(Shark.SharkOption.RateLimitingOptions);
             if (Shark.SharkOption.RateLimitStoreFactory != null)
                 services.AddSingleton(Shark.SharkOption.RateLimitStoreFactory);
             else
-                services.TryAddSingleton<IDistributedRateLimitStore, MemoryRateLimitStore>();
+                services.TryAddSingleton<IDistributedRateLimitStore>(_ => new MemoryRateLimitStore(rateLimitMaxEntries));
         }
         else
         {
@@ -80,7 +81,7 @@ public static class SharkExtension
             if (Shark.SharkOption.RateLimitStoreFactory != null)
                 services.AddSingleton(Shark.SharkOption.RateLimitStoreFactory);
             else
-                services.TryAddSingleton<IDistributedRateLimitStore, MemoryRateLimitStore>();
+                services.TryAddSingleton<IDistributedRateLimitStore>(_ => new MemoryRateLimitStore(rateLimitMaxEntries));
         }
         //register authorization (default enabled)
         if (Shark.SharkOption.EnableAuthorization)
