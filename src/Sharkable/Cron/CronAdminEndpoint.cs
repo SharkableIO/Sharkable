@@ -42,14 +42,28 @@ internal static class CronAdminEndpoint
         s.NextRun,
         s.LastRun,
         s.LastDurationMs,
-        LastError = s.LastError == null
-            ? null
-            : (s.LastError.Length > MaxLastErrorChars
-                ? s.LastError.Substring(0, MaxLastErrorChars) + "..."
-                : s.LastError),
+        LastError = TruncateLastError(s.LastError),
         s.RunCount,
         s.Paused,
     };
+
+    /// <summary>
+    /// Truncates <paramref name="value"/> to <see cref="MaxLastErrorChars"/>
+    /// characters and appends an ellipsis when truncation occurred. When the
+    /// character at the cut boundary is a UTF-16 high surrogate, the boundary
+    /// is shifted back by one so the resulting string never contains an
+    /// unpaired surrogate (which would render as <c>U+FFFD</c> in JSON and
+    /// downstream consumers) — SHARK-SEC-016 follow-up.
+    /// </summary>
+    private static string? TruncateLastError(string? value)
+    {
+        if (value == null) return null;
+        if (value.Length <= MaxLastErrorChars) return value;
+
+        var cut = MaxLastErrorChars;
+        if (char.IsHighSurrogate(value[cut - 1])) cut--;
+        return value.Substring(0, cut) + "...";
+    }
 
     /// <summary>
     /// Returns <c>true</c> when the request carries a configured API key.
