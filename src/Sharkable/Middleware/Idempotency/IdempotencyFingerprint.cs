@@ -40,6 +40,16 @@ internal static class IdempotencyFingerprint
     /// Note: the hash input differs from <see cref="Compute(string,PathString,ReadOnlySpan{byte})"/>,
     /// which omits the content length field.
     /// </summary>
+    /// <param name="method">HTTP method (case-insensitive; normalized to upper).</param>
+    /// <param name="path">Request path. Null/empty is treated as <c>"/"</c>.</param>
+    /// <param name="body">Request body stream. Read incrementally — never materialized as a full buffer.</param>
+    /// <param name="maxBodySize">Maximum number of body bytes to include in the hash. Acts as a hard
+    /// upper bound to prevent OOM when an attacker advertises a huge <c>Content-Length</c>.</param>
+    /// <param name="contentLength">The <c>Content-Length</c> of the request, or <c>-1</c> when the
+    /// length is unknown (e.g. <c>Transfer-Encoding: chunked</c>). The sentinel <c>-1</c> is mixed
+    /// into the hash so chunked requests cannot collide with fixed-length requests of identical body
+    /// content, nor with one another when their bodies differ.</param>
+    /// <returns>64-character lower-case hex SHA-256 digest.</returns>
     public static async Task<string> ComputeAsync(
         string method, PathString path, Stream body, int maxBodySize, long contentLength)
     {

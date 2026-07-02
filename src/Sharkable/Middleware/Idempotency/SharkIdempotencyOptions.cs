@@ -34,7 +34,25 @@ public sealed class SharkIdempotencyOptions
     /// Bodies larger than this are hashed incrementally up to this limit.
     /// Default is 64 KiB. Prevents OOM from attacker-controlled <c>Content-Length</c> values.
     /// </summary>
-    public int MaxFingerprintBodySize { get; set; } = 65_536;
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when set to a value less than or equal to zero — a non-positive value would
+    /// cause the fingerprint to read zero body bytes, collapsing all requests with bodies
+    /// to the same fingerprint.
+    /// </exception>
+    public int MaxFingerprintBodySize
+    {
+        get => _maxFingerprintBodySize;
+        set
+        {
+            if (value <= 0)
+                throw new ArgumentOutOfRangeException(
+                    nameof(value),
+                    "MaxFingerprintBodySize must be > 0 to ensure the fingerprint reflects body content.");
+            _maxFingerprintBodySize = value;
+        }
+    }
+
+    private int _maxFingerprintBodySize = 65_536;
 
     /// <summary>Response header set on replays. Default is <c>"X-Idempotent-Replayed"</c>.</summary>
     public string ReplayedHeaderName { get; set; } = "X-Idempotent-Replayed";

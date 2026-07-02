@@ -33,11 +33,16 @@ Remote denial of service via memory exhaustion. No authentication required — t
 1. **Added** `SharkIdempotencyOptions.MaxFingerprintBodySize` (default 64 KiB) — configurable upper bound for body bytes included in the fingerprint hash.
 2. **Introduced** `IdempotencyFingerprint.ComputeAsync()` — reads the body incrementally in 4 KiB chunks via `IncrementalHash`, never materializing the full body. Stops reading after `min(Content-Length, MaxFingerprintBodySize)` bytes.
 3. **Replaced** the vulnerable `Compute` + `ReadBodyBytes` call path with the bounded `ComputeAsync` path.
+4. **Fixed chunked-transfer bypass** — when `Content-Length` is absent (chunked encoding) the body is now read incrementally via `ComputeAsync` with `contentLength = -1` sentinel, instead of falling through to the empty-body path. This prevents all chunked requests from sharing one fingerprint (which previously let an attacker replay any chunked request under any other chunked request's idempotency key).
+5. **Added validation** — `SharkIdempotencyOptions.MaxFingerprintBodySize` setter throws `ArgumentOutOfRangeException` for `<= 0`.
 
 ### Verification
 
 - `Content-Length: 2147483647` with a small body → only 64 KiB read, single 4 KiB buffer allocated, no OOM.
-- `Content-Length: 0` or absent → no body read, falls back to `Compute()` with empty span (unchanged).
+- `Content-Length: 0` → no body read, falls back to `Compute()` with empty span (unchanged).
+- `Content-Length` absent (chunked) with body "abc" vs body "xyz" → distinct fingerprints (the `-1` contentLength sentinel is mixed into the hash, and bodies are hashed incrementally).
+- `Content-Length` absent with no body → distinct from `Content-Length: 0` (sentinel `-1` differs from no length marker).
+- `SharkIdempotencyOptions.MaxFingerprintBodySize = 0` → throws `ArgumentOutOfRangeException`.
 - Normal requests with bodies ≤ 64 KiB → hashed in full, identical fingerprint behavior.
 
 ### Timeline

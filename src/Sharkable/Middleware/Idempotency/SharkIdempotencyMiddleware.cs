@@ -144,8 +144,11 @@ internal sealed class SharkIdempotencyMiddleware
     private async Task<string> ComputeFingerprint(HttpContext context)
     {
         var contentLength = context.Request.ContentLength;
+        var maxBodySize = _options.MaxFingerprintBodySize;
 
-        if (contentLength is null or <= 0)
+        // Content-Length: 0 (or negative) — no body. Use the empty-body path so its
+        // fingerprint stays distinct from any chunked request.
+        if (contentLength is not null && contentLength.Value <= 0)
         {
             return IdempotencyFingerprint.Compute(
                 context.Request.Method,
@@ -153,18 +156,25 @@ internal sealed class SharkIdempotencyMiddleware
                 ReadOnlySpan<byte>.Empty);
         }
 
+        // Content-Length absent — typically Transfer-Encoding: chunked. We cannot
+        // trust the body to be empty, so hash incrementally up to maxBodySize and
+        // pass -1 as the contentLength sentinel. The sentinel is mixed into the
+        // hash, ensuring chunked requests never collide with one another (different
+        // bodies → different fingerprints) or with the empty-body path.
         var body = context.Request.Body;
         if (body.CanSeek) body.Position = 0;
 
-        var maxBodySize = _options.MaxFingerprintBodySize;
-        var bytesToHash = contentLength.Value > maxBodySize ? maxBodySize : (int)contentLength.Value;
+        var bytesToHash = maxBodySize;
+        var hashContentLength = contentLength ?? -1;
+        if (contentLength is not null && contentLength.Value < bytesToHash)
+            bytesToHash = (int)contentLength.Value;
 
         return await IdempotencyFingerprint.ComputeAsync(
             context.Request.Method,
             context.Request.Path,
             body,
             bytesToHash,
-            contentLength.Value);
+            hashContentLength);
     }
 
     private async Task Replay(HttpContext context, IdempotencyRecord record)

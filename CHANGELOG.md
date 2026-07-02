@@ -136,7 +136,7 @@ All notable changes to Sharkable are documented here.
 
 ### security
 
-- Add `MaxFingerprintBodySize` (default 64 KiB) to `SharkIdempotencyOptions` — prevent OOM via attacker-controlled `Content-Length` header in idempotency middleware fingerprinting
+- Add `MaxFingerprintBodySize` (default 64 KiB) to `SharkIdempotencyOptions` — prevent OOM via attacker-controlled `Content-Length` header in idempotency middleware fingerprinting. Fixed chunked-transfer bypass where all `Transfer-Encoding: chunked` requests hashed to the same fingerprint (now hashes body incrementally with `-1` sentinel for unknown length); setter rejects `<= 0`
 - Replace `Thread.Sleep` polling with `await Task.Delay` in graceful shutdown drain — prevent ApplicationStopping thread block (SHARK-SEC-003). Initial fix used `.GetAwaiter().GetResult()` on the drain task which still blocked the callback; corrected to true fire-and-forget so `ApplicationStopping` returns immediately.
 - Make `SagaExecutor.LockTtl` configurable; add `LockRenewalInterval` with periodic lock extension — prevent split-brain sagas when step duration exceeds lock TTL (SHARK-SEC-004, cross-repo with `Sharkable.Cache.Redis`)
 - Replace unconditional `KeyDelete` in `RedisSagaStore.ReleaseLockAsync` and `RedisCronJobStore.ReleaseJobLockAsync` with check-and-delete Lua script — prevent split-brain when LockTtl expires mid-work (SHARK-SEC-005, cross-repo with `Sharkable.Cache.Redis`)
