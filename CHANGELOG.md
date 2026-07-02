@@ -2,6 +2,12 @@
 
 All notable changes to Sharkable are documented here.
 
+## [0.5.5] — 2026-07-03
+
+### security
+
+- Pin `Microsoft.OpenApi` to 2.7.5 — suppress NU1903 (CVE-2026-49451, circular schema stack overflow)
+
 ## [0.5.4] — 2026-06-30
 
 ### security
