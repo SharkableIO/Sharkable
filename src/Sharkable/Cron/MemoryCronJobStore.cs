@@ -12,6 +12,7 @@ public sealed class MemoryCronJobStore : ICronJobStore
     private readonly ConcurrentDictionary<string, byte> _locks = new();
     private readonly ConcurrentDictionary<string, CronJobState> _states = new();
 
+    /// <summary>Attempts to acquire a lock for a cron job. Returns <c>true</c> if successful.</summary>
     public Task<bool> TryAcquireJobLockAsync(string jobName, TimeSpan ttl)
         => Task.FromResult(_locks.TryAdd(jobName, 0));
 
@@ -22,21 +23,25 @@ public sealed class MemoryCronJobStore : ICronJobStore
     public Task RenewJobLockAsync(string jobName, TimeSpan ttl)
         => Task.CompletedTask;
 
+    /// <summary>Releases a previously acquired lock for a cron job.</summary>
     public Task ReleaseJobLockAsync(string jobName)
     {
         _locks.TryRemove(jobName, out _);
         return Task.CompletedTask;
     }
 
+    /// <summary>Saves the runtime state for a cron job.</summary>
     public Task SaveStateAsync(string jobName, CronJobState state)
     {
         _states[jobName] = state;
         return Task.CompletedTask;
     }
 
+    /// <summary>Loads the runtime state for a cron job, or <c>null</c> if not found.</summary>
     public Task<CronJobState?> LoadStateAsync(string jobName)
         => Task.FromResult(_states.TryGetValue(jobName, out var s) ? s : null);
 
+    /// <summary>Returns the state of all tracked cron jobs.</summary>
     public Task<IReadOnlyList<CronJobState>> ListStatesAsync()
         => Task.FromResult<IReadOnlyList<CronJobState>>(_states.Values.ToList());
 }

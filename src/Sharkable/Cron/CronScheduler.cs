@@ -33,6 +33,7 @@ public sealed class CronScheduler : ICronScheduler
     /// </remarks>
     public TimeSpan CronLockTtl { get; set; } = TimeSpan.FromMinutes(10);
 
+    /// <summary>Creates a scheduler with the given store and logger.</summary>
     public CronScheduler(ICronJobStore store, ILogger<CronScheduler> logger)
     {
         _store = store;
@@ -44,6 +45,7 @@ public sealed class CronScheduler : ICronScheduler
         get { lock (_entries) return _entries.Values.Select(e => e.Job).ToList(); }
     }
 
+    /// <summary>Registers a new cron job and starts tracking its schedule.</summary>
     public async Task RegisterAsync(CronJob job)
     {
         // Parse cron first — fail fast before any state mutation
@@ -201,6 +203,7 @@ public sealed class CronScheduler : ICronScheduler
         }
     }
 
+    /// <summary>Manually triggers a registered cron job by name.</summary>
     public async Task<CronJobState?> TriggerAsync(string name)
     {
         JobEntry? entry;
@@ -214,18 +217,21 @@ public sealed class CronScheduler : ICronScheduler
         return state;
     }
 
+    /// <summary>Pauses a cron job by name. Paused jobs skip their scheduled runs.</summary>
     public Task PauseAsync(string name)
     {
         lock (_entries) { if (_entries.TryGetValue(name, out var e)) e.State.Paused = true; }
         return Task.CompletedTask;
     }
 
+    /// <summary>Resumes a previously paused cron job.</summary>
     public Task ResumeAsync(string name)
     {
         lock (_entries) { if (_entries.TryGetValue(name, out var e)) e.State.Paused = false; }
         return Task.CompletedTask;
     }
 
+    /// <summary>Returns the runtime state of all registered cron jobs.</summary>
     public Task<IReadOnlyList<CronJobState>> ListAsync()
     {
         lock (_entries)

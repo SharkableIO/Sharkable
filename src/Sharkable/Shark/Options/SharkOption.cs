@@ -9,6 +9,7 @@ namespace Sharkable;
 /// </summary>
 public sealed class SharkOption : ISharkOption
 {
+    /// <summary>Default section name used when binding from <c>appsettings.json</c>.</summary>
     public const string Default = "Sharkable";
     /// <summary>
     /// API prefix for all endpoint groups. Default is <c>"api"</c>.
@@ -47,7 +48,7 @@ public sealed class SharkOption : ISharkOption
     public Func<OpenApiSchema, IOpenApiSchema>? WrapSchemaFactory { get; set; }
     /// <summary>
     /// When true, scan and register FluentValidation validators, and auto-validate
-    /// endpoint parameters that have a registered <see cref="IValidator{T}"/>.
+    /// endpoint parameters that have a registered <c>IValidator&lt;T&gt;</c>.
     /// Default is false (opt-in).
     /// </summary>
     public bool EnableValidation { get; set; } = false;
@@ -251,7 +252,7 @@ public sealed class SharkOption : ISharkOption
     internal Action<SqlSugarOptions>? SqlSugarOptionsConfigure{ get; private set; }
     /// <summary>
     /// Configures structured log field redaction.
-    /// When set, <see cref="ILogger{T}"/> is replaced with a redacting wrapper.
+    /// When set, <c>ILogger&lt;T&gt;</c> is replaced with a redacting wrapper.
     /// </summary>
     public void ConfigureRedactingLog(Action<RedactingLogOptions> configure)
     {

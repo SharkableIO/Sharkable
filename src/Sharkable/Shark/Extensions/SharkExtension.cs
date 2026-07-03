@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Sharkable;
 
+/// <summary>Extension methods on <c>IServiceCollection</c> and <c>IApplicationBuilder</c> for configuring Sharkable.</summary>
 public static class SharkExtension
 {
     /// <summary>

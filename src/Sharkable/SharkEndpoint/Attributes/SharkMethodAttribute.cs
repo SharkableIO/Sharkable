@@ -11,11 +11,14 @@ public sealed class SharkMethodAttribute(
     SharkHttpMethod method = SharkHttpMethod.POST)
     : Attribute
 {
+    /// <summary>Creates an attribute with only an HTTP method (route pattern is optional).</summary>
     public SharkMethodAttribute(SharkHttpMethod method = SharkHttpMethod.POST) : this(null, method)
     {
     }
 
+    /// <summary>Optional route pattern. When null, the method name is used.</summary>
     [StringSyntax("Route")]
     public string? Pattern { get; internal set; } = pattern;
+    /// <summary>HTTP verb for this endpoint.</summary>
     public SharkHttpMethod Method { get; } = method;
 }

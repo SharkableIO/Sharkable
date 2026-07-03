@@ -25,11 +25,19 @@ public sealed class MemoryIdempotencyStore : IIdempotencyStore
     /// <summary>Marker for an in-flight slot (no record yet).</summary>
     private sealed record InFlightMarker;
 
+    /// <summary>
+    /// Initialises the store with the given <see cref="IMemoryCache"/> instance.
+    /// </summary>
+    /// <param name="cache">The memory cache backing this store.</param>
     public MemoryIdempotencyStore(IMemoryCache cache)
     {
         _cache = cache;
     }
 
+    /// <summary>
+    /// Atomically reserves an idempotency key slot. Returns <c>true</c> if this
+    /// caller won the reservation; <c>false</c> if another request already holds it.
+    /// </summary>
     public Task<bool> TryReserveAsync(string key, TimeSpan inFlightTtl)
     {
         // IMemoryCache.GetOrCreate is NOT atomic across threads: the
@@ -50,6 +58,7 @@ public sealed class MemoryIdempotencyStore : IIdempotencyStore
         }
     }
 
+    /// <summary>Returns the current state (in-flight or completed) for a key.</summary>
     public Task<IdempotencyLookup?> GetAsync(string key)
     {
         if (!_cache.TryGetValue(key, out var value) || value is null)
@@ -63,6 +72,7 @@ public sealed class MemoryIdempotencyStore : IIdempotencyStore
         return Task.FromResult(result);
     }
 
+    /// <summary>Persists a completed idempotency record for replay.</summary>
     public Task StoreAsync(string key, IdempotencyRecord record, TimeSpan ttl)
     {
         using var entry = _cache.CreateEntry(key);
@@ -72,6 +82,7 @@ public sealed class MemoryIdempotencyStore : IIdempotencyStore
         return Task.CompletedTask;
     }
 
+    /// <summary>Releases (removes) an idempotency key from the store.</summary>
     public Task ReleaseAsync(string key)
     {
         _cache.Remove(key);

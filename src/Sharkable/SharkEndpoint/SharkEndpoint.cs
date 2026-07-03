@@ -21,12 +21,16 @@ public class SharkEndpoint : ISharkEndpoint
     {
     }
 
+    /// <summary>Creates an endpoint group with the group name auto-derived from the class name.</summary>
     public SharkEndpoint()
     {
         var name = GetType().Name;
         groupName = name.FormatAsGroupName()!;
     }
 
+    /// <summary>Creates an endpoint group with an explicit group name and API prefix.</summary>
+    /// <param name="groupName">The URL segment for this endpoint group.</param>
+    /// <param name="apiPrefix">Prefix prepended to all routes (default <c>"api"</c>).</param>
     public SharkEndpoint(string? groupName, string apiPrefix = "api")
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(groupName);

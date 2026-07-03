@@ -11,12 +11,12 @@ public sealed class TracingOptions
 {
     /// <summary>
     /// Service name reported in the <c>service.name</c> tag. Default is the
-    /// entry assembly name. Also exposed as <see cref="Sharkable.Tracing.ActivitySourceName"/>.
+    /// entry assembly name.
     /// </summary>
     public string ServiceName { get; set; } = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "sharkable";
 
     /// <summary>
-    /// The <see cref="ActivitySource"/> name used for Sharkable tracing spans.
+    /// The <see cref="System.Diagnostics.ActivitySource"/> name used for Sharkable tracing spans.
     /// Default is <c>"Sharkable"</c>. Set this to a custom value when you need
     /// to filter or route traces by source name in OpenTelemetry.
     /// </summary>
@@ -31,7 +31,7 @@ public sealed class TracingOptions
 
     /// <summary>
     /// Optional callback for configuring OpenTelemetry SDK.
-    /// The <see cref="TracerProviderBuilder"/> instance is provided by the
+    /// The <c>TracerProviderBuilder</c> instance is provided by the
     /// <c>OpenTelemetry.Extensions.Hosting</c> NuGet package.
     /// Use this to add exporters like Jaeger, Zipkin, or OTLP.
     /// </summary>

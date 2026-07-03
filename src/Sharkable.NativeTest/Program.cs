@@ -1,92 +1,157 @@
-using System.Text.Json.Serialization;
+using System.Text;
 using FluentValidation;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Sharkable;
 using Sharkable.NativeTest;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
+// ── Services ──────────────────────────────────────────────
+builder.Services.AddSingleton<ShoppingDbContext>();
+builder.Services.AddSingleton<AuthService>();
+builder.Services.AddSingleton<OrderSagaSteps>();
+builder.Services.AddSingleton<IValidator<CreateProductRequest>, CreateProductValidator>();
 
-builder.Services.AddShark([typeof(Program).Assembly],opt =>
+// ── JWT Bearer (self-contained, no OIDC authority) ───────
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "DefaultSampleKey12345678901234567890";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "sharkable-shop";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "sharkable-shop-api";
+var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30),
+            IssuerSigningKey = signingKey,
+        };
+    });
+builder.Services.AddAuthorization();
+
+// ── JSON serialization (AOT-safe) ─────────────────────────
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.TypeInfoResolverChain.Insert(0, ShoppingJsonContext.Default);
+});
+
+// ── Sharkable ─────────────────────────────────────────────
+builder.Services.AddShark([typeof(Program).Assembly], opt =>
 {
     opt.Format = EndpointFormat.SnakeCase;
     opt.EnableValidation = true;
     opt.EnableHealthChecks = true;
-    opt.UnifiedResultFactory = new MyApiResultFactory();
+    opt.EnableIdempotency = true;
+
+    opt.ConfigureTracing(t => t.ServiceName = "sharkable-shop");
+
+    opt.ConfigureGracefulShutdown(g => g.DrainTimeout = TimeSpan.FromSeconds(15));
+
+    opt.ConfigureAuditTrail(a =>
+    {
+        a.AsyncWrite = true;
+        a.BatchSize = 50;
+    });
+
+    opt.ConfigureRateLimiting(r =>
+    {
+        r.DefaultLimit = 200;
+        r.DefaultWindow = TimeSpan.FromMinutes(1);
+        r.IncludeHeaders = true;
+        r.HeaderPrefix = "X-RateLimit";
+    });
+
+    opt.RateLimiterConfigure = rateLimiterOptions =>
+    {
+        rateLimiterOptions.AddFixedWindowLimiter("auth", o =>
+        {
+            o.PermitLimit = 10;
+            o.Window = TimeSpan.FromMinutes(1);
+            o.QueueLimit = 0;
+        });
+        rateLimiterOptions.AddFixedWindowLimiter("cart", o =>
+        {
+            o.PermitLimit = 60;
+            o.Window = TimeSpan.FromMinutes(1);
+            o.QueueLimit = 0;
+        });
+        rateLimiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    };
+
+    opt.ConfigureCronJobs = async scheduler =>
+    {
+        await scheduler.RegisterAsync(new CronJob(
+            "cleanup-expired-carts",
+            "0 */5 * * * ?",
+            async ct =>
+            {
+                var logger = Shark.GetService<ILogger<Program>>();
+                logger?.LogInformation("Cron: cleaning up expired carts...");
+            },
+            new CronJobOptions { RetryCount = 1, Timeout = TimeSpan.FromSeconds(30) }));
+    };
 });
-builder.Services.AddSingleton<IValidator<Todo>, TodoValidator>();
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.TypeInfoResolverChain.Insert(1, AppJsonSerializerContext.Default);
-    options.SerializerOptions.TypeInfoResolverChain.Insert(2, AppJsonSerializerContext2.Default);
-    options.SerializerOptions.TypeInfoResolverChain.Insert(3, MyUnifiedResultContext.Default);
-    options.SerializerOptions.TypeInfoResolverChain.Insert(4, NativeTestJsonContext.Default);
-});
+
+// ── Build ─────────────────────────────────────────────────
 var app = builder.Build();
+
+// ── Seed data ─────────────────────────────────────────────
+SeedData(app.Services.GetRequiredService<ShoppingDbContext>(),
+    app.Services.GetRequiredService<AuthService>());
+
+// ── Sharkable pipeline ────────────────────────────────────
 app.UseShark(opt =>
 {
     opt.EnableAutoWrap = true;
 });
-var sampleTodos = new Todo[]
-{
-    new(1, "Walk the dog"),
-    new(2, "Do the dishes", DateOnly.FromDateTime(DateTime.Now)),
-    new(3, "Do the laundry", DateOnly.FromDateTime(DateTime.Now.AddDays(1))),
-    new(4, "Clean the bathroom"),
-    new(5, "Clean the car", DateOnly.FromDateTime(DateTime.Now.AddDays(2)))
-};
 
-var todosApi = app.MapGroup("/todos");
-todosApi.MapGet("/", () => sampleTodos);
-todosApi.MapGet("/{id}", (int id) =>
-    sampleTodos.FirstOrDefault(a => a.Id == id) is { } todo
-        ? Results.Ok(todo)
-        : Results.NotFound());
-
+// ── Run ───────────────────────────────────────────────────
 app.Run();
 
-
-public record Todo(int Id, string? Title, DateOnly? DueBy = null, bool IsComplete = false);
-
-public class TodoValidator : AbstractValidator<Todo>
+// ── Seed method ───────────────────────────────────────────
+static void SeedData(ShoppingDbContext db, AuthService auth)
 {
-    public TodoValidator()
+    // Admin user created via registration
+    var (_, _) = auth.Register(new RegisterRequest("admin", "admin@shop.com", "admin123", "Admin"));
+    // Customer user
+    var (_, _) = auth.Register(new RegisterRequest("alice", "alice@shop.com", "alice123", "Alice"));
+
+    var seedProducts = new[]
     {
-        RuleFor(x => x.Title).NotEmpty().MaximumLength(100);
+        new CreateProductRequest("Wireless Headphones", "Noise-cancelling Bluetooth headphones with 30hr battery", 79.99m, 50, "Electronics", "/images/headphones.jpg"),
+        new CreateProductRequest("Running Shoes", "Lightweight mesh running shoes, breathable design", 129.99m, 30, "Clothing", "/images/shoes.jpg"),
+        new CreateProductRequest("Organic Coffee Beans", "Fair-trade single origin, medium roast 500g", 24.99m, 100, "Food", "/images/coffee.jpg"),
+        new CreateProductRequest("Mechanical Keyboard", "Cherry MX switches, RGB backlit, 87-key", 149.99m, 25, "Electronics", "/images/keyboard.jpg"),
+        new CreateProductRequest("Yoga Mat", "Non-slip TPE material, 6mm thickness, eco-friendly", 39.99m, 60, "Sports", "/images/yogamat.jpg"),
+        new CreateProductRequest("Cotton T-Shirt", "Premium organic cotton, unisex fit, crew neck", 29.99m, 80, "Clothing", "/images/tshirt.jpg"),
+        new CreateProductRequest("USB-C Hub", "7-in-1 multiport adapter with 4K HDMI, SD card reader", 45.99m, 40, "Electronics", "/images/usbhub.jpg"),
+        new CreateProductRequest("Dark Chocolate Bar", "72% cacao, organic, single-origin Madagascar", 8.99m, 200, "Food", "/images/chocolate.jpg"),
+    };
+
+    foreach (var p in seedProducts)
+    {
+        db.AddProduct(new Product(
+            db.NextProductId(), p.Name, p.Description, p.Price, p.Stock,
+            p.Category, p.ImageUrl, DateTime.UtcNow));
     }
 }
 
-[JsonSerializable(typeof(Todo[]))]
-[JsonSerializable(typeof(Task<Todo[]>))]
-[JsonSerializable(typeof(string))]
-internal partial class AppJsonSerializerContext : JsonSerializerContext
+// ── FluentValidation ─────────────────────────────────────
+public sealed class CreateProductValidator : AbstractValidator<CreateProductRequest>
 {
-}
-[JsonSerializable(typeof(Todo))]
-internal partial class AppJsonSerializerContext2 : JsonSerializerContext
-{
-}
-
-[JsonSerializable(typeof(UnifiedResult<Todo[]>))]
-[JsonSerializable(typeof(UnifiedResult<Todo>))]
-[JsonSerializable(typeof(UnifiedResult<string>))]
-public partial class MyUnifiedResultContext : JsonSerializerContext
-{
-    
-}
-
-[JsonSerializable(typeof(UserInfo[]))]
-[JsonSerializable(typeof(UserInfo))]
-[JsonSerializable(typeof(ReportStats))]
-[JsonSerializable(typeof(int[]))]
-[JsonSerializable(typeof(UnifiedResult<UserInfo[]>))]
-[JsonSerializable(typeof(UnifiedResult<ReportStats>))]
-[JsonSerializable(typeof(UnifiedResult<UserInfo>))]
-[JsonSerializable(typeof(UnifiedResult<int[]>))]
-[JsonSerializable(typeof(MyApiResult))]
-[JsonSerializable(typeof(PostBody))]
-[JsonSerializable(typeof(PostBody[]))]
-[JsonSerializable(typeof(VersionInfo))]
-public partial class NativeTestJsonContext : JsonSerializerContext
-{
-    
+    public CreateProductValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Description).NotEmpty().MaximumLength(2000);
+        RuleFor(x => x.Price).GreaterThan(0);
+        RuleFor(x => x.Stock).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.Category).NotEmpty().MaximumLength(100);
+    }
 }

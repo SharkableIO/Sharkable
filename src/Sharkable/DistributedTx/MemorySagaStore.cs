@@ -15,7 +15,7 @@ public sealed class MemorySagaStore : ISagaStore
 
     /// <inheritdoc />
     /// <remarks>
-    /// Lock TTL is ignored — <see cref="ConcurrentDictionary"/> has no
+    /// Lock TTL is ignored — <c>ConcurrentDictionary</c> has no
     /// expiration. In-process only; for production with crash recovery,
     /// use a distributed store such as <c>RedisSagaStore</c>.
     /// </remarks>

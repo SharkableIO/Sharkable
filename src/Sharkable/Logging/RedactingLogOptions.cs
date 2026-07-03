@@ -1,7 +1,7 @@
 namespace Sharkable;
 
 /// <summary>
-/// Options for configuring structured log field redaction via <see cref="RedactingLoggerProvider"/>.
+/// Options for configuring structured log field redaction via the redacting logger wrapper.
 /// </summary>
 public sealed class RedactingLogOptions
 {

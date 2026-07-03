@@ -20,8 +20,14 @@ public class UnifiedResult<T> : IUnifiedResult
     /// <summary>UTC timestamp in milliseconds since epoch.</summary>
     public long? TimeStamp { get; init; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
+    /// <summary>Creates an empty unified result with default OK status.</summary>
     public UnifiedResult() { }
 
+    /// <summary>Creates a unified result with the given data and optional error/status metadata.</summary>
+    /// <param name="data">Response payload.</param>
+    /// <param name="errorMessage">Error message (null when successful).</param>
+    /// <param name="statusCode">HTTP status code.</param>
+    /// <param name="extra">Optional extra metadata.</param>
     public UnifiedResult(T? data, string? errorMessage = null, HttpStatusCode statusCode = HttpStatusCode.OK, string? extra = null)
     {
         Data = data;

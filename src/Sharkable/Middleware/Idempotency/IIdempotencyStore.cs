@@ -61,7 +61,7 @@ public sealed record IdempotencyRecord(
     ReadOnlyMemory<byte> Body,
     DateTimeOffset CompletedAt);
 
-/// <summary>Discriminated union for <see cref="IIdempotencyStore.Get"/>.</summary>
+/// <summary>Discriminated union for <see cref="IIdempotencyStore.GetAsync"/>.</summary>
 public abstract record IdempotencyLookup;
 
 /// <summary>The key is currently in-flight; another request is executing.</summary>

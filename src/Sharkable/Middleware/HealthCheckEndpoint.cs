@@ -23,16 +23,15 @@ internal static class HealthCheckEndpoint
         app.MapGet(path, async (HealthCheckService healthCheck, CancellationToken cancellationToken) =>
         {
             if (Volatile.Read(ref InternalShark.IsShuttingDown))
-                return Results.Json(new
-                {
-                    status = "unhealthy",
-                    checks = new Dictionary<string, object>
+                return Results.Json(new HealthCheckResponse(
+                    "unhealthy",
+                    new Dictionary<string, HealthCheckEntry>
                     {
-                        ["shutdown"] = new { status = "unhealthy", message = "Server is shutting down" }
+                        ["shutdown"] = new("unhealthy", "Server is shutting down", null, null)
                     },
-                    uptime = GetUptime(),
-                    version = InternalShark.AppVersion ?? "0.0.0",
-                }, statusCode: 503);
+                    GetUptime(),
+                    InternalShark.AppVersion ?? "0.0.0"
+                ), statusCode: 503);
 
             // SHARK-SEC-M015: bound the aggregate health-check call with a
             // linked CTS so a stuck individual check cannot keep /healthz
@@ -52,31 +51,27 @@ internal static class HealthCheckEndpoint
             {
                 // Per-check timeout fired. Return a synthetic unhealthy report
                 // so the probe can fail fast instead of hanging.
-                return Results.Json(new
-                {
-                    status = "unhealthy",
-                    checks = new Dictionary<string, object>
+                return Results.Json(new HealthCheckResponse(
+                    "unhealthy",
+                    new Dictionary<string, HealthCheckEntry>
                     {
-                        ["timeout"] = new
-                        {
-                            status = "unhealthy",
-                            message = $"Health check exceeded {HealthCheckTimeout.TotalSeconds:F0}s timeout",
-                        }
+                        ["timeout"] = new("unhealthy",
+                            $"Health check exceeded {HealthCheckTimeout.TotalSeconds:F0}s timeout",
+                            null, null)
                     },
-                    uptime = GetUptime(),
-                    version = InternalShark.AppVersion ?? "0.0.0",
-                }, statusCode: 503);
+                    GetUptime(),
+                    InternalShark.AppVersion ?? "0.0.0"
+                ), statusCode: 503);
             }
 
             var checks = report.Entries.ToDictionary(
                 e => e.Key,
-                e => (object)new
-                {
-                    status = e.Value.Status.ToString().ToLower(),
-                    description = e.Value.Description,
-                    data = e.Value.Data.Count > 0 ? e.Value.Data : null,
-                    exception = e.Value.Exception?.Message,
-                });
+                e => new HealthCheckEntry(
+                    e.Value.Status.ToString().ToLower(),
+                    e.Value.Description,
+                    e.Value.Data.Count > 0 ? e.Value.Data : null,
+                    e.Value.Exception?.Message
+                ));
 
             var overall = report.Status switch
             {
@@ -88,13 +83,9 @@ internal static class HealthCheckEndpoint
             var statusCode = report.Status == HealthStatus.Healthy ? 200
                 : report.Status == HealthStatus.Degraded ? 200 : 503;
 
-            return Results.Json(new
-            {
-                status = overall,
-                checks,
-                uptime = GetUptime(),
-                version = InternalShark.AppVersion ?? "0.0.0",
-            }, statusCode: statusCode);
+            return Results.Json(new HealthCheckResponse(
+                overall, checks, GetUptime(), InternalShark.AppVersion ?? "0.0.0"
+            ), statusCode: statusCode);
         }).ExcludeFromDescription();
     }
 

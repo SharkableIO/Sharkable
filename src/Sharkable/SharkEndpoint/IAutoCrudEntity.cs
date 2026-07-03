@@ -6,6 +6,7 @@ namespace Sharkable;
 /// </summary>
 public interface IAutoCrudEntityMarker
 {
+    /// <summary>Returns the set of CRUD operations enabled for this entity.</summary>
     CrudOperations GetOperations();
 }
 
@@ -25,5 +26,6 @@ public interface IAutoCrudEntity<T> : IAutoCrudEntityMarker where T : class, new
     /// </summary>
     CrudOperations AllowedOperations => CrudOperations.All;
 
+    /// <inheritdoc />
     CrudOperations IAutoCrudEntityMarker.GetOperations() => AllowedOperations;
 }

@@ -15,8 +15,6 @@
 | Project | Path | Notes |
 |---|---|---|
 | Sharkable (lib) | `src/Sharkable/` | NuGet package, `Microsoft.NET.Sdk` |
-| Sharkable.Sample | `src/Sharkable.Sample/` | Reference usage |
-| Sharkable.AotSample | `src/Sharkable.AotSample/` | `PublishAot=true` |
 | Sharkable.NativeTest | `src/Sharkable.NativeTest/` | `PublishAot=true` |
 
 ## Build & run
@@ -25,8 +23,7 @@
 dotnet build
 dotnet build src/Sharkable/Sharkable.csproj
 dotnet pack src/Sharkable/Sharkable.csproj
-dotnet run --project src/Sharkable.Sample/
-dotnet run --project src/Sharkable.AotSample/
+
 ```
 
 No test project exists. No linter/formatter beyond compiler warnings.

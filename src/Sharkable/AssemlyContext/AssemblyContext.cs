@@ -45,6 +45,7 @@ public class AssemblyContext
     {
         
     }
+    /// <summary>Creates a context with the given set of assemblies.</summary>
     public AssemblyContext(Assembly[]? assemblies)
     {
         InternalAssemblies = assemblies;

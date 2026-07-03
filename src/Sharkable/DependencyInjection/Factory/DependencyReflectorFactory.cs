@@ -43,11 +43,13 @@ public class DependencyReflectorFactory : IDependencyReflectorFactory
         return parameters;
     }
 
+    /// <summary>Creates an instance of the given type using DI-resolved constructor parameters.</summary>
     public object CreateInstance(Type type)
     {
         var p = GetConstructorParameters(type);
         return Activator.CreateInstance(type, p) ?? throw new InvalidOperationException($"No constructor found for {type}");
     }
+    /// <summary>Creates a reflected instance of <typeparamref name="T"/> from the given type.</summary>
     public T GetReflectedType<T>(Type typeToReflect, object[]? constructorRequiredParamerters)
         where T : class
     {

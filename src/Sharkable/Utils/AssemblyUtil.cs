@@ -1,6 +1,7 @@
 
 namespace Sharkable;
 
+/// <summary>Utility methods for assembly scanning, string formatting, and reflection helpers.</summary>
 public partial class Utils
 {
     internal static Assembly[]? GetAssemblies(params Assembly[] assembly)

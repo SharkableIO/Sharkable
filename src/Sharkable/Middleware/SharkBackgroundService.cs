@@ -122,8 +122,12 @@ catch (Exception ex)
 /// </summary>
 public enum BackgroundServiceStatus
 {
+    /// <summary>Service has not started yet.</summary>
     Idle,
+    /// <summary>Service is actively executing.</summary>
     Running,
+    /// <summary>Service terminated with an unhandled exception.</summary>
     Failed,
+    /// <summary>Service has been cleanly stopped.</summary>
     Stopped,
 }

@@ -51,7 +51,7 @@ public sealed record SagaResult(bool Success, string? Error = null, int FailedSt
 /// <summary>
 /// Pluggable store for saga progress and distributed locking.
 /// Default <see cref="MemorySagaStore"/> keeps state in-process;
-/// use <see cref="SagaStoreFactory"/> to plug in Redis or database.
+/// use a custom <c>ISagaStore</c> implementation backed by Redis or a database.
 /// </summary>
 public interface ISagaStore
 {

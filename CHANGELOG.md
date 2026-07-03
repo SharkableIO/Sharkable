@@ -11,6 +11,14 @@ All notable changes to Sharkable are documented here.
 ### fix
 
 - Null-coalesce `stepResult.Error` in `SagaExecutor` — fix CS8604 nullable warning in `CompensateAsync` call
+- Add XML doc comments to all public API types and members — fix CS1591 warnings across 17 files; enable `GenerateDocumentationFile=true`
+- Fix CS1574 unresolved cref references in XML docs across SagaTypes, RedactingLogOptions, IIdempotencyStore, SharkOption, TracingOptions, MemorySagaStore
+- Replace anonymous types with concrete records in `HealthCheckEndpoint` — enable AOT-compatible serialization; add public `HealthCheckResponse`/`HealthCheckEntry` types
+
+### chore
+
+- Remove deprecated `Sharkable.Sample` and `Sharkable.AotSample` projects — consolidate AOT sample into `Sharkable.NativeTest`
+- Rewrite `Sharkable.NativeTest` as a complete shopping website backend (auth, products, cart, orders/SAGA, admin) with AOT-safe source-generated JSON serialization
 
 ## [0.5.5] — 2026-07-03
 

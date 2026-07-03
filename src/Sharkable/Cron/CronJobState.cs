@@ -5,15 +5,25 @@ namespace Sharkable;
 /// </summary>
 public sealed class CronJobState
 {
+    /// <summary>Display name of the cron job.</summary>
     public string Name { get; set; } = "";
+    /// <summary>Free-text description of what this job does.</summary>
     public string Description { get; set; } = "";
+    /// <summary>Cron expression that defines the job schedule.</summary>
     public string Cron { get; set; } = "";
+    /// <summary>Whether the job is currently executing.</summary>
     public bool IsRunning { get; set; }
+    /// <summary>Next scheduled execution time (UTC).</summary>
     public DateTimeOffset? NextRun { get; set; }
+    /// <summary>Most recent execution time (UTC).</summary>
     public DateTimeOffset? LastRun { get; set; }
+    /// <summary>Duration of the most recent execution in milliseconds.</summary>
     public long? LastDurationMs { get; set; }
+    /// <summary>Error message from the most recent failed execution.</summary>
     public string? LastError { get; set; }
+    /// <summary>Total number of times this job has executed.</summary>
     public long RunCount { get; set; }
+    /// <summary>Whether this job is paused and will not execute.</summary>
     public bool Paused { get; set; }
 }
 

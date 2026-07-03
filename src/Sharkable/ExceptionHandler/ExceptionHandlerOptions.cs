@@ -10,6 +10,9 @@ public sealed class ExceptionHandlerOptions
 {
     private readonly Dictionary<Type, HttpStatusCode> _exceptionMappings;
 
+    /// <summary>
+    /// Initialises a new instance with default exception-to-status mappings.
+    /// </summary>
     public ExceptionHandlerOptions()
     {
         _exceptionMappings = new Dictionary<Type, HttpStatusCode>
