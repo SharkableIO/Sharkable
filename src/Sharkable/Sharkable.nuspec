@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Sharkable</id>
-    <version>0.5.5</version>
+    <version>0.5.6</version>
     <title>Sharkable</title>
     <authors>charleypeng</authors>
     <readme>docs\README.md</readme>
@@ -11,7 +11,7 @@
     <icon>sharkable.jpg</icon>
     <projectUrl>https://sharkableio.github.io/</projectUrl>
     <description>a dotnet minimal api framework collection aimed to support aot</description>
-    <releaseNotes>SHARK-SEC-003 (Thread.Sleep to await Task.Delay in graceful shutdown, true fire-and-forget). SHARK-SEC-004 (configurable SagaExecutor.LockTtl + LockRenewalInterval; ISagaStore.RenewLockAsync as DIM). SHARK-SEC-005 (cross-repo Cache.Redis: check-and-delete Lua in RedisSagaStore / RedisCronJobStore; CronScheduler.CronLockTtl + ICronJobStore.RenewJobLockAsync). Idempotency hardening (MaxFingerprintBodySize, incremental chunked hashing, setter validation). SHARK-SEC-006 cross-repo AutoCrud.SqlSugar BREAKING: [CrudAllow] field allowlist; SafeSoftDeleteField excluded even when marked; POST/PUT return persisted row. Pin Microsoft.OpenApi to 2.7.5 for NU1903 (CVE-2026-49451).</releaseNotes>
+    <releaseNotes>CS1591 XML doc comments on all public API types (fix). CS1574 unresolved cref references (fix). Replace anonymous types with concrete records in HealthCheckEndpoint for AOT-safe serialization (fix). Remove deprecated Sample and AotSample projects (chore). Rewrite NativeTest as complete shopping backend (chore). Pin Microsoft.OpenApi to 2.7.5 for NU1903.</releaseNotes>
     <copyright>CopyRight 2026 Penglei</copyright>
     <tags>minimalapi aot framework toolkit</tags>
     <dependencies>

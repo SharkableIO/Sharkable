@@ -4,6 +4,8 @@ All notable changes to Sharkable are documented here.
 
 ## [Unreleased]
 
+## [0.5.6] — 2026-07-03
+
 ### feat
 
 - Upgrade `Scalar.AspNetCore` to 2.16.8
