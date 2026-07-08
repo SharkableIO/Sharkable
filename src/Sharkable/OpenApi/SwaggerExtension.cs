@@ -25,6 +25,15 @@ internal static class OpenApiExtension
                 // /openapi/v1.json — which any anonymous browser can read.
                 options.AddSchemaTransformer(RemoveSensitiveProperties);
 
+                // Convert ObsoleteAttribute from endpoint metadata to deprecated: true
+                options.AddOperationTransformer((operation, context, cancellationToken) =>
+                {
+                    var metadata = context.Description?.ActionDescriptor?.EndpointMetadata;
+                    if (metadata != null && metadata.Any(m => m is ObsoleteAttribute))
+                        operation.Deprecated = true;
+                    return Task.CompletedTask;
+                });
+
                 if (Shark.SharkOption.EnableAutoWrap)
                 {
                     options.AddDocumentTransformer((document, context, cancellationToken) =>

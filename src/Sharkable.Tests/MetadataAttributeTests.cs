@@ -136,7 +136,7 @@ public sealed class DeprecatedAttributeTests : IClassFixture<DeprecatedFixture>
     }
 
     [Fact]
-    public async Task Endpoint_Has_Obsolete_Metadata()
+    public async Task Endpoint_Has_Deprecated_Flag()
     {
         var res = await _client.GetAsync("/openapi/v1.json");
         var doc = await res.Content.ReadAsStringAsync();
@@ -145,9 +145,7 @@ public sealed class DeprecatedAttributeTests : IClassFixture<DeprecatedFixture>
         var paths = json.RootElement.GetProperty("paths");
         var getOp = paths.GetProperty("/api/deprecatedTest/old").GetProperty("get");
 
-        // ObsoleteAttribute is added to endpoint metadata but the OpenAPI
-        // generator may not automatically reflect it as "deprecated: true".
-        // Verify the endpoint is reachable as a baseline.
-        Assert.True(getOp.TryGetProperty("operationId", out _));
+        Assert.True(getOp.TryGetProperty("deprecated", out var deprecated));
+        Assert.True(deprecated.GetBoolean());
     }
 }

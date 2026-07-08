@@ -12,6 +12,7 @@ All notable changes to Sharkable are documented here.
 ### fix
 
 - Route patterns in `AddRoutes()` now respect `EndpointFormat` (SnakeCase/CamelCase). Parameterized routes (`{id:int}`) are preserved as-is.
+- Add OpenAPI operation transformer so `[SharkDeprecated]` correctly sets `deprecated: true` on generated operations (frame- work's default OpenAPI generator does not convert `ObsoleteAttribute` automatically)
 
 ## [0.5.6] — 2026-07-03
 
