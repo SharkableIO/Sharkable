@@ -126,13 +126,11 @@ public static class SharkableExtension
         // CORS
         if (Shark.SharkOption.CorsConfigure != null)
             app.UseCors();
-        // JWT auth
+        // Auth
         if (Shark.SharkOption.JwtAuthority != null)
-        {
             app.UseAuthentication();
-            if (Shark.SharkOption.EnableAuthorization)
-                app.UseAuthorization();
-        }
+        if (Shark.SharkOption.EnableAuthorization)
+            app.UseAuthorization();
 
         if (Shark.UseSharkOptions?.EnableExceptionHandler ?? true)
         {

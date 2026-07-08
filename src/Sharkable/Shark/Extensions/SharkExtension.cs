@@ -96,34 +96,10 @@ public static class SharkExtension
         //register authorization (default enabled)
         if (Shark.SharkOption.EnableAuthorization)
         {
-            var userConfigure = Shark.SharkOption.ConfigureAuthorization;
-            var requireAuthByDefault = Shark.SharkOption.RequireAuthenticatedByDefault;
-            if (userConfigure != null)
-            {
-                services.AddAuthorization(options =>
-                {
-                    userConfigure(options);
-                    if (requireAuthByDefault)
-                    {
-                        options.FallbackPolicy = new AuthorizationPolicyBuilder()
-                            .RequireAuthenticatedUser()
-                            .Build();
-                    }
-                });
-            }
-            else if (requireAuthByDefault)
-            {
-                services.AddAuthorization(options =>
-                {
-                    options.FallbackPolicy = new AuthorizationPolicyBuilder()
-                        .RequireAuthenticatedUser()
-                        .Build();
-                });
-            }
+            if (Shark.SharkOption.ConfigureAuthorization != null)
+                services.AddAuthorization(Shark.SharkOption.ConfigureAuthorization);
             else
-            {
                 services.AddAuthorization();
-            }
         }
         //register JWT auth
         if (Shark.SharkOption.JwtAuthority != null)

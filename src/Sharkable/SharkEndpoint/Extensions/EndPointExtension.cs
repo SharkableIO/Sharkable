@@ -162,6 +162,13 @@ internal static class SharkEndPointExtension
                     }
                 }
 
+                // Auto-RequireAuthorization when RequireAuthenticatedByDefault is enabled
+                if (options.Value.RequireAuthenticatedByDefault
+                    && !builder.Metadata.Any(m => m is IAuthorizeData or IAllowAnonymous))
+                {
+                    builder.Metadata.Add(new AuthorizeAttribute());
+                }
+
                 if (!builder.Metadata.Any(m => m is ITagsMetadata) && capturedTags.Count != 0)
                     builder.Metadata.Add(new TagsAttribute([.. capturedTags]));
 
