@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -133,6 +134,34 @@ internal static class SharkEndPointExtension
             var capturedIsDeprecated = isDeprecated;
             ((IEndpointConventionBuilder)group).Add(builder =>
             {
+                // Apply route pattern formatting based on SharkOption.Format
+                var routeFormat = options.Value.Format;
+                if (routeFormat != EndpointFormat.UnChanged && builder is RouteEndpointBuilder routeBuilder)
+                {
+                    var rawText = routeBuilder.RoutePattern?.RawText;
+                    if (!string.IsNullOrEmpty(rawText))
+                    {
+                        var segments = rawText.Split('/');
+                        var changed = false;
+                        for (var i = 0; i < segments.Length; i++)
+                        {
+                            if (!segments[i].Contains('{') && !segments[i].Contains('}'))
+                            {
+                                var formatted = segments[i].GetCaseFormat(routeFormat);
+                                if (!string.Equals(formatted, segments[i]))
+                                {
+                                    segments[i] = formatted ?? segments[i];
+                                    changed = true;
+                                }
+                            }
+                        }
+                        if (changed)
+                        {
+                            routeBuilder.RoutePattern = RoutePatternFactory.Parse(string.Join("/", segments));
+                        }
+                    }
+                }
+
                 if (!builder.Metadata.Any(m => m is ITagsMetadata) && capturedTags.Count != 0)
                     builder.Metadata.Add(new TagsAttribute([.. capturedTags]));
 
