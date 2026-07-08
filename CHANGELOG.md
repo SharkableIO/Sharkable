@@ -9,6 +9,10 @@ All notable changes to Sharkable are documented here.
 - Auto-inject `[Authorize]` metadata on all endpoints when `RequireAuthenticatedByDefault` is enabled (replaces FallbackPolicy approach)
 - `UseAuthorization()` now runs whenever `EnableAuthorization` is `true`, regardless of JWT configuration
 
+### fix
+
+- Route patterns in `AddRoutes()` now respect `EndpointFormat` (SnakeCase/CamelCase). Parameterized routes (`{id:int}`) are preserved as-is.
+
 ## [0.5.6] — 2026-07-03
 
 ### feat
