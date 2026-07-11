@@ -9,7 +9,6 @@ internal static class AttributeBasedServiceCollectionExtensions
     /// <summary>
     /// scan for service
     /// </summary>
-    /// <typeparam name="T"></typeparam>
     /// <param name="serviceCollection"></param>
     /// <param name="assemblys"></param>
     internal static void AddServicesWithAttributeOfTypeFromAssembly(this IServiceCollection serviceCollection, Assembly[]? assemblys)
@@ -19,7 +18,6 @@ internal static class AttributeBasedServiceCollectionExtensions
     /// <summary>
     /// scan for service
     /// </summary>
-    /// <typeparam name="T"></typeparam>
     /// <param name="serviceCollection"></param>
     /// <param name="assemblys"></param>
     internal static void AddServicesWithAttributeOfType(this IServiceCollection serviceCollection, params Assembly[]? assemblys)
@@ -49,7 +47,6 @@ internal static class AttributeBasedServiceCollectionExtensions
     /// <summary>
     /// scan first，if not registered then register
     /// </summary>
-    /// <typeparam name="T"></typeparam>
     /// <param name="serviceCollection"></param>
     /// <param name="serviceType"></param>
     /// <param name="implementationType"></param>
