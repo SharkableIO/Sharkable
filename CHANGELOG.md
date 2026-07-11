@@ -6,6 +6,7 @@ All notable changes to Sharkable are documented here.
 
 ### feat
 
+- Add `SharkOption.DefaultApiVersion` — sets a default version segment in URL paths for all endpoints without `[SharkVersion]`. E.g., `DefaultApiVersion = "v2"` produces `/api/v2/group/route`. Endpoints with explicit `[SharkVersion("v1")]` retain their declared version.
 - Auto-inject `[Authorize]` metadata on all endpoints when `RequireAuthenticatedByDefault` is enabled (replaces FallbackPolicy approach)
 - `UseAuthorization()` now runs whenever `EnableAuthorization` is `true`, regardless of JWT configuration
 

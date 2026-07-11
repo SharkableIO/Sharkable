@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS0618 // Internal use of legacy attribute-based endpoint system
+#pragma warning disable CS0618 // Internal use of legacy attribute-based endpoint system
 
 using System.Linq;
 using System.Linq.Expressions;
@@ -63,6 +63,8 @@ internal static class SharkEndPointExtension
             {
                 sharkEndpoint.version = versionAttr.Version;
             }
+
+            sharkEndpoint.version ??= options.Value.DefaultApiVersion;
 
             if (string.IsNullOrWhiteSpace(sharkEndpoint.apiPrefix))
                 sharkEndpoint.apiPrefix = options.Value.ApiPrefix;

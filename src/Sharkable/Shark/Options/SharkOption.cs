@@ -16,6 +16,13 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public string ApiPrefix { get; set; } = "api";
     /// <summary>
+    /// Default API version applied to endpoints without <c>[SharkVersion]</c>.
+    /// When set, the version segment is included in all URL paths (e.g., <c>/api/v2/group/route</c>).
+    /// Endpoints with an explicit <c>[SharkVersion]</c> always use their declared version.
+    /// Default is <c>null</c> (no version segment for unversioned endpoints).
+    /// </summary>
+    public string? DefaultApiVersion { get; set; }
+    /// <summary>
     /// Whether to enable OpenAPI document generation and Scalar UI. Default is true.
     /// </summary>
     public bool UseOpenApi { get; set; } = true;
