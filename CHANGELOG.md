@@ -4,6 +4,8 @@ All notable changes to Sharkable are documented here.
 
 ## [Unreleased]
 
+## [0.5.7] — 2026-07-11
+
 ### feat
 
 - Add `SharkOption.DefaultApiVersion` — sets a default version segment in URL paths for all endpoints without `[SharkVersion]`. E.g., `DefaultApiVersion = "v2"` produces `/api/v2/group/route`. Endpoints with explicit `[SharkVersion("v1")]` retain their declared version.
@@ -13,7 +15,7 @@ All notable changes to Sharkable are documented here.
 ### fix
 
 - Route patterns in `AddRoutes()` now respect `EndpointFormat` (SnakeCase/CamelCase). Parameterized routes (`{id:int}`) are preserved as-is.
-- Add OpenAPI operation transformer so `[SharkDeprecated]` correctly sets `deprecated: true` on generated operations (frame- work's default OpenAPI generator does not convert `ObsoleteAttribute` automatically)
+- Add OpenAPI operation transformer so `[SharkDeprecated]` correctly sets `deprecated: true` on generated operations
 
 ## [0.5.6] — 2026-07-03
 
