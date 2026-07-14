@@ -437,6 +437,57 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public string? ScalarApiKeyValue { get; set; }
     /// <summary>
+    /// Registers a callback that runs when the application has started
+    /// (after <c>app.Run()</c> begins accepting requests).
+    /// The callback receives the root <see cref="IServiceProvider"/>.
+    /// </summary>
+    public void ConfigureOnStarted(Action<IServiceProvider> onStarted)
+    {
+        OnStartedAction = onStarted;
+    }
+    internal Action<IServiceProvider>? OnStartedAction { get; set; }
+
+    /// <summary>
+    /// Registers a callback that runs when the application is stopping
+    /// (SIGTERM / graceful shutdown).
+    /// The callback receives the root <see cref="IServiceProvider"/>.
+    /// </summary>
+    public void ConfigureOnStopped(Action<IServiceProvider> onStopped)
+    {
+        OnStoppedAction = onStopped;
+    }
+    internal Action<IServiceProvider>? OnStoppedAction { get; set; }
+
+    /// <summary>
+    /// Registers a warmup service type that implements <see cref="IWarmupService"/>.
+    /// The service is resolved from DI and its <see cref="IWarmupService.WarmupAsync"/>
+    /// runs synchronously during startup, before the readiness gate opens.
+    /// Throw to fail startup.
+    /// </summary>
+    public void ConfigureWarmup<T>() where T : class, IWarmupService
+    {
+        WarmupServiceType = typeof(T);
+    }
+    internal Type? WarmupServiceType { get; set; }
+
+    /// <summary>
+    /// Timeout for warmup execution. Default is 30 seconds.
+    /// </summary>
+    internal TimeSpan WarmupTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Registers a service type to be validated at startup.
+    /// <c>app.Services.GetRequiredService()</c> is called for each registered type
+    /// during <c>UseShark()</c>, before the readiness gate opens.
+    /// A resolution failure throws immediately, preventing the server from starting.
+    /// </summary>
+    public void ValidateOnStart<T>() where T : class
+    {
+        ValidateOnStartTypes.Add(typeof(T));
+    }
+    internal List<Type> ValidateOnStartTypes { get; set; } = [];
+
+    /// <summary>
     /// Regex pattern for stripping common suffixes from endpoint group names.
     /// Default strips <c>Endpoint</c>, <c>Service</c>, <c>Controller</c>, etc.
     /// </summary>

@@ -17,10 +17,12 @@ internal sealed class InternalShark
     public static IServiceScopeFactory ServiceScopeFactory { get; internal set; } = null!;
     public static bool AotMode { get; internal set; } = false;
     internal static bool IsShuttingDown;
+    internal static bool StartupCompleted;
     internal static int ActiveRequests;
     internal static AuditLogBuffer? AuditLogBuffer;
     internal static DateTimeOffset StartedAt;
     internal static string? AppVersion;
+    internal static readonly List<Type> EagerSingletonTypes = [];
     internal static void ConfigureShark(IWebHostBuilder builder, Assembly[]? assemblies, IHostBuilder? hostBuilder = default)
     {
         if(hostBuilder == null || hostBuilder == default)

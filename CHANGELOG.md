@@ -11,10 +11,23 @@ All notable changes to Sharkable are documented here.
 - Add parameterless `ConfigureAuditTrail()` overload — enables audit trail with default options without requiring a callback
 - Add `AuditTrailFormat` enum with `Default`, `DotnetLogger`, `JsonStyle`, and `Compact` presets — configurable via `AuditTrailOptions.LogFormat`
 
+### feat (Phase 5 — Lifecycle & startup integrity)
+
+- **#25 Startup banner**: Sharkable now prints a formatted banner (version, environment, UTC timestamp) to the console at the end of `UseShark()`
+- **#20 Lifecycle hooks**: `SharkOption.ConfigureOnStarted()` / `ConfigureOnStopped()` — register callbacks that fire on `IHostApplicationLifetime.ApplicationStarted` / `ApplicationStopping`
+- **#22 Readiness gate**: `InternalShark.StartupCompleted` opens after all wiring completes; `/healthz` returns 503 until then
+- **#23 Warmup**: `IWarmupService` interface + `SharkOption.ConfigureWarmup<T>()` — resolves and runs a warmup task synchronously before the readiness gate opens (30s timeout)
+- **#27 Eager singleton**: `[SingletonService(Eager = true)]` — eagerly resolves the singleton from DI during `UseShark()`, before the server accepts requests
+- **#26 Pipeline injection points**: `UseSharkOptions.AddBeforeAuth()` / `AddAfterAuth()` / `AddAfterEndpoints()` — inject custom middleware at specific pipeline positions
+- **#21 Liveness probe**: `/livez` endpoint mapped alongside `/healthz` — returns `{"status":"alive"}` unconditionally, not blocked by readiness/shutdown gates
+- **#24 DI validation**: `SharkOption.ValidateOnStart<T>()` — calls `GetRequiredService<T>()` during `UseShark()`, fails fast on missing registrations
+
 ### docs
 
 - Document all unified result extension methods and static factories in EN + ZH
 - Add service registration guide covering `[ScopedService]`, `[TransientService]`, `[SingletonService]` attributes (EN + ZH)
+- Add lifecycle hooks, startup banner, warmup, eager singleton, pipeline injection, DI validation guide (EN + ZH)
+- Update health checks guide with readiness gate and liveness probe details (EN + ZH)
 
 ## [0.5.7] — 2026-07-11
 

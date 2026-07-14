@@ -91,9 +91,17 @@ internal static class AttributeBasedServiceCollectionExtensions
             .Where(type => type.IsDefined(typeof(T), false))
             .ToList();
 
+        var attrType = typeof(T);
         foreach (Type serviceType in servicesToBeRegistered)
         {
             List<Type> implementations = [];
+
+            // Check if this is an eager singleton
+            var attr = serviceType.GetCustomAttribute(attrType) as SingletonServiceAttribute;
+            if (attr is { Eager: true } && typeof(T) == typeof(SingletonServiceAttribute))
+            {
+                InternalShark.EagerSingletonTypes.Add(serviceType);
+            }
 
             if (serviceType.IsGenericType && serviceType.IsGenericTypeDefinition)
             {

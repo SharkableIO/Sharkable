@@ -15,4 +15,37 @@ public sealed class UseSharkOptions : ISharkOption
     /// Default is <c>false</c> (opt-in).
     /// </summary>
     public bool EnableAutoWrap { get; set; } = false;
+
+    /// <summary>
+    /// Adds a custom middleware <see cref="Action{WebApplication}"/> that runs
+    /// before authentication/authorization in the pipeline.
+    /// Useful for request logging, header validation, or custom pre-auth logic.
+    /// </summary>
+    public void AddBeforeAuth(Action<WebApplication> configure)
+    {
+        BeforeAuthActions.Add(configure);
+    }
+    internal List<Action<WebApplication>> BeforeAuthActions { get; set; } = [];
+
+    /// <summary>
+    /// Adds a custom middleware <see cref="Action{WebApplication}"/> that runs
+    /// after authentication/authorization but before endpoint mapping.
+    /// Useful for tenant resolution, culture setting, or request enrichment.
+    /// </summary>
+    public void AddAfterAuth(Action<WebApplication> configure)
+    {
+        AfterAuthActions.Add(configure);
+    }
+    internal List<Action<WebApplication>> AfterAuthActions { get; set; } = [];
+
+    /// <summary>
+    /// Adds a custom middleware <see cref="Action{WebApplication}"/> that runs
+    /// after all Sharkable endpoints have been mapped.
+    /// Useful for fallback routes, custom error pages, or post-endpoint middleware.
+    /// </summary>
+    public void AddAfterEndpoints(Action<WebApplication> configure)
+    {
+        AfterEndpointsActions.Add(configure);
+    }
+    internal List<Action<WebApplication>> AfterEndpointsActions { get; set; } = [];
 }

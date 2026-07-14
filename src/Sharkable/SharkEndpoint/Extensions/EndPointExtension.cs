@@ -266,6 +266,7 @@ internal static class SharkEndPointExtension
         if (Shark.SharkOption.EnableHealthChecks)
         {
             HealthCheckEndpoint.Map(app);
+            HealthCheckEndpoint.MapLiveness(app);
         }
 
         return app;

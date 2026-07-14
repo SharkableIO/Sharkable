@@ -22,6 +22,17 @@ internal static class HealthCheckEndpoint
         var path = Shark.SharkOption.HealthCheckPath ?? "/healthz";
         app.MapGet(path, async (HealthCheckService healthCheck, CancellationToken cancellationToken) =>
         {
+            if (!Volatile.Read(ref InternalShark.StartupCompleted))
+                return Results.Json(new HealthCheckResponse(
+                    "unhealthy",
+                    new Dictionary<string, HealthCheckEntry>
+                    {
+                        ["startup"] = new("unhealthy", "Startup not complete", null, null)
+                    },
+                    GetUptime(),
+                    InternalShark.AppVersion ?? "0.0.0"
+                ), statusCode: 503);
+
             if (Volatile.Read(ref InternalShark.IsShuttingDown))
                 return Results.Json(new HealthCheckResponse(
                     "unhealthy",
@@ -87,6 +98,20 @@ internal static class HealthCheckEndpoint
                 overall, checks, GetUptime(), InternalShark.AppVersion ?? "0.0.0"
             ), statusCode: statusCode);
         }).ExcludeFromDescription();
+    }
+
+    /// <summary>
+    /// Maps the liveness probe endpoint at <c>/livez</c>.
+    /// Always returns 200 <c>{"status":"alive"}</c> regardless of health check state.
+    /// Unlike <c>/healthz</c>, this endpoint is NOT blocked by the readiness gate
+    /// or graceful shutdown — it is intended for platform-level liveness checks
+    /// (e.g. Kubernetes <c>livenessProbe</c>) to distinguish a hung process from
+    /// a merely unhealthy one.
+    /// </summary>
+    internal static void MapLiveness(WebApplication app)
+    {
+        app.MapGet("/livez", () => Results.Json(new { status = "alive" }))
+            .ExcludeFromDescription();
     }
 
     private static string GetUptime()

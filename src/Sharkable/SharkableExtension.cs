@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Hosting;
+using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Hosting;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -126,11 +127,27 @@ public static class SharkableExtension
         // CORS
         if (Shark.SharkOption.CorsConfigure != null)
             app.UseCors();
+
+        // pipeline injection: before auth
+        var useOpts = Shark.UseSharkOptions;
+        if (useOpts != null)
+        {
+            foreach (var action in useOpts.BeforeAuthActions)
+                action(app);
+        }
+
         // Auth
         if (Shark.SharkOption.JwtAuthority != null)
             app.UseAuthentication();
         if (Shark.SharkOption.EnableAuthorization)
             app.UseAuthorization();
+
+        // pipeline injection: after auth
+        if (useOpts != null)
+        {
+            foreach (var action in useOpts.AfterAuthActions)
+                action(app);
+        }
 
         if (Shark.UseSharkOptions?.EnableExceptionHandler ?? true)
         {
@@ -162,5 +179,60 @@ public static class SharkableExtension
             CronAdminEndpoint.Map(app);
 
         app.MapEndpoints();
+
+        // pipeline injection: after endpoints
+        if (useOpts != null)
+        {
+            foreach (var action in useOpts.AfterEndpointsActions)
+                action(app);
+        }
+
+        // eager singleton activation
+        foreach (var type in InternalShark.EagerSingletonTypes)
+            app.Services.GetRequiredService(type);
+
+        // DI validation
+        foreach (var type in Shark.SharkOption.ValidateOnStartTypes)
+            app.Services.GetRequiredService(type);
+
+        // warmup
+        if (Shark.SharkOption.WarmupServiceType != null)
+        {
+            var warmup = (IWarmupService)app.Services.GetRequiredService(Shark.SharkOption.WarmupServiceType);
+            using var warmupCts = new CancellationTokenSource(Shark.SharkOption.WarmupTimeout);
+            warmup.WarmupAsync(warmupCts.Token).GetAwaiter().GetResult();
+        }
+
+        // open readiness gate
+        InternalShark.StartupCompleted = true;
+
+        // startup banner
+        PrintStartupBanner(app);
+
+        // lifecycle hooks (#20)
+        var appLifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+        if (Shark.SharkOption.OnStartedAction != null)
+            appLifetime.ApplicationStarted.Register(() => Shark.SharkOption.OnStartedAction(app.Services));
+        if (Shark.SharkOption.OnStoppedAction != null)
+        {
+            // Chain onto the existing stopping registration (graceful shutdown already
+            // registers one above). Multiple Register calls are additive.
+            appLifetime.ApplicationStopping.Register(() => Shark.SharkOption.OnStoppedAction(app.Services));
+        }
+    }
+
+    private static void PrintStartupBanner(WebApplication app)
+    {
+        var version = InternalShark.AppVersion ?? "0.0.0";
+        var env = app.Environment.EnvironmentName;
+        var now = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
+
+        Console.WriteLine();
+        Console.WriteLine($"╔══════════════════════════════════════════════╗");
+        Console.WriteLine($"║             Sharkable v{version,-20}║");
+        Console.WriteLine($"║             Environment: {env,-14}║");
+        Console.WriteLine($"║             Started at:  {now,-14}║");
+        Console.WriteLine($"╚══════════════════════════════════════════════╝");
+        Console.WriteLine();
     }
 }
