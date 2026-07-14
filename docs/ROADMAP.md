@@ -53,6 +53,19 @@
 | 18 | **BackgroundService enhancement** — `SharkBackgroundService` with health reporting, retry policy, execution tracing | Background jobs | Zero — auto | ✅ |
 | 19 | **ProblemDetails (RFC 7807) compatibility** — `UseProblemDetails` flag, all error responses output standard format with type/title/status/detail/instance/traceId | Interop | Config only | ✅ |
 
+## Phase 5 — Lifecycle & startup integrity
+
+| # | Feature | Value | Intrusion |
+|---|---------|-------|-----------|
+| 20 | **`ConfigureOnStarted` / `ConfigureOnStopped` callbacks** — hooks for app-ready and shutdown cleanup (warm caches, close connections, flush buffers) | Startup/shutdown control | Config only |
+| 21 | **Separate liveness probe `/livez`** — always-200 endpoint for k8s liveness, distinct from `/healthz` readiness | K8s-native ops | Zero — auto when health checks enabled |
+| 22 | **Startup readiness gate** — `/healthz` returns 503 until all `OnStarted` callbacks complete, preventing traffic before initialization | Production safety | Zero — internal |
+| 23 | **Warmup / async initialization** — `IWarmupService` interface + `ConfigureWarmup(Func<IServiceProvider, CancellationToken, Task>[])`, executed after app starts but before readiness probe turns green | Cold-start mitigation | Config only |
+| 24 | **Startup DI validation** — optional `ValidateOnStart` flag that eagerly resolves all registered services to catch missing DI registrations at boot | Fail-fast | Config only |
+| 25 | **Startup banner** — log framework version, enabled features, and key config values at `UseShark()` time | Operations | Zero — auto |
+| 26 | **Middleware pipeline injection points** — `app.UseShark(beforeAuth: mw => ..., afterAuth: mw => ...)` for inserting custom middleware at precise pipeline positions | Pipeline control | Config only |
+| 27 | **Eager singleton activation** — `[SingletonService(Eager = true)]` flag to pre-create singletons at startup instead of first-resolution | Cold-start mitigation | Attribute option |
+
 ## Excluded (high-intrusion)
 
 | Feature | Reason |
