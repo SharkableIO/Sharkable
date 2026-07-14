@@ -197,6 +197,15 @@ public sealed class SharkOption : ISharkOption
     }
     internal Action<ScalarOptions>? ScalarConfigure { get; set; }
     /// <summary>
+    /// Configures structured request/response audit trail logging with default options.
+    /// When set, the <see cref="AuditTrailMiddleware"/> is wired into the pipeline.
+    /// </summary>
+    public void ConfigureAuditTrail()
+    {
+        AuditTrailOptions = new AuditTrailOptions();
+    }
+
+    /// <summary>
     /// Configures structured request/response audit trail logging.
     /// When set, the <see cref="AuditTrailMiddleware"/> is wired into the pipeline.
     /// </summary>

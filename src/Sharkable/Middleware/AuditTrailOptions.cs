@@ -95,4 +95,32 @@ public sealed class AuditTrailOptions
     /// Default is <c>true</c>.
     /// </summary>
     public bool EnsureFlushOnShutdown { get; set; } = true;
+
+    /// <summary>
+    /// Log output format preset. Default is <see cref="AuditTrailFormat.Default"/>.
+    /// </summary>
+    public AuditTrailFormat LogFormat { get; set; } = AuditTrailFormat.Default;
+
+    internal static string FormatEntry(AuditLogEntry entry, AuditTrailFormat format)
+    {
+        var query = entry.Query ?? string.Empty;
+
+        return format switch
+        {
+            AuditTrailFormat.DotnetLogger =>
+                $"{entry.Method} {entry.Path}{query} => {entry.StatusCode} in {entry.ElapsedMs}ms [{entry.CorrelationId}] Headers={entry.Headers}",
+            AuditTrailFormat.JsonStyle =>
+                $$"""{"method":"{{EscapeJson(entry.Method)}}","path":"{{EscapeJson(entry.Path)}}","query":"{{EscapeJson(query)}}","statusCode":{{entry.StatusCode}},"durationMs":{{entry.ElapsedMs}},"correlationId":"{{EscapeJson(entry.CorrelationId)}}","headers":{{entry.Headers}}}""",
+            AuditTrailFormat.Compact =>
+                $"{entry.Method} {entry.Path}{query} {entry.StatusCode} {entry.ElapsedMs}ms",
+            _ =>
+                $"HTTP {entry.Method} {entry.Path}{query} responded {entry.StatusCode} in {entry.ElapsedMs}ms [CorrelationId: {entry.CorrelationId}] Headers={entry.Headers}",
+        };
+    }
+
+    private static string EscapeJson(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return value;
+        return value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+    }
 }

@@ -4,6 +4,18 @@ All notable changes to Sharkable are documented here.
 
 ## [Unreleased]
 
+### feat
+
+- Add unified result extension methods and static factories for 20 HTTP status codes (202, 405, 406, 410, 415, 422, 429, 500–504)
+- Add generic `AsStatus()` extension and `UnifiedResult.Status<T>()` static factory for custom `HttpStatusCode` — covers any status code not explicitly enumerated
+- Add parameterless `ConfigureAuditTrail()` overload — enables audit trail with default options without requiring a callback
+- Add `AuditTrailFormat` enum with `Default`, `DotnetLogger`, `JsonStyle`, and `Compact` presets — configurable via `AuditTrailOptions.LogFormat`
+
+### docs
+
+- Document all unified result extension methods and static factories in EN + ZH
+- Add service registration guide covering `[ScopedService]`, `[TransientService]`, `[SingletonService]` attributes (EN + ZH)
+
 ## [0.5.7] — 2026-07-11
 
 ### feat

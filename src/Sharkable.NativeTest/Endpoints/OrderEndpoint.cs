@@ -1,5 +1,3 @@
-using Sharkable;
-
 namespace Sharkable.NativeTest;
 
 [SharkDescription("Orders", "Place, manage, and track orders via SAGA")]
@@ -11,19 +9,18 @@ public class OrderEndpoint : ISharkEndpoint
         app.MapGet("", (HttpContext ctx, ShoppingDbContext db) =>
         {
             var userId = AuthEndpoint.GetUserId(ctx);
-            if (userId is null) return Results.Unauthorized();
-            var orders = db.GetOrdersByUser(userId.Value).OrderByDescending(o => o.CreatedAt).ToList();
-            return Results.Ok(orders);
+            if (userId is null) return "Unauthorized".AsUnauthorized();
+            return (object?)db.GetOrdersByUser(userId.Value).OrderByDescending(o => o.CreatedAt).ToList();
         }).RequireAuthorization();
 
         app.MapGet("{id:int}", (int id, HttpContext ctx, ShoppingDbContext db) =>
         {
             var userId = AuthEndpoint.GetUserId(ctx);
-            if (userId is null) return Results.Unauthorized();
+            if (userId is null) return "Unauthorized".AsUnauthorized();
             var order = db.GetOrderById(id);
             if (order is null || order.UserId != userId.Value)
-                return Results.NotFound();
-            return Results.Ok(order);
+                return "Not found".AsNotFound();
+            return (object?)order;
         }).RequireAuthorization();
 
         app.MapPost("", async (CreateOrderRequest request, HttpContext ctx,
@@ -31,11 +28,11 @@ public class OrderEndpoint : ISharkEndpoint
             ILogger<OrderEndpoint> logger) =>
         {
             var userId = AuthEndpoint.GetUserId(ctx);
-            if (userId is null) return Results.Unauthorized();
+            if (userId is null) return "Unauthorized".AsUnauthorized();
 
             var cart = db.GetCart(userId.Value);
             if (cart is null || cart.Items.Count == 0)
-                return Results.BadRequest(new ErrorResponse("Cart is empty"));
+                return "Cart is empty".AsBadRequest();
 
             var orderId = db.NextOrderId();
             var orderItems = cart.Items.Select(i =>
@@ -61,13 +58,13 @@ public class OrderEndpoint : ISharkEndpoint
                 db.UpdateOrder(orderId, order with { Status = OrderStatus.Cancelled });
                 logger.LogWarning("Order {OrderId} failed at step {Step}: {Error}",
                     orderId, result.FailedStepIndex, result.Error);
-                return Results.BadRequest(new ErrorResponse($"{result.Error} (order #{orderId})"));
+                return $"Order failed: {result.Error} (order #{orderId})".AsBadRequest();
             }
 
             db.UpdateOrder(orderId, order with { Status = OrderStatus.Shipped });
             db.RemoveCart(userId.Value);
             logger.LogInformation("Order {OrderId} placed successfully", orderId);
-            return Results.Ok(db.GetOrderById(orderId));
+            return (object?)db.GetOrderById(orderId);
         }).RequireAuthorization();
     }
 }

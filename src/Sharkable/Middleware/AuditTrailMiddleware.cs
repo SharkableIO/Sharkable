@@ -168,15 +168,18 @@ internal sealed class AuditTrailMiddleware
         if (!_logger.IsEnabled(logLevel))
             return;
 
-        _logger.Log(logLevel,
-            "HTTP {Method} {Path}{Query} responded {StatusCode} in {ElapsedMs}ms [CorrelationId: {CorrelationId}] Headers={Headers}",
-            method,
-            path,
-            query,
-            statusCode,
-            elapsedMs,
-            correlationId,
-            headers);
+        if (_options.LogFormat == AuditTrailFormat.Default)
+        {
+            _logger.Log(logLevel,
+                "HTTP {Method} {Path}{Query} responded {StatusCode} in {ElapsedMs}ms [CorrelationId: {CorrelationId}] Headers={Headers}",
+                method, path, query, statusCode, elapsedMs, correlationId, headers);
+        }
+        else
+        {
+            var entry = new AuditLogEntry(method, path, query, headers, statusCode, elapsedMs, correlationId);
+            var message = AuditTrailOptions.FormatEntry(entry, _options.LogFormat);
+            _logger.Log(logLevel, "{Message}", message);
+        }
     }
 
     /// <summary>

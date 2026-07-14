@@ -1,8 +1,8 @@
 using System.Text;
 using FluentValidation;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 using Sharkable;
 using Sharkable.NativeTest;
 
@@ -14,27 +14,10 @@ builder.Services.AddSingleton<AuthService>();
 builder.Services.AddSingleton<OrderSagaSteps>();
 builder.Services.AddSingleton<IValidator<CreateProductRequest>, CreateProductValidator>();
 
-// ── JWT Bearer (self-contained, no OIDC authority) ───────
+// ── JWT config ────────────────────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "DefaultSampleKey12345678901234567890";
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "sharkable-shop";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "sharkable-shop-api";
-var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = jwtIssuer,
-            ValidateAudience = true,
-            ValidAudience = jwtAudience,
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromSeconds(30),
-            IssuerSigningKey = signingKey,
-        };
-    });
-builder.Services.AddAuthorization();
 
 // ── JSON serialization (AOT-safe) ─────────────────────────
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -49,8 +32,31 @@ builder.Services.AddShark([typeof(Program).Assembly], opt =>
     opt.EnableValidation = true;
     opt.EnableHealthChecks = true;
     opt.EnableIdempotency = true;
-
+    opt.EnableAutoWrap = true;
     opt.ConfigureTracing(t => t.ServiceName = "sharkable-shop");
+
+    // JWT — self-issued, no OIDC authority
+    opt.ConfigureJwt(
+        authority: jwtIssuer,
+        audiences: [jwtAudience],
+        configure: jwt =>
+        {
+            jwt.Authority = null;
+            jwt.ConfigurationManager = null;
+            jwt.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = jwtIssuer,
+                ValidateAudience = true,
+                ValidAudience = jwtAudience,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.FromSeconds(30),
+                RequireSignedTokens = true,
+                RequireExpirationTime = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+                NameClaimType = JwtRegisteredClaimNames.Sub,
+            };
+        });
 
     opt.ConfigureGracefulShutdown(g => g.DrainTimeout = TimeSpan.FromSeconds(15));
 

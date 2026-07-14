@@ -48,6 +48,7 @@ namespace Sharkable.NativeTest;
 [JsonSerializable(typeof(UnifiedResult<UserInfo>))]
 [JsonSerializable(typeof(UnifiedResult<AdminUserInfo[]>))]
 [JsonSerializable(typeof(UnifiedResult<List<AdminUserInfo>>))]
+[JsonSerializable(typeof(UnifiedResult<object?>))]
 [JsonSerializable(typeof(UnifiedResult<AdminStats>))]
 [JsonSerializable(typeof(UnifiedResult<ErrorResponse>))]
 [JsonSerializable(typeof(UnifiedResult<string>))]

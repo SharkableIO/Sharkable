@@ -12,6 +12,7 @@ internal sealed class AuditLogBuffer : IDisposable
     private readonly LogLevel _successLevel;
     private readonly LogLevel _warningLevel;
     private readonly LogLevel _errorLevel;
+    private readonly AuditTrailFormat _logFormat;
     private readonly CancellationTokenSource _cts = new();
     private readonly Task _consumerTask;
     private bool _disposed;
@@ -31,6 +32,7 @@ internal sealed class AuditLogBuffer : IDisposable
         _successLevel = options.SuccessLogLevel;
         _warningLevel = options.WarningLogLevel;
         _errorLevel = options.ErrorLogLevel;
+        _logFormat = options.LogFormat;
 
         _consumerTask = ConsumeAsync(_cts.Token);
     }
@@ -104,9 +106,17 @@ internal sealed class AuditLogBuffer : IDisposable
             if (!_logger.IsEnabled(level))
                 continue;
 
-            _logger.Log(level,
-                "HTTP {Method} {Path}{Query} responded {StatusCode} in {ElapsedMs}ms [CorrelationId: {CorrelationId}] Headers={Headers}",
-                entry.Method, entry.Path, entry.Query, entry.StatusCode, entry.ElapsedMs, entry.CorrelationId, entry.Headers);
+            if (_logFormat == AuditTrailFormat.Default)
+            {
+                _logger.Log(level,
+                    "HTTP {Method} {Path}{Query} responded {StatusCode} in {ElapsedMs}ms [CorrelationId: {CorrelationId}] Headers={Headers}",
+                    entry.Method, entry.Path, entry.Query, entry.StatusCode, entry.ElapsedMs, entry.CorrelationId, entry.Headers);
+            }
+            else
+            {
+                var message = AuditTrailOptions.FormatEntry(entry, _logFormat);
+                _logger.Log(level, "{Message}", message);
+            }
         }
     }
 

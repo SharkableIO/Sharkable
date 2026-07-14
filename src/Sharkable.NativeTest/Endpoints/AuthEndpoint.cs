@@ -12,24 +12,24 @@ public class AuthEndpoint : ISharkEndpoint
         {
             var (response, error) = auth.Register(request);
             return error is not null
-                ? Results.BadRequest(new ErrorResponse(error))
-                : Results.Ok(response);
+                ? (object?)error.AsBadRequest()
+                : response;
         }).SharkRequireRateLimiting("auth");
 
         app.MapPost("login", (LoginRequest request, AuthService auth) =>
         {
             var response = auth.Login(request);
             return response is not null
-                ? Results.Ok(response)
-                : Results.Unauthorized();
+                ? (object?)response
+                : "Unauthorized".AsUnauthorized();
         }).SharkRequireRateLimiting("auth");
 
         app.MapGet("profile", (HttpContext ctx, AuthService auth) =>
         {
             var userId = GetUserId(ctx);
-            if (userId is null) return Results.NotFound();
+            if (userId is null) return "Not found".AsNotFound();
             var profile = auth.GetProfile(userId.Value);
-            return profile is not null ? Results.Ok(profile) : Results.NotFound();
+            return profile is not null ? (object?)profile : "Not found".AsNotFound();
         }).RequireAuthorization();
     }
 
