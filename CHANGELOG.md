@@ -4,6 +4,9 @@ All notable changes to Sharkable are documented here.
 
 ## [Unreleased]
 
+### fix
+- `UnifiedResultExtension` and `UnifiedResult` static methods now respect `UnifiedResultFactory` — custom factory implementations are used for all `.AsNotFound()`, `UnifiedResult.Ok()`, etc.
+
 ## [0.6.1] — 2026-07-15
 
 ### feat
