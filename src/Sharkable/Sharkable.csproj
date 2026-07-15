@@ -3,8 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Description>🌈Powerful tools for dotnet aot and more</Description>
-    <AssemblyVersion>0.5.7</AssemblyVersion>
-    <Version>0.5.7</Version>
+    <AssemblyVersion>0.6.0</AssemblyVersion>
+    <Version>0.6.0</Version>
     <PackageIcon>sharkable.jpg</PackageIcon>
     <PackageReleaseNotes>SHARK-SEC-003: replace Thread.Sleep with await Task.Delay in graceful shutdown drain; true fire-and-forget so ApplicationStopping returns immediately. SHARK-SEC-004: make SagaExecutor.LockTtl configurable; add LockRenewalInterval with periodic lock extension (cross-repo Cache.Redis); ISagaStore.RenewLockAsync converted to default interface method so existing implementations keep compiling. SHARK-SEC-005 (cross-repo Cache.Redis): replace unconditional KeyDelete with check-and-delete Lua in RedisSagaStore / RedisCronJobStore; add CronScheduler.CronLockTtl + ICronJobStore.RenewJobLockAsync. Idempotency hardening: add MaxFingerprintBodySize (default 64 KiB); chunked-transfer requests now hash incrementally with -1 sentinel; setter rejects &lt;= 0. SHARK-SEC-006 (AutoCrud.SqlSugar, BREAKING): add [CrudAllow] field allowlist; endpoints with zero [CrudAllow] properties throw InvalidOperationException at startup. SHARK-SEC-006 follow-ups (BREAKING): exclude SafeSoftDeleteField from [CrudAllow] allow-list even when explicitly marked; AutoCrud POST and PUT now return the persisted row re-read from DB.</PackageReleaseNotes>
     <PackageProjectUrl>https://sharkableio.github.io/</PackageProjectUrl>
