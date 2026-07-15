@@ -4,6 +4,8 @@ All notable changes to Sharkable are documented here.
 
 ## [Unreleased]
 
+## [0.6.1] — 2026-07-15
+
 ### feat
 - EnableAutoWrap defaults to true — all plain return values wrapped in UnifiedResult<T> out of the box
 - Custom IResult (UnifiedResultResult) eliminates one allocation per wrapped response and syncs HTTP status code
