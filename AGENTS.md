@@ -152,7 +152,11 @@ When told to bump version and publish a new release, execute the following steps
 8. **Push the commit** — `git push`.
 9. **Publish to NuGet** — `dotnet pack src/Sharkable/Sharkable.csproj -c Release && dotnet nuget push src/Sharkable/bin/Release/Sharkable.x.y.z.nupkg --api-key <key> --source https://api.nuget.org/v3/index.json`.
    - The NuGet API key is assumed to be available in the environment. If not, ask the user.
- 10. **Update docs site repo** — after bumping version, ensure docs site (`~/dev/sharkableio.github.io/`) has all pending changes committed and pushed (at minimum the QuickStart version update, plus any new docs for the release).
+ 10. **Cut Docusaurus version** — in the docs site repo, run `npm run docusaurus docs:version <label>` (e.g. `npm run docusaurus docs:version 0.6.0`) to snapshot `docs/` + `sidebars.js` into `versioned_docs/version-<label>/` + `versioned_sidebars/version-<label>-sidebars.json`.
+ 11. **Fix ZH version label** — Docusaurus defaults the newly created `i18n/zh-cn/docusaurus-plugin-content-docs/version-<label>.json` to `"Next"`; change to `"<label>"`.
+ 12. **Commit and push docs site** — `git add -A && git commit -m "chore: cut docs version <label> (Docusaurus snapshot)" && git push`.
+
+**NOTE:** The Docusaurus version cut must happen AFTER the QuickStart version update (step 5) but BEFORE the docs site repo is pushed. This ensures the versioned snapshot carries the correct QuickStart version number, and the ZH version label fix is applied before the push.
 
 ## Documentation checklist (apply after EVERY feature or version change)
 
