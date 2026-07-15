@@ -33,8 +33,7 @@ internal static class ProblemDetailsResult
         {
             var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
             var result = factory.Create(data: null, errorMessage: detail, statusCode: statusCode);
-            ctx.Response.ContentType = "application/json";
-            await ctx.Response.WriteAsJsonAsync(result, result.GetType());
+            await new UnifiedResultResult(result).ExecuteAsync(ctx);
         }
     }
 

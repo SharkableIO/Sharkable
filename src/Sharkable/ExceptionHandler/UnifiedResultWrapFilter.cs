@@ -13,8 +13,12 @@ internal sealed class UnifiedResultWrapFilter : IEndpointFilter
         if (result == null || result is IResult || result is IUnifiedResult)
             return result;
 
+        var endpoint = context.HttpContext.GetEndpoint();
+        if (endpoint?.Metadata.GetMetadata<DisableAutoWrapMetadata>() is not null)
+            return result;
+
         var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
-        var statusCode = context.HttpContext.Response.StatusCode;
-        return factory.Create(result, null, statusCode);
+        var wrapped = factory.Create(result, errorMessage: null, statusCode: 200);
+        return new UnifiedResultResult(wrapped);
     }
 }

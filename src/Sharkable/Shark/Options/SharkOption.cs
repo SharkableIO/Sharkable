@@ -44,7 +44,7 @@ public sealed class SharkOption : ISharkOption
     /// Can also be set at runtime via <see cref="UseSharkOptions.EnableAutoWrap"/>.
     /// Default is <c>false</c> (opt-in).
     /// </summary>
-    public bool EnableAutoWrap { get; set; } = false;
+    public bool EnableAutoWrap { get; set; } = true;
     /// <summary>
     /// Custom factory for the OpenAPI schema used by <see cref="EnableAutoWrap"/>.
     /// Takes the original response schema and returns the wrapped schema.
