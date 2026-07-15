@@ -437,6 +437,12 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public string? ScalarApiKeyValue { get; set; }
     /// <summary>
+    /// When <c>true</c> (default), prints a formatted startup banner (version, environment,
+    /// UTC timestamp) to the console at the end of <c>UseShark()</c>.
+    /// </summary>
+    public bool ShowStartupBanner { get; set; } = true;
+
+    /// <summary>
     /// Registers a callback that runs when the application has started
     /// (after <c>app.Run()</c> begins accepting requests).
     /// The callback receives the root <see cref="IServiceProvider"/>.

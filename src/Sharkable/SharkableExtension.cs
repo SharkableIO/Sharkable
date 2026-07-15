@@ -207,7 +207,8 @@ public static class SharkableExtension
         InternalShark.StartupCompleted = true;
 
         // startup banner
-        PrintStartupBanner(app);
+        if (Shark.SharkOption.ShowStartupBanner)
+            PrintStartupBanner(app);
 
         // lifecycle hooks (#20)
         var appLifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
