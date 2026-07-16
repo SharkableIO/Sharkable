@@ -4,6 +4,9 @@ All notable changes to Sharkable are documented here.
 
 ## [Unreleased]
 
+### feat
+- Add `ISingleton`, `IScoped`, `ITransient` marker interfaces — classes implementing these are auto-registered in DI (same as `[SingletonService]` etc.)
+
 ### fix
 - `UnifiedResultExtension` and `UnifiedResult` static methods now respect `UnifiedResultFactory` — custom factory implementations are used for all `.AsNotFound()`, `UnifiedResult.Ok()`, etc.
 

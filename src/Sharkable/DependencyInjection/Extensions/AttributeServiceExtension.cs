@@ -14,6 +14,7 @@ internal static class AttributeBasedServiceCollectionExtensions
     internal static void AddServicesWithAttributeOfTypeFromAssembly(this IServiceCollection serviceCollection, Assembly[]? assemblys)
     {
         serviceCollection.AddServicesWithAttributeOfType(Shark.Assemblies);
+        serviceCollection.AddServicesWithInterfaceMarker(Shark.Assemblies);
     }
     /// <summary>
     /// scan for service
@@ -150,6 +151,72 @@ internal static class AttributeBasedServiceCollectionExtensions
                     serviceCollection.TryAdd(serviceType, serviceType, lifetime);
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Scan and register classes that implement <see cref="ISingleton"/>,
+    /// <see cref="IScoped"/>, or <see cref="ITransient"/> marker interfaces.
+    /// If a class implements multiple marker interfaces, the first match
+    /// in priority order (ISingleton &gt; IScoped &gt; ITransient) wins.
+    /// </summary>
+    internal static void AddServicesWithInterfaceMarker(this IServiceCollection services, Assembly[]? assemblies)
+    {
+        if (assemblies is not { Length: > 0 })
+            return;
+
+        var candidates = assemblies.SelectMany(a => a.GetTypes())
+            .Where(t => t.IsClass && !t.IsAbstract && !t.IsGenericTypeDefinition)
+            .ToList();
+
+        foreach (var type in candidates)
+        {
+            var serviceInterfaces = type.GetInterfaces();
+            ServiceLifetime? lifetime = null;
+
+            if (serviceInterfaces.Any(i => i == typeof(ISingleton)))
+                lifetime = ServiceLifetime.Singleton;
+            else if (serviceInterfaces.Any(i => i == typeof(IScoped)))
+                lifetime = ServiceLifetime.Scoped;
+            else if (serviceInterfaces.Any(i => i == typeof(ITransient)))
+                lifetime = ServiceLifetime.Transient;
+
+            if (lifetime == null)
+                continue;
+
+            services.RegisterImplementation(type, lifetime.Value);
+        }
+    }
+
+    /// <summary>
+    /// Register a type for its business interfaces, base class, or itself,
+    /// excluding the marker interfaces (<see cref="ISingleton"/> etc.).
+    /// </summary>
+    private static void RegisterImplementation(this IServiceCollection services, Type implementation, ServiceLifetime lifetime)
+    {
+        var businessInterfaces = implementation.GetInterfaces()
+            .Where(i => i != typeof(ISingleton) && i != typeof(IScoped) && i != typeof(ITransient))
+            .ToArray();
+
+        if (businessInterfaces.Length > 0)
+        {
+            foreach (var iface in businessInterfaces)
+            {
+                Utils.WriteDebug("injecting service (marker):" + iface.Name + "," + implementation.Name);
+                services.TryAdd(iface, implementation, lifetime);
+            }
+        }
+
+        Type? baseType = implementation.BaseType;
+        if (baseType != null && baseType != typeof(object))
+        {
+            Utils.WriteDebug("injecting service (marker):" + baseType.Name + "," + implementation.Name);
+            services.TryAdd(baseType, implementation, lifetime);
+        }
+        else
+        {
+            Utils.WriteDebug("injecting service (marker):" + implementation.Name + "," + implementation.Name);
+            services.TryAdd(implementation, implementation, lifetime);
         }
     }
 }

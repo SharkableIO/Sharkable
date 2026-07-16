@@ -9,7 +9,7 @@ namespace Sharkable;
 /// </summary>
 public static class UnifiedResultExtension
 {
-    /// <summary>Creates an <see cref="IUnifiedResult"/> using the configured <see cref="UnifiedResultFactory"/> (or default).</summary>
+    /// <summary>Creates an <see cref="IUnifiedResult"/> using the configured <see cref="SharkOption.UnifiedResultFactory"/> (or default).</summary>
     internal static IUnifiedResult CreateResult(object? data, string? errorMessage, int statusCode)
     {
         var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
