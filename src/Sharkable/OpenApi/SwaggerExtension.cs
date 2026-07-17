@@ -130,6 +130,16 @@ internal static class OpenApiExtension
     {
         if (Shark.SharkOption.UseOpenApi)
         {
+            if (!InternalShark.HostEnvironment.IsDevelopment())
+            {
+                var logger = app.Services.GetService<ILoggerFactory>()
+                    ?.CreateLogger("Sharkable.OpenApi");
+                logger?.LogWarning(
+                    "OpenAPI and Scalar UI are enabled in a non-Development environment. " +
+                    "Full API surface is exposed at /openapi/v1.json and /scalar/v1. " +
+                    "Disable with opt.UseOpenApi = false in production.");
+            }
+
             app.MapOpenApi();
             var opt = Shark.SharkOption;
             app.MapScalarApiReference(scalar =>

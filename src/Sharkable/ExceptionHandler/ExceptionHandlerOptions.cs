@@ -38,6 +38,15 @@ public sealed class ExceptionHandlerOptions
     public bool IsDevelopment { get; set; }
 
     /// <summary>
+    /// When <c>true</c> (opt-in), production error responses include the actual
+    /// <see cref="Exception.Message"/>. When <c>false</c> (default), production
+    /// responses return a generic "An error occurred." message.
+    /// <see cref="IsDevelopment"/> continues to return the stripped full exception
+    /// text regardless of this setting. Default is <c>false</c>.
+    /// </summary>
+    public bool IncludeExceptionMessage { get; set; } = false;
+
+    /// <summary>
     /// Map an exception type to an HTTP status code.
     /// </summary>
     public void Map<TException>(HttpStatusCode statusCode) where TException : Exception
@@ -66,21 +75,23 @@ public sealed class ExceptionHandlerOptions
     /// In development mode (<see cref="IsDevelopment"/> = <c>true</c>) the full
     /// exception is included but with the assembly-qualified type name stripped
     /// so the response cannot leak the exact framework version / assembly.
+    /// In production, returns a generic message unless <see cref="IncludeExceptionMessage"/>
+    /// is <c>true</c>.
     /// </summary>
     public string GetErrorMessage(Exception exception)
     {
-        if (!IsDevelopment) return exception.Message;
-
-        // SHARK-SEC-M003: ToString() starts with "<FullTypeName>: <Message>\n   at ...".
-        // Replace the assembly-qualified prefix with the short type name so callers
-        // still see useful debug info but cannot fingerprint the assembly/version.
-        var full = exception.ToString();
-        var fullTypeName = exception.GetType().FullName;
-        var shortTypeName = exception.GetType().Name;
-        if (!string.IsNullOrEmpty(fullTypeName) && full.StartsWith(fullTypeName, StringComparison.Ordinal))
+        if (IsDevelopment)
         {
-            return shortTypeName + full[fullTypeName.Length..];
+            var full = exception.ToString();
+            var fullTypeName = exception.GetType().FullName;
+            var shortTypeName = exception.GetType().Name;
+            if (!string.IsNullOrEmpty(fullTypeName) && full.StartsWith(fullTypeName, StringComparison.Ordinal))
+                return shortTypeName + full[fullTypeName.Length..];
+            return full;
         }
-        return full;
+
+        return IncludeExceptionMessage
+            ? exception.Message
+            : "An error occurred.";
     }
 }

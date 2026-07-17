@@ -5,7 +5,7 @@ namespace Sharkable.Tests.Idempotency;
 public class MemoryIdempotencyStoreTests
 {
     private static MemoryIdempotencyStore NewStore() =>
-        new(new MemoryCache(new MemoryCacheOptions()));
+        new(new SharkIdempotencyOptions());
 
     [Fact]
     public async Task TryReserve_NewKey_ReturnsTrue()

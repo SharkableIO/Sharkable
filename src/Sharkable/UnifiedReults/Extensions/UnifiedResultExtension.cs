@@ -12,7 +12,7 @@ public static class UnifiedResultExtension
     /// <summary>Creates an <see cref="IUnifiedResult"/> using the configured <see cref="SharkOption.UnifiedResultFactory"/> (or default).</summary>
     internal static IUnifiedResult CreateResult(object? data, string? errorMessage, int statusCode)
     {
-        var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
+        var factory = UnifiedResultFactoryHelper.ResolveFactory();
         return factory.Create(data, errorMessage, statusCode);
     }
 

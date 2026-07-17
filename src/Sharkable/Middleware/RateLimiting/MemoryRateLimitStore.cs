@@ -16,10 +16,11 @@ namespace Sharkable;
 /// <c>AbsoluteExpirationRelativeToNow</c>; <see cref="MemoryCache"/>'s
 /// built-in background compaction evicts them on the next scan.
 /// </summary>
-public sealed class MemoryRateLimitStore : IDistributedRateLimitStore
+public sealed class MemoryRateLimitStore : IDistributedRateLimitStore, IDisposable
 {
     private const int EntrySize = 256;
-    private readonly IMemoryCache _cache;
+    private readonly MemoryCache _cache;
+    private bool _disposed;
 
     /// <summary>
     /// Creates a new <see cref="MemoryRateLimitStore"/> with the default
@@ -55,12 +56,7 @@ public sealed class MemoryRateLimitStore : IDistributedRateLimitStore
     /// <inheritdoc />
     public Task<long> IncrementAsync(string key, TimeSpan window)
     {
-        // SHARK-SEC-013 follow-up: store the counter as a single-element long[]
-        // so that concurrent callers share the same boxed value and can increment
-        // atomically via Interlocked. GetOrCreate serializes factory invocation,
-        // guaranteeing all callers observe a single, stable reference that they
-        // then mutate in place — preventing the under-counting race where two
-        // concurrent calls each computed count = 1 from a stale null read.
+        if (_disposed) return Task.FromResult(0L);
         var counter = _cache.GetOrCreate(key, entry =>
         {
             entry.Size = EntrySize;
@@ -74,7 +70,16 @@ public sealed class MemoryRateLimitStore : IDistributedRateLimitStore
     /// <inheritdoc />
     public Task ResetAsync(string key)
     {
+        if (_disposed) return Task.CompletedTask;
         _cache.Remove(key);
         return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _cache.Dispose();
     }
 }

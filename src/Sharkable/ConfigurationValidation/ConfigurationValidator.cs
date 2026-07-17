@@ -40,7 +40,7 @@ internal static class ConfigurationValidator
         ValidateMultiTenant(opt, errors);
         ValidateIdempotency(opt, errors, warnings);
         ValidateSaga(opt, errors);
-        ValidateRateLimiting(opt, errors);
+        ValidateRateLimiting(opt, errors, warnings);
         ValidateEtag(opt, errors);
         ValidateAuditTrail(opt, errors);
         ValidateHeaderNames(opt, errors);
@@ -162,12 +162,13 @@ internal static class ConfigurationValidator
     /// <summary>
     /// L-17: validate the distributed rate limiter's most critical knobs.
     /// </summary>
-    private static void ValidateRateLimiting(SharkOption opt, List<string> errors)
+    private static void ValidateRateLimiting(SharkOption opt, List<string> errors, List<string> warnings)
     {
         if (opt.RateLimitingOptions == null)
             return;
 
         var r = opt.RateLimitingOptions;
+
         if (r.DefaultLimit <= 0)
             errors.Add(
                 "Rate limiting DefaultLimit must be > 0. " +
@@ -198,6 +199,15 @@ internal static class ConfigurationValidator
                     $"Rate limiting MaxPermitLimit ({r.MaxPermitLimit}) must be >= " +
                     $"MinPermitLimit ({r.MinPermitLimit}).");
         }
+
+        // Proxy-trust guidance: when rate limiting is enabled and the default
+        // key generator uses RemoteIpAddress, the absence of ForwardedHeaders
+        // configuration collapses all clients into a single rate-limit bucket.
+        if (r.KeyGenerator == null)
+            warnings.Add(
+                "Rate limiting is enabled with the default IP-based key generator. " +
+                "Behind a reverse proxy/CDN, configure ForwardedHeadersMiddleware with KnownProxies " +
+                "so per-client IPs are preserved. Otherwise all traffic shares one rate-limit bucket.");
     }
 
     /// <summary>

@@ -23,4 +23,11 @@ public sealed class ProfilerOptions
     /// Default is 1000.
     /// </summary>
     public int MaxEntries { get; set; } = 1000;
+
+    /// <summary>
+    /// When <c>true</c>, the profiler samples <c>GC.GetTotalMemory(false)</c>
+    /// before and after each request. Disabled by default (adds GC bookkeeping
+    /// overhead under high RPS). Default is <c>false</c>.
+    /// </summary>
+    public bool TrackMemory { get; set; } = false;
 }

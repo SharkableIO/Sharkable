@@ -19,7 +19,8 @@ internal sealed class ProfilerMiddleware
     public async Task InvokeAsync(HttpContext context)
     {
         var sw = Stopwatch.StartNew();
-        var startMem = GC.GetTotalMemory(false);
+        var trackMemory = Shark.SharkOption.ProfilerOptions?.TrackMemory ?? false;
+        var startMem = trackMemory ? GC.GetTotalMemory(false) : 0L;
 
         try
         {
@@ -28,7 +29,7 @@ internal sealed class ProfilerMiddleware
         finally
         {
             sw.Stop();
-            var endMem = GC.GetTotalMemory(false);
+            var endMem = trackMemory ? GC.GetTotalMemory(false) : 0L;
             var entry = new ProfilerEntry(
                 context.Request.Method,
                 context.Request.Path.Value ?? "/",

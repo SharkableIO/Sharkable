@@ -3,35 +3,32 @@ using Microsoft.Extensions.Caching.Memory;
 namespace Sharkable;
 
 /// <summary>
-/// In-process <see cref="IIdempotencyStore"/> backed by
-/// <see cref="IMemoryCache"/>. Single-instance only; for distributed
+/// In-process <see cref="IIdempotencyStore"/> backed by a private
+/// <see cref="MemoryCache"/>. Single-instance only; for distributed
 /// scenarios implement <see cref="IIdempotencyStore"/> with Redis or
 /// similar.
 ///
-/// The injected <see cref="IMemoryCache"/> MUST have
-/// <see cref="MemoryCacheOptions.SizeLimit"/> set to bound the total
-/// number of distinct idempotency keys. Each entry records its cost via
-/// <c>entry.Size</c> (completed records charge <c>Body.Length + 256</c>,
-/// in-flight markers charge 256) so the cap reflects realistic memory
-/// pressure. Without a configured <c>SizeLimit</c>, an attacker sending
-/// random unique <c>Idempotency-Key</c> headers can exhaust process memory.
+/// The cache is size-limited via <see cref="SharkIdempotencyOptions.MaxEntries"/>
+/// (default 10,000) so an attacker sending random unique
+/// <c>Idempotency-Key</c> headers cannot exhaust process memory.
 /// </summary>
-public sealed class MemoryIdempotencyStore : IIdempotencyStore
+public sealed class MemoryIdempotencyStore : IIdempotencyStore, IDisposable
 {
     private const int MarkerSize = 256;
-    private readonly IMemoryCache _cache;
+    private readonly MemoryCache _cache;
     private readonly object _reservationLock = new();
+    private bool _disposed;
 
     /// <summary>Marker for an in-flight slot (no record yet).</summary>
     private sealed record InFlightMarker;
 
     /// <summary>
-    /// Initialises the store with the given <see cref="IMemoryCache"/> instance.
+    /// Creates an in-process idempotency store with a size-limited private <see cref="MemoryCache"/>.
     /// </summary>
-    /// <param name="cache">The memory cache backing this store.</param>
-    public MemoryIdempotencyStore(IMemoryCache cache)
+    /// <param name="options">Idempotency options controlling the cache size limit.</param>
+    public MemoryIdempotencyStore(SharkIdempotencyOptions options)
     {
-        _cache = cache;
+        _cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = options.MaxEntries });
     }
 
     /// <summary>
@@ -40,11 +37,7 @@ public sealed class MemoryIdempotencyStore : IIdempotencyStore
     /// </summary>
     public Task<bool> TryReserveAsync(string key, TimeSpan inFlightTtl)
     {
-        // IMemoryCache.GetOrCreate is NOT atomic across threads: the
-        // factory may run concurrently on multiple threads, each creating
-        // its own InFlightMarker and each believing it won the reservation.
-        // We serialize the check-and-set with a lock so only one caller
-        // sees its own marker come back from the cache.
+        if (_disposed) return Task.FromResult(false);
         lock (_reservationLock)
         {
             var marker = new InFlightMarker();
@@ -61,6 +54,7 @@ public sealed class MemoryIdempotencyStore : IIdempotencyStore
     /// <summary>Returns the current state (in-flight or completed) for a key.</summary>
     public Task<IdempotencyLookup?> GetAsync(string key)
     {
+        if (_disposed) return Task.FromResult<IdempotencyLookup?>(null);
         if (!_cache.TryGetValue(key, out var value) || value is null)
             return Task.FromResult<IdempotencyLookup?>(null);
         var result = value switch
@@ -75,6 +69,7 @@ public sealed class MemoryIdempotencyStore : IIdempotencyStore
     /// <summary>Persists a completed idempotency record for replay.</summary>
     public Task StoreAsync(string key, IdempotencyRecord record, TimeSpan ttl)
     {
+        if (_disposed) return Task.CompletedTask;
         using var entry = _cache.CreateEntry(key);
         entry.Size = record.Body.Length + MarkerSize;
         entry.AbsoluteExpirationRelativeToNow = ttl;
@@ -85,7 +80,16 @@ public sealed class MemoryIdempotencyStore : IIdempotencyStore
     /// <summary>Releases (removes) an idempotency key from the store.</summary>
     public Task ReleaseAsync(string key)
     {
+        if (_disposed) return Task.CompletedTask;
         _cache.Remove(key);
         return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _cache.Dispose();
     }
 }

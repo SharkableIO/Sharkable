@@ -1,19 +1,14 @@
 
+using System.Collections.Concurrent;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
 
 namespace Sharkable;
 
-/// <summary>
-/// Endpoint filter that validates request parameters against registered <see cref="IValidator{T}"/> instances.
-/// When validation fails, short-circuits the pipeline with a 400 <see cref="UnifiedResult{T}"/> response.
-/// </summary>
 internal sealed class ValidationFilter : IEndpointFilter
 {
-    /// <summary>
-    /// Validates each non-null argument that has a registered <see cref="IValidator{T}"/> in DI.
-    /// Returns the first validation error as a 400 response.
-    /// </summary>
+    private static readonly ConcurrentDictionary<Type, Func<IServiceProvider, IValidator?>> _validatorCache = new();
+
     public async ValueTask<object?> InvokeAsync(
         EndpointFilterInvocationContext context,
         EndpointFilterDelegate next)
@@ -23,8 +18,13 @@ internal sealed class ValidationFilter : IEndpointFilter
             if (arg is null)
                 continue;
 
-            var validatorType = typeof(IValidator<>).MakeGenericType(arg.GetType());
-            var validator = context.HttpContext.RequestServices.GetService(validatorType) as IValidator;
+            var argType = arg.GetType();
+            var validatorFactory = _validatorCache.GetOrAdd(argType, static t =>
+            {
+                var validatorType = typeof(IValidator<>).MakeGenericType(t);
+                return sp => sp.GetService(validatorType) as IValidator;
+            });
+            var validator = validatorFactory(context.HttpContext.RequestServices);
 
             if (validator is null)
                 continue;
@@ -36,7 +36,7 @@ internal sealed class ValidationFilter : IEndpointFilter
                 continue;
 
             var errorMessage = string.Join("; ", result.Errors.Select(e => e.ErrorMessage));
-            var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
+            var factory = UnifiedResultFactoryHelper.ResolveFactory();
             var body = factory.Create(null, errorMessage, 400);
 
             context.HttpContext.Response.StatusCode = 400;

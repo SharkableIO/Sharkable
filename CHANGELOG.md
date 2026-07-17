@@ -7,6 +7,33 @@ All notable changes to Sharkable are documented here.
 ### feat
 - Add `ISingleton`, `IScoped`, `ITransient` marker interfaces — classes implementing these are auto-registered in DI (same as `[SingletonService]` etc.)
 
+### perf
+- **PERF-01** — `DefaultUnifiedResultFactory.Instance` singleton; `UnifiedResultFactoryHelper.ResolveFactory()` caches configured factory at 5 hot-path call sites (P1)
+- **PERF-02** — Source-generated JSON context defaults to `WriteIndented=false` for compact production output (P1)
+- **PERF-04** — Audit middleware caches `_redactQueryParams` HashSet in ctor instead of allocating per request (P2)
+- **PERF-05** — Audit middleware checks `_logger.IsEnabled()` before building log strings, avoiding allocations when the category is filtered out (P2)
+- **PERF-06** — Shared `ApiKeyValidator` service caches stored-key hashes and invalidates via `IOptionsMonitor.OnChange`, replacing O(keys) SHA-256 per request (P2)
+- **PERF-07** — Validation filter caches `ConcurrentDictionary<Type, Func<IServiceProvider, IValidator?>>` per argument type, avoiding `MakeGenericType` + DI lookup per request (P2)
+- **PERF-08** — ETag middleware uses `Convert.ToHexString()` instead of per-byte `StringBuilder` + `ToString("x2")` — one allocation instead of 33 (P3)
+- **PERF-09** — Idempotency middleware uses `HashSet<string>` for method check and `TryGetBuffer()` to avoid double body copy (P3)
+- **PERF-10** — Profiler `TrackMemory` option (default `false`) gates per-request `GC.GetTotalMemory(false)` calls (P3)
+- **PERF-11** — `HttpResponseExtension.WriteJsonAsync` caches static `JsonSerializerOptions` instead of allocating per call (P3)
+
+### fix (memory & lifetime)
+- **MEM-01** — `MemoryIdempotencyStore` now owns a private `MemoryCache` instead of hijacking the app-wide `IMemoryCache` registration (P1)
+- **MEM-02** — `AdaptiveLimitMonitor` registered as singleton in DI with `autoStart:true`; DI handles disposal of the timer + process handle (P2)
+- **MEM-03** — `AuditLogBuffer` consumer survives flush failures with try/catch + `Interlocked`-tracked dropped-entry counter (P2)
+- **MEM-04** — `MemoryRateLimitStore` and `MemoryIdempotencyStore` implement `IDisposable` so `MemoryCache` expiration-scan timers are properly disposed (P2)
+- **MEM-07** — ETag `CountingResponseBody` disposes its internal `MemoryStream` spool; `using var counting` in middleware (P3)
+
+### security
+- **SEC-01** — `HealthCheckDetailLevel` enum (`StatusOnly`/`Description`/`Full`); `/healthz` defaults to `StatusOnly` in non-Development, never leaking `Exception.Message` (P1)
+- **SEC-02** — `ExceptionHandlerOptions.IncludeExceptionMessage` (default `false`); production error responses return generic `"An error occurred."` (P2)
+- **SEC-03** — Startup warning when OpenAPI/Scalar is enabled outside Development (P2)
+- **SEC-04** — Admin endpoints (`/_sharkable/jobs`, profiler gate) unified on shared `ApiKeyValidator` service with hot-reload support (P3)
+- **SEC-05** — Configuration validator warns when rate limiting is enabled without proxy ForwardedHeaders configuration (P3)
+- **SEC-06** — `JwtHealthCheck` caches result for 30 seconds to avoid hammering OIDC discovery endpoint on k8s probes (P3)
+
 ### fix
 - `UnifiedResultExtension` and `UnifiedResult` static methods now respect `UnifiedResultFactory` — custom factory implementations are used for all `.AsNotFound()`, `UnifiedResult.Ok()`, etc.
 - **BUG-01** — Cron shutdown cancellation token wired into `ExecuteJobAsync` so in-flight jobs are cancelled on `app.StopAsync()` (P1)

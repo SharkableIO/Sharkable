@@ -31,7 +31,7 @@ internal static class ProblemDetailsResult
         }
         else
         {
-            var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
+            var factory = UnifiedResultFactoryHelper.ResolveFactory();
             var result = factory.Create(data: null, errorMessage: detail, statusCode: statusCode);
             await new UnifiedResultResult(result).ExecuteAsync(ctx);
         }

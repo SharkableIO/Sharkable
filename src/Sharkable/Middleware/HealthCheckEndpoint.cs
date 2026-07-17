@@ -75,14 +75,21 @@ internal static class HealthCheckEndpoint
                 ), statusCode: 503);
             }
 
+            var detailLevel = Shark.SharkOption.HealthCheckDetailLevel;
             var checks = report.Entries.ToDictionary(
                 e => e.Key,
-                e => new HealthCheckEntry(
-                    e.Value.Status.ToString().ToLower(),
-                    e.Value.Description,
-                    e.Value.Data.Count > 0 ? e.Value.Data : null,
-                    e.Value.Exception?.Message
-                ));
+                e =>
+                {
+                    var description = detailLevel >= HealthCheckDetailLevel.Description ? e.Value.Description : null;
+                    var data = detailLevel >= HealthCheckDetailLevel.Full && e.Value.Data.Count > 0 ? e.Value.Data : null;
+                    var exceptionMessage = detailLevel >= HealthCheckDetailLevel.Full ? e.Value.Exception?.Message : null;
+                    return new HealthCheckEntry(
+                        e.Value.Status.ToString().ToLower(),
+                        description,
+                        data,
+                        exceptionMessage
+                    );
+                });
 
             var overall = report.Status switch
             {

@@ -99,6 +99,15 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public bool EnableHealthChecks { get; set; } = false;
     /// <summary>
+    /// Controls how much detail <c>/healthz</c> exposes per check.
+    /// <c>StatusOnly</c> (default in non-Development) hides exception messages
+    /// and data; <c>Description</c> includes the check description;
+    /// <c>Fulll</c> includes everything including <c>Exception.Message</c>.
+    /// Default in Development is <c>Full</c>; otherwise <c>StatusOnly</c>.
+    /// </summary>
+    public HealthCheckDetailLevel HealthCheckDetailLevel { get; set; } =
+        InternalShark.HostEnvironment.IsDevelopment() ? HealthCheckDetailLevel.Full : HealthCheckDetailLevel.StatusOnly;
+    /// <summary>
     /// Optional callback to add custom health checks. Called after
     /// <c>services.AddHealthChecks()</c>. The builder parameter is
     /// <see cref="IHealthChecksBuilder"/>.

@@ -27,14 +27,16 @@ internal sealed class AdaptiveLimitMonitor : IDisposable
     internal AdaptiveLimitMonitor(SharkRateLimiterOptions options)
     {
         _options = options;
-        // SHARK-SEC-M010: acquire the Process handle lazily on Start() and
-        // dispose it on shutdown so the monitor does not leak the handle for
-        // the lifetime of the process (the audit's L-16 concern).
         _lastTotalProcessorTime = TimeSpan.Zero;
         _lastSampleAt = DateTime.UtcNow;
         CurrentLimit = options.BasePermitLimit;
         _logger = InternalShark.ServiceProvider?.GetService<ILoggerFactory>()
             ?.CreateLogger<AdaptiveLimitMonitor>();
+    }
+
+    internal AdaptiveLimitMonitor(SharkRateLimiterOptions options, bool autoStart) : this(options)
+    {
+        if (autoStart) Start();
     }
 
     internal void Start()

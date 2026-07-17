@@ -15,6 +15,7 @@ internal sealed class SharkIdempotencyMiddleware
     private readonly IIdempotencyStore _store;
     private readonly SharkIdempotencyOptions _options;
     private readonly ILogger<SharkIdempotencyMiddleware> _logger;
+    private readonly HashSet<string> _unsafeMethodNames;
 
     public SharkIdempotencyMiddleware(
         RequestDelegate next,
@@ -26,7 +27,12 @@ internal sealed class SharkIdempotencyMiddleware
         _store = store;
         _options = options;
         _logger = logger;
+        _unsafeMethodNames = new HashSet<string>(
+            options.UnsafeMethods.Select(m => m.Method),
+            StringComparer.OrdinalIgnoreCase);
     }
+
+    private bool IsUnsafeMethod(string method) => _unsafeMethodNames.Contains(method);
 
     public async Task InvokeAsync(HttpContext context)
     {
@@ -49,8 +55,8 @@ internal sealed class SharkIdempotencyMiddleware
             return;
         }
 
-        // 3. Method eligible?
-        if (!_options.UnsafeMethods.Contains(new HttpMethod(context.Request.Method)))
+        // 3. Method eligible? (compare strings to avoid HttpMethod allocation)
+        if (!IsUnsafeMethod(context.Request.Method))
         {
             await _next(context);
             return;
@@ -144,7 +150,12 @@ internal sealed class SharkIdempotencyMiddleware
         // 6a. Successful (cacheable) responses -> store and forward.
         if (_options.ShouldCacheStatus(context.Response.StatusCode))
         {
-            var bytes = buffer.ToArray();
+            ArraySegment<byte> segment = buffer.TryGetBuffer(out var buf)
+                ? buf
+                : new ArraySegment<byte>(buffer.ToArray());
+            var bytes = segment.Count == segment.Array!.Length
+                ? segment.Array
+                : segment.ToArray();
             await buffer.CopyToAsync(originalBody);
 
             var record = new IdempotencyRecord(
@@ -223,7 +234,7 @@ internal sealed class SharkIdempotencyMiddleware
     private static Task WriteUnified(
         HttpContext context, int status, string code, string message)
     {
-        var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
+        var factory = UnifiedResultFactoryHelper.ResolveFactory();
         var errorMessage = $"[{code}] {message}";
         var result = factory.Create(data: null, errorMessage: errorMessage, statusCode: status);
         context.Response.StatusCode = status;

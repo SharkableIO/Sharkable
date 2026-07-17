@@ -17,7 +17,7 @@ internal sealed class UnifiedResultWrapFilter : IEndpointFilter
         if (endpoint?.Metadata.GetMetadata<DisableAutoWrapMetadata>() is not null)
             return result;
 
-        var factory = Shark.SharkOption.UnifiedResultFactory ?? new DefaultUnifiedResultFactory();
+        var factory = UnifiedResultFactoryHelper.ResolveFactory();
         var wrapped = factory.Create(result, errorMessage: null, statusCode: 200);
         return new UnifiedResultResult(wrapped);
     }

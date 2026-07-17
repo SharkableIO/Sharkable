@@ -37,7 +37,6 @@ public static class SharkExtension
         //register rate limiter
         if (Shark.SharkOption.RateLimiterConfigure != null)
             services.AddRateLimiter(Shark.SharkOption.RateLimiterConfigure);
-        //register output cache
         if (Shark.SharkOption.OutputCacheConfigure != null)
             services.AddOutputCache(Shark.SharkOption.OutputCacheConfigure);
         //register health checks
@@ -56,19 +55,12 @@ public static class SharkExtension
         //register CORS
         if (Shark.SharkOption.CorsConfigure != null)
             services.AddCors(Shark.SharkOption.CorsConfigure);
-        //register idempotency
+        //register API key validator (shared across filter, cron admin, profiler gates)
+        services.TryAddSingleton<ApiKeyValidator>();
         if (Shark.SharkOption.EnableIdempotency)
         {
             var idempotencyOptions = Shark.SharkOption.IdempotencyOptions ?? new SharkIdempotencyOptions();
             services.AddSingleton(idempotencyOptions);
-            // SHARK-SEC-014: configure IMemoryCache with SizeLimit so the cache
-            // evicts LRU entries instead of growing unbounded under random
-            // Idempotency-Key probes.
-            services.AddSingleton<IMemoryCache>(_ =>
-                new MemoryCache(new MemoryCacheOptions
-                {
-                    SizeLimit = idempotencyOptions.MaxEntries,
-                }));
             if (Shark.SharkOption.IdempotencyStoreFactory != null)
                 services.AddSingleton(Shark.SharkOption.IdempotencyStoreFactory);
             else
@@ -79,6 +71,8 @@ public static class SharkExtension
         if (Shark.SharkOption.RateLimitingOptions != null)
         {
             services.AddSingleton(Shark.SharkOption.RateLimitingOptions);
+            if (Shark.SharkOption.RateLimitingOptions.EnableAdaptive)
+                services.AddSingleton(new AdaptiveLimitMonitor(Shark.SharkOption.RateLimitingOptions, autoStart: true));
             if (Shark.SharkOption.RateLimitStoreFactory != null)
                 services.AddSingleton(Shark.SharkOption.RateLimitStoreFactory);
             else

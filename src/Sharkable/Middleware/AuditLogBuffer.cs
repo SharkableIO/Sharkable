@@ -15,6 +15,8 @@ internal sealed class AuditLogBuffer : IDisposable
     private readonly AuditTrailFormat _logFormat;
     private readonly CancellationTokenSource _cts = new();
     private readonly Task _consumerTask;
+    private long _droppedCount;
+    private int _errorLogged;
     private bool _disposed;
 
     internal AuditLogBuffer(AuditTrailOptions options, ILogger logger)
@@ -39,7 +41,8 @@ internal sealed class AuditLogBuffer : IDisposable
 
     internal void Write(AuditLogEntry entry)
     {
-        _channel.Writer.TryWrite(entry);
+        if (!_channel.Writer.TryWrite(entry))
+            Interlocked.Increment(ref _droppedCount);
     }
 
     internal void FlushRemaining()
@@ -61,61 +64,72 @@ internal sealed class AuditLogBuffer : IDisposable
 
         while (!ct.IsCancellationRequested)
         {
-            if (!await reader.WaitToReadAsync(ct).ConfigureAwait(false))
-                break;
-
-            buffer.Clear();
-            var timer = _batchSize > 1 ? Task.Delay(_flushInterval, ct) : Task.CompletedTask;
-
-            while (buffer.Count < _batchSize && reader.TryRead(out var entry))
+            try
             {
-                buffer.Add(entry);
+                if (!await reader.WaitToReadAsync(ct).ConfigureAwait(false))
+                    break;
+
+                buffer.Clear();
+                var timer = _batchSize > 1 ? Task.Delay(_flushInterval, ct) : Task.CompletedTask;
+
+                while (buffer.Count < _batchSize && reader.TryRead(out var entry))
+                {
+                    buffer.Add(entry);
+                }
+
+                FlushBatch(buffer);
+
+                if (_batchSize > 1)
+                {
+                    try { await timer; } catch (OperationCanceledException) { }
+                }
             }
-
-            FlushBatch(buffer);
-
-            if (_batchSize > 1)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                try { await timer; } catch (OperationCanceledException) { }
+                if (Interlocked.CompareExchange(ref _errorLogged, 1, 0) == 0)
+                    _logger.LogError(ex, "AuditLogBuffer consumer loop faulted; resuming");
             }
         }
 
-        // drain remaining on cancellation
         buffer.Clear();
         while (reader.TryRead(out var entry))
             buffer.Add(entry);
         if (buffer.Count > 0)
             FlushBatch(buffer);
 
-        // SHARK-SEC-L020: a debug-level log so operators can tell whether
-        // the consumer exited cleanly (graceful shutdown) vs. an
-        // unrelated cancellation hit the loop. The exception is
-        // swallowed by design here — cancellation on graceful shutdown
-        // is the trigger for draining the channel.
-        _logger.LogDebug("AuditLogBuffer consumer exiting (cancellation token fired)");
+        var dropped = Interlocked.Read(ref _droppedCount);
+        _logger.LogDebug("AuditLogBuffer consumer exiting (cancellation token fired, {Dropped} entries dropped)", dropped);
     }
 
     private void FlushBatch(List<AuditLogEntry> batch)
     {
         foreach (var entry in batch)
         {
-            var level = entry.StatusCode >= 500 ? _errorLevel
-                       : entry.StatusCode >= 400 ? _warningLevel
-                       : _successLevel;
-
-            if (!_logger.IsEnabled(level))
-                continue;
-
-            if (_logFormat == AuditTrailFormat.Default)
+            try
             {
-                _logger.Log(level,
-                    "HTTP {Method} {Path}{Query} responded {StatusCode} in {ElapsedMs}ms [CorrelationId: {CorrelationId}] Headers={Headers}",
-                    entry.Method, entry.Path, entry.Query, entry.StatusCode, entry.ElapsedMs, entry.CorrelationId, entry.Headers);
+                var level = entry.StatusCode >= 500 ? _errorLevel
+                           : entry.StatusCode >= 400 ? _warningLevel
+                           : _successLevel;
+
+                if (!_logger.IsEnabled(level))
+                    continue;
+
+                if (_logFormat == AuditTrailFormat.Default)
+                {
+                    _logger.Log(level,
+                        "HTTP {Method} {Path}{Query} responded {StatusCode} in {ElapsedMs}ms [CorrelationId: {CorrelationId}] Headers={Headers}",
+                        entry.Method, entry.Path, entry.Query, entry.StatusCode, entry.ElapsedMs, entry.CorrelationId, entry.Headers);
+                }
+                else
+                {
+                    var message = AuditTrailOptions.FormatEntry(entry, _logFormat);
+                    _logger.Log(level, "{Message}", message);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                var message = AuditTrailOptions.FormatEntry(entry, _logFormat);
-                _logger.Log(level, "{Message}", message);
+                if (Interlocked.CompareExchange(ref _errorLogged, 1, 0) == 0)
+                    _logger.LogWarning(ex, "AuditLogBuffer batch flush failed");
             }
         }
     }

@@ -11,6 +11,7 @@ internal sealed class AuditTrailMiddleware
     private readonly AuditTrailOptions _options;
     private readonly AuditLogBuffer? _buffer;
     private readonly HashSet<string> _redactHeaders;
+    private readonly HashSet<string> _redactQueryParams;
 
     public AuditTrailMiddleware(RequestDelegate next, ILogger<AuditTrailMiddleware> logger)
     {
@@ -18,6 +19,7 @@ internal sealed class AuditTrailMiddleware
         _logger = logger;
         _options = Shark.SharkOption.AuditTrailOptions!;
         _redactHeaders = new HashSet<string>(_options.RedactHeaders, StringComparer.OrdinalIgnoreCase);
+        _redactQueryParams = new HashSet<string>(_options.RedactQueryParams, StringComparer.OrdinalIgnoreCase);
         _buffer = _options.AsyncWrite
             ? new AuditLogBuffer(_options, _logger)
             : null;
@@ -47,25 +49,32 @@ internal sealed class AuditTrailMiddleware
         {
             stopwatch.Stop();
             var statusCode = context.Response.StatusCode;
-            var query = _options.IncludeQueryString
-                ? RedactQueryString(context.Request.QueryString.Value)
-                : null;
-            var headers = CaptureHeaders(context.Request.Headers);
+            var logLevel = statusCode >= 500 ? _options.ErrorLogLevel
+                         : statusCode >= 400 ? _options.WarningLogLevel
+                         : _options.SuccessLogLevel;
 
-            if (_buffer != null)
+            if (_logger.IsEnabled(logLevel))
             {
-                _buffer.Write(new AuditLogEntry(
-                    context.Request.Method,
-                    path,
-                    query,
-                    headers,
-                    statusCode,
-                    stopwatch.ElapsedMilliseconds,
-                    correlationId));
-            }
-            else
-            {
-                LogRequest(context.Request.Method, path, query, headers, statusCode, stopwatch.ElapsedMilliseconds, correlationId);
+                var query = _options.IncludeQueryString
+                    ? RedactQueryString(context.Request.QueryString.Value)
+                    : null;
+                var headers = CaptureHeaders(context.Request.Headers);
+
+                if (_buffer != null)
+                {
+                    _buffer.Write(new AuditLogEntry(
+                        context.Request.Method,
+                        path,
+                        query,
+                        headers,
+                        statusCode,
+                        stopwatch.ElapsedMilliseconds,
+                        correlationId));
+                }
+                else
+                {
+                    LogRequest(context.Request.Method, path, query, headers, statusCode, stopwatch.ElapsedMilliseconds, correlationId);
+                }
             }
         }
     }
@@ -200,16 +209,15 @@ internal sealed class AuditTrailMiddleware
         // allocating large intermediate strings.
         var capped = TruncateQueryString(queryString);
 
-        if (_options.RedactQueryParams.Length == 0)
+        if (_redactQueryParams.Count == 0)
             return capped;
 
-        var redacted = new HashSet<string>(_options.RedactQueryParams, StringComparer.OrdinalIgnoreCase);
         var query = System.Web.HttpUtility.ParseQueryString(capped!.TrimStart('?'));
         var modified = false;
 
         foreach (var key in query.AllKeys)
         {
-            if (key != null && redacted.Contains(key))
+            if (key != null && _redactQueryParams.Contains(key))
             {
                 query[key] = "***";
                 modified = true;

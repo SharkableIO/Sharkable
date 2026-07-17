@@ -32,7 +32,7 @@ internal sealed class ETagMiddleware
 
         var originalBody = context.Response.Body;
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        var counting = new CountingResponseBody(originalBody, _options.MaxResponseSize, hash);
+        using var counting = new CountingResponseBody(originalBody, _options.MaxResponseSize, hash);
 
         context.Response.Body = counting;
         var limitExceeded = false;
@@ -131,10 +131,7 @@ internal sealed class ETagMiddleware
 
     private static string ToHex(byte[] bytes)
     {
-        var sb = new StringBuilder(bytes.Length * 2);
-        foreach (var b in bytes)
-            sb.Append(b.ToString("x2"));
-        return sb.ToString();
+        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 
     /// <summary>
@@ -144,7 +141,7 @@ internal sealed class ETagMiddleware
     /// the configured cap. Keeps an internal spool so partial writes past the
     /// cap can still be flushed to the client with no ETag header.
     /// </summary>
-    private sealed class CountingResponseBody : Stream
+    private sealed class CountingResponseBody : Stream, IDisposable
     {
         private readonly Stream _inner;
         private readonly long _maxBytes;
@@ -172,6 +169,13 @@ internal sealed class ETagMiddleware
         }
 
         public override void Flush() => _inner.Flush();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                _spool.Dispose();
+            base.Dispose(disposing);
+        }
 
         public override async Task FlushAsync(CancellationToken cancellationToken)
         {

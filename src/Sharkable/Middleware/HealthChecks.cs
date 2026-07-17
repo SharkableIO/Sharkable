@@ -10,8 +10,11 @@ namespace Sharkable;
 /// </summary>
 internal sealed class JwtHealthCheck : IHealthCheck
 {
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(30);
     private readonly IHttpClientFactory? _httpClientFactory;
     private readonly ILogger<JwtHealthCheck>? _logger;
+    private static (DateTimeOffset timestamp, HealthCheckResult result)? _cachedResult;
+    private static readonly object _cacheLock = new();
 
     /// <summary>
     /// Resolved by the Microsoft.Extensions.DependencyInjection health-check
@@ -35,6 +38,22 @@ internal sealed class JwtHealthCheck : IHealthCheck
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
+    {
+        lock (_cacheLock)
+        {
+            if (_cachedResult is { } c && (DateTimeOffset.UtcNow - c.timestamp) < CacheDuration)
+                return c.result;
+        }
+
+        var result = await ProbeAsync(cancellationToken);
+
+        lock (_cacheLock)
+            _cachedResult = (DateTimeOffset.UtcNow, result);
+
+        return result;
+    }
+
+    private async Task<HealthCheckResult> ProbeAsync(CancellationToken cancellationToken)
     {
         var authority = Shark.SharkOption.JwtAuthority;
         if (string.IsNullOrEmpty(authority))

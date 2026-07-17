@@ -6,7 +6,7 @@ namespace Sharkable;
 /// Source-generated <see cref="JsonSerializerContext"/> for <see cref="UnifiedResult{T}"/> types.
 /// Registered in the <c>TypeInfoResolverChain</c> to enable AOT-compatible serialization.
 /// </summary>
-[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSourceGenerationOptions(WriteIndented = false)]
 [JsonSerializable(typeof(UnifiedResult<string>))]
 [JsonSerializable(typeof(UnifiedResult<int>))]
 [JsonSerializable(typeof(UnifiedResult<long>))]

@@ -17,17 +17,13 @@ internal sealed class SharkRateLimiterMiddleware
     public SharkRateLimiterMiddleware(
         RequestDelegate next,
         IDistributedRateLimitStore store,
-        SharkRateLimiterOptions options)
+        SharkRateLimiterOptions options,
+        AdaptiveLimitMonitor? adaptiveMonitor = null)
     {
         _next = next;
         _store = store;
         _options = options;
-
-        if (options.EnableAdaptive)
-        {
-            _adaptiveMonitor = new AdaptiveLimitMonitor(options);
-            _adaptiveMonitor.Start();
-        }
+        _adaptiveMonitor = adaptiveMonitor;
     }
 
     public async Task InvokeAsync(HttpContext context)
