@@ -12,9 +12,10 @@ public sealed class UseSharkOptions : ISharkOption
     /// <summary>
     /// When <c>true</c>, endpoint return values that are not <see cref="IResult"/> are
     /// automatically wrapped in <see cref="UnifiedResult{T}"/>.
-    /// Default is <c>false</c> (opt-in).
+    /// When <c>null</c> (default), uses the value from <see cref="SharkOption.EnableAutoWrap"/>.
+    /// Set to <c>true</c> or <c>false</c> to override the <c>AddShark</c>-time setting.
     /// </summary>
-    public bool EnableAutoWrap { get; set; } = false;
+    public bool? EnableAutoWrap { get; set; }
 
     /// <summary>
     /// Adds a custom middleware <see cref="Action{WebApplication}"/> that runs

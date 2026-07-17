@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -63,7 +64,7 @@ internal sealed class SharkIdempotencyMiddleware
             switch (existing)
             {
                 case IdempotencyInFlight:
-                    context.Response.Headers["Retry-After"] = _options.RetryAfterSeconds.ToString();
+                    context.Response.Headers["Retry-After"] = _options.RetryAfterSeconds.ToString(CultureInfo.InvariantCulture);
                     await WriteUnified(context, 409, "idempotency_in_progress",
                         "An identical request is already in progress; retry after 1 second.");
                     return;
@@ -85,7 +86,17 @@ internal sealed class SharkIdempotencyMiddleware
             }
         }
 
-        // 5. We own the in-flight slot. Execute downstream with response buffering.
+        // 5. We own the in-flight slot. Check for streaming / SSE endpoints
+        // before buffering — replacing Response.Body with a MemoryStream
+        // silently breaks flush-to-client behavior for SSE and long-polling.
+        if (context.GetEndpoint()?.Metadata.GetMetadata<NoIdempotencyMetadata>() is not null)
+        {
+            await _store.ReleaseAsync(key);
+            await _next(context);
+            return;
+        }
+
+        // 6. Execute downstream with response buffering.
         // SHARK-SEC-M008: use a counting stream wrapper around a bounded
         // MemoryStream so the peak allocation is capped at MaxResponseSize
         // bytes. The previous MemoryStream grew unbounded; the post-hoc
@@ -130,7 +141,7 @@ internal sealed class SharkIdempotencyMiddleware
             return;
         }
 
-        // 5a. Successful (cacheable) responses -> store and forward.
+        // 6a. Successful (cacheable) responses -> store and forward.
         if (_options.ShouldCacheStatus(context.Response.StatusCode))
         {
             var bytes = buffer.ToArray();

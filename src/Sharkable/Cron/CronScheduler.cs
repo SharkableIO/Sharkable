@@ -98,7 +98,7 @@ public sealed class CronScheduler : ICronScheduler
             var next = expr.GetNext(now - TimeSpan.FromSeconds(1));
             if (next == null) continue;
 
-            state.NextRun = next;
+            lock (_entries) { if (_entries.TryGetValue(job.Name, out var e)) e.State.NextRun = next; }
             if (next > now) continue;
 
             var lockHeld = false;
@@ -106,7 +106,7 @@ public sealed class CronScheduler : ICronScheduler
             {
                 if (!await _store.TryAcquireJobLockAsync(job.Name, CronLockTtl))
                     continue;
-                state.IsRunning = true;
+                lock (_entries) { if (_entries.TryGetValue(job.Name, out var e)) e.State.IsRunning = true; }
                 lockHeld = true;
             }
 
@@ -118,7 +118,7 @@ public sealed class CronScheduler : ICronScheduler
         return due;
     }
 
-    internal async Task ExecuteJobAsync(CronJob job, CronJobState state, bool lockHeld)
+    internal async Task ExecuteJobAsync(CronJob job, CronJobState state, bool lockHeld, CancellationToken shutdownToken = default)
     {
         CancellationTokenSource? renewCts = null;
         Task? renewalTask = null;
@@ -130,8 +130,7 @@ public sealed class CronScheduler : ICronScheduler
 
         try
         {
-            state.IsRunning = true;
-            state.LastRun = DateTimeOffset.UtcNow;
+            lock (_entries) { if (_entries.TryGetValue(job.Name, out var e)) { e.State.IsRunning = true; e.State.LastRun = DateTimeOffset.UtcNow; } }
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var success = false;
 
@@ -139,27 +138,32 @@ public sealed class CronScheduler : ICronScheduler
             {
                 try
                 {
-                    using var cts = job.Options.Timeout.HasValue
+                    using var timeoutCts = job.Options.Timeout.HasValue
                         ? new CancellationTokenSource(job.Options.Timeout.Value)
                         : new CancellationTokenSource();
 
-                    await job.Handler(cts.Token);
+                    using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, shutdownToken);
+                    await job.Handler(linkedCts.Token);
                     success = true;
-                    state.LastError = null;
+                    lock (_entries) { if (_entries.TryGetValue(job.Name, out var e)) e.State.LastError = null; }
+                }
+                catch (OperationCanceledException) when (!shutdownToken.IsCancellationRequested)
+                {
+                    lock (_entries) { if (_entries.TryGetValue(job.Name, out var e)) e.State.LastError = "Job timed out"; }
+                    _logger.LogWarning("Cron job {Name} timed out (attempt {Attempt})", job.Name, attempt + 1);
+                    break;
                 }
                 catch (Exception ex)
                 {
-                    state.LastError = ex.Message;
+                    lock (_entries) { if (_entries.TryGetValue(job.Name, out var e)) e.State.LastError = ex.Message; }
                     _logger.LogError(ex, "Cron job {Name} failed (attempt {Attempt})", job.Name, attempt + 1);
                     if (attempt < job.Options.RetryCount)
-                        await Task.Delay(job.Options.RetryDelay);
+                        await Task.Delay(job.Options.RetryDelay, shutdownToken);
                 }
             }
 
             sw.Stop();
-            state.IsRunning = false;
-            state.LastDurationMs = sw.ElapsedMilliseconds;
-            if (success) state.RunCount++;
+            lock (_entries) { if (_entries.TryGetValue(job.Name, out var e)) { e.State.IsRunning = false; e.State.LastDurationMs = sw.ElapsedMilliseconds; if (success) e.State.RunCount++; } }
         }
         finally
         {
@@ -213,7 +217,7 @@ public sealed class CronScheduler : ICronScheduler
         var job = entry.Job;
         var state = entry.State;
 
-        _ = Task.Run(async () => await ExecuteJobAsync(job, state, lockHeld: false));
+        _ = Task.Run(async () => await ExecuteJobAsync(job, state, lockHeld: false, CancellationToken.None));
         return state;
     }
 

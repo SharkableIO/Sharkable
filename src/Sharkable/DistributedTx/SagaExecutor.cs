@@ -46,6 +46,28 @@ public sealed class SagaExecutor
     private TimeSpan _lockTtl = TimeSpan.FromMinutes(5);
 
     /// <summary>
+    /// Timeout for compensation steps. When a saga is cancelled or a step fails,
+    /// compensation runs with its own timeout that is NOT linked to the execution
+    /// cancellation token — ensuring the saga can always roll back even when the
+    /// caller has cancelled. Default is 60 seconds.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when set to a negative value or <see cref="TimeSpan.Zero"/>.
+    /// </exception>
+    public TimeSpan CompensationTimeout
+    {
+        get => _compensationTimeout;
+        set
+        {
+            if (value <= TimeSpan.Zero)
+                throw new ArgumentOutOfRangeException(nameof(value),
+                    "CompensationTimeout must be greater than TimeSpan.Zero.");
+            _compensationTimeout = value;
+        }
+    }
+    private TimeSpan _compensationTimeout = TimeSpan.FromSeconds(60);
+
+    /// <summary>
     /// Interval between automatic lock TTL renewals while a saga is in progress.
     /// </summary>
     /// <remarks>
@@ -200,12 +222,17 @@ public sealed class SagaExecutor
     private async Task<SagaResult> CompensateAsync(
         string sagaId, Saga saga, int completedCount, CancellationToken ct, string error)
     {
+        // Use a dedicated CTS for compensation so it is NOT cancelled when the
+        // execution token fires — the saga must always be able to roll back.
+        using var compensationCts = new CancellationTokenSource(CompensationTimeout);
+        var compensationCt = compensationCts.Token;
+
         for (var i = completedCount - 1; i >= 0; i--)
         {
             _logger.LogWarning("Saga {SagaId} compensating step {Index}", sagaId, i + 1);
             try
             {
-                await saga.Steps[i].CompensateAsync(ct);
+                await saga.Steps[i].CompensateAsync(compensationCt);
             }
             catch (Exception ex)
             {
@@ -213,7 +240,7 @@ public sealed class SagaExecutor
             }
         }
 
-        await _store.DeleteAsync(sagaId, ct);
+        await _store.DeleteAsync(sagaId, compensationCt);
         return new SagaResult(false, error, completedCount);
     }
 }

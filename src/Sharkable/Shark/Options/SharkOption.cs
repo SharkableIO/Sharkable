@@ -41,8 +41,8 @@ public sealed class SharkOption : ISharkOption
     /// <summary>
     /// When <c>true</c>, endpoint return values that are not <see cref="IResult"/> are
     /// automatically wrapped in <see cref="UnifiedResult{T}"/>.
-    /// Can also be set at runtime via <see cref="UseSharkOptions.EnableAutoWrap"/>.
-    /// Default is <c>false</c> (opt-in).
+    /// Can be overridden at runtime via <see cref="UseSharkOptions.EnableAutoWrap"/>.
+    /// Default is <c>true</c>.
     /// </summary>
     public bool EnableAutoWrap { get; set; } = true;
     /// <summary>

@@ -20,6 +20,16 @@ internal sealed class SharkExceptionHandlerMiddleware
         {
             await _next(context);
         }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            // Client disconnected — not an error. Silently return.
+        }
+        catch (Exception ex) when (context.Response.HasStarted)
+        {
+            _logger.LogError(ex, "Unhandled exception after response started for {Method} {Path}",
+                context.Request.Method, context.Request.Path);
+            throw;
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception processing {Method} {Path}", context.Request.Method, context.Request.Path);

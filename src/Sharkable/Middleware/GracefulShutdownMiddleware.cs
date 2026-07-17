@@ -21,7 +21,7 @@ internal sealed class GracefulShutdownMiddleware
             context.Response.StatusCode = statusCode;
             var localizer = ErrorLocalizerHelper.GetLocalizer();
             var culture = ErrorLocalizerHelper.ResolveCulture(context);
-            await ProblemDetailsResult.WriteAsync(context, 503,
+            await ProblemDetailsResult.WriteAsync(context, statusCode,
                 localizer.Localize("ServerShuttingDown", culture));
             return;
         }

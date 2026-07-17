@@ -178,9 +178,9 @@ internal static class ConfigurationValidator
                 "Rate limiting DefaultWindow must be > 0. " +
                 "Set it via: opt.ConfigureRateLimiting(o => o.DefaultWindow = TimeSpan.FromMinutes(1)).");
 
-        if (r.MaxEntries <= 0)
+        if (r.MaxEntries <= 0 && r.MaxEntries != -1)
             errors.Add(
-                "Rate limiting MaxEntries must be > 0. " +
+                "Rate limiting MaxEntries must be > 0 or -1 for uncapped. " +
                 "Set it via: opt.ConfigureRateLimiting(o => o.MaxEntries = 100000).");
 
         if (r.EnableAdaptive)

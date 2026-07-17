@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Sharkable;
 
 /// <summary>
@@ -45,9 +47,9 @@ internal sealed class SharkRateLimiterMiddleware
             var limit = effectiveLimit;
             context.Response.OnStarting(() =>
             {
-                context.Response.Headers[$"{_options.HeaderPrefix}-Limit"] = limit.ToString();
-                context.Response.Headers[$"{_options.HeaderPrefix}-Remaining"] = remaining > 0 ? remaining.ToString() : "0";
-                context.Response.Headers[$"{_options.HeaderPrefix}-Reset"] = ((long)_options.DefaultWindow.TotalSeconds).ToString();
+                context.Response.Headers[$"{_options.HeaderPrefix}-Limit"] = limit.ToString(CultureInfo.InvariantCulture);
+                context.Response.Headers[$"{_options.HeaderPrefix}-Remaining"] = remaining > 0 ? remaining.ToString(CultureInfo.InvariantCulture) : "0";
+                context.Response.Headers[$"{_options.HeaderPrefix}-Reset"] = ((long)_options.DefaultWindow.TotalSeconds).ToString(CultureInfo.InvariantCulture);
                 return Task.CompletedTask;
             });
         }

@@ -31,15 +31,25 @@ public sealed class MemoryRateLimitStore : IDistributedRateLimitStore
     /// Creates a new <see cref="MemoryRateLimitStore"/> with a custom cap.
     /// </summary>
     /// <param name="maxEntries">
-    /// Maximum number of distinct rate limit keys to retain. Must be &gt; 0.
-    /// When the cap is reached, the cache evicts the least-recently-used
-    /// entries.
+    /// Maximum number of distinct rate limit keys to retain. Must be &gt; 0,
+    /// or <c>-1</c> to disable the cap (unbounded — only for trusted-internal
+    /// services). When the cap is reached, the cache evicts the
+    /// least-recently-used entries.
     /// </param>
     public MemoryRateLimitStore(long maxEntries)
     {
-        if (maxEntries <= 0)
-            throw new ArgumentOutOfRangeException(nameof(maxEntries), "MaxEntries must be > 0.");
-        _cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = maxEntries });
+        if (maxEntries == -1)
+        {
+            _cache = new MemoryCache(new MemoryCacheOptions());
+        }
+        else if (maxEntries <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maxEntries), "MaxEntries must be > 0 or -1 for uncapped.");
+        }
+        else
+        {
+            _cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = maxEntries });
+        }
     }
 
     /// <inheritdoc />

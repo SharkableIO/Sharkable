@@ -46,7 +46,7 @@ internal sealed class SharkCronHostedService : BackgroundService
                     {
                         try
                         {
-                            await _scheduler.ExecuteJobAsync(job, state, lockHeld);
+                            await _scheduler.ExecuteJobAsync(job, state, lockHeld, jobCts.Token);
                         }
                         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                         {

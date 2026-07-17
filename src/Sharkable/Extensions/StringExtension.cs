@@ -61,7 +61,7 @@ internal static class StringExtension
         if (string.IsNullOrEmpty(str))
             return str;
 
-        return char.ToLower(str[0]) + str[1..];
+        return char.ToLowerInvariant(str[0]) + str[1..];
     }
 
     internal static string? ToSnakeCase(this string? text)
@@ -166,7 +166,7 @@ internal static class StringExtension
         var _str = format switch 
         {
             EndpointFormat.CamelCase => str.ToCamelCase(),
-            EndpointFormat.ToLower => str.ToLower(),
+            EndpointFormat.ToLower => str.ToLowerInvariant(),
             EndpointFormat.SnakeCase => str.ToSnakeCase(),
             _ => str,
         };

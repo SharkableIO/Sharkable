@@ -9,6 +9,18 @@ All notable changes to Sharkable are documented here.
 
 ### fix
 - `UnifiedResultExtension` and `UnifiedResult` static methods now respect `UnifiedResultFactory` — custom factory implementations are used for all `.AsNotFound()`, `UnifiedResult.Ok()`, etc.
+- **BUG-01** — Cron shutdown cancellation token wired into `ExecuteJobAsync` so in-flight jobs are cancelled on `app.StopAsync()` (P1)
+- **BUG-02** — Exception handler no longer logs client disconnects as errors and avoids writing to already-started responses (P1)
+- **BUG-03** — Saga compensation now runs with its own CTS (`CompensationTimeout`, default 60s) — never cancelled by the execution token (P1)
+- **BUG-04** — Cron job timeouts are recorded as "Job timed out" with zero retries; retry delay now respects shutdown via linked token (P2)
+- **BUG-05** — Graceful shutdown middleware honors configured `ShutdownStatusCode` instead of hard-coded 503 (P2)
+- **BUG-06** — Auto-wrap docs fixed; `UseSharkOptions.EnableAutoWrap` is now nullable tri-state overriding `SharkOption.EnableAutoWrap`; `[SharkDontWrap]` evaluated per endpoint class instead of per merged group (P2)
+- **BUG-07** — `MemoryRateLimitStore` now supports `MaxEntries = -1` to disable the cap (uncapped `MemoryCache`) (P2)
+- **BUG-08** — Route formatting uses `ToLowerInvariant()` / `char.ToLowerInvariant()` instead of culture-sensitive `ToLower()` (P2)
+- **BUG-09** — Rate-limit and idempotency `Retry-After` headers formatted with `CultureInfo.InvariantCulture` (P2)
+- **BUG-10** — Add `[SharkNoIdempotency]` attribute; idempotency middleware skips response buffering for marked streaming/SSE endpoints (P2)
+- **BUG-11** — Cron job state mutations (`IsRunning`, `LastRun`, `LastError`, etc.) now guarded with `_entries` lock (P3)
+- **BUG-12** — Legacy attribute mapper copies formatted values to locals instead of mutating runtime-cached attribute instances (P3)
 
 ## [0.6.1] — 2026-07-15
 

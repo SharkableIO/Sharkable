@@ -106,9 +106,7 @@ internal static class SharkEndPointExtension
             var group = app.MapGroup(basePath).WithDisplayName(groupName);
 
             // Shared filters (once per group)
-            var hasDontWrap = endpoints.Any(ep => ep.Item2.GetCustomAttribute<SharkDontWrapAttribute>() != null);
-            var autoWrap = (Shark.SharkOption.EnableAutoWrap || (Shark.UseSharkOptions?.EnableAutoWrap ?? false))
-                && !hasDontWrap;
+            var autoWrap = Shark.UseSharkOptions?.EnableAutoWrap ?? Shark.SharkOption.EnableAutoWrap;
             if (autoWrap)
                 group.AddEndpointFilter<UnifiedResultWrapFilter>();
 
@@ -210,58 +208,61 @@ internal static class SharkEndPointExtension
                 }
             });
 
-            // AutoCrud: generate routes before user's AddRoutes so overrides take precedence
+            // Per-endpoint-class routing: AutoCrud (generated before user routes)
+            // and user-defined AddRoutes. Classes with [SharkDontWrap] route
+            // through a nested group so the auto-wrap filter does not apply.
             var crudGenerator = app.Services.GetService<IAutoCrudGenerator>();
-            if (crudGenerator != null)
+            var crudLogger = crudGenerator != null
+                ? app.Services.GetService<ILoggerFactory>()?.CreateLogger("Sharkable.AutoCrud")
+                : null;
+            foreach (var (endpoint, classType) in endpoints)
             {
-                var crudLogger = app.Services.GetService<ILoggerFactory>()
-                    ?.CreateLogger("Sharkable.AutoCrud");
-                foreach (var (_, classType) in endpoints)
+                var hasDontWrap = autoWrap && classType.GetCustomAttribute<SharkDontWrapAttribute>() != null;
+                var hasNoIdempotency = classType.GetCustomAttribute<SharkNoIdempotencyAttribute>() != null;
+                var needsSubGroup = hasDontWrap || hasNoIdempotency;
+                var targetGroup = needsSubGroup ? group.MapGroup("") : group;
+                if (hasNoIdempotency)
+                    targetGroup.WithMetadata(new NoIdempotencyMetadata());
+
+                if (crudGenerator != null)
                 {
                     var entityInterface = classType.GetInterfaces()
                         .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IAutoCrudEntity<>));
-                    if (entityInterface == null) continue;
+                    if (entityInterface != null)
+                    {
+                        var entityType = entityInterface.GetGenericArguments()[0];
+                        var operations = CrudOperations.All;
+                        try
+                        {
+                            if (Activator.CreateInstance(classType) is IAutoCrudEntityMarker marker)
+                                operations = marker.GetOperations();
+                        }
+                        catch (TypeLoadException ex)
+                        {
+                            crudLogger?.LogDebug(ex,
+                                "Endpoint type {Type} does not implement IAutoCrudEntityMarker (missing dependency); using CrudOperations.All",
+                                classType.FullName);
+                        }
+                        catch (TargetInvocationException ex) when (ex.InnerException is not null)
+                        {
+                            crudLogger?.LogWarning(ex.InnerException,
+                                "AutoCrud marker construction for {Type} threw; falling back to CrudOperations.All",
+                                classType.FullName);
+                        }
+                        catch (MissingMethodException ex)
+                        {
+                            crudLogger?.LogWarning(ex,
+                                "AutoCrud marker type {Type} has no public parameterless constructor; falling back to CrudOperations.All",
+                                classType.FullName);
+                        }
 
-                    var entityType = entityInterface.GetGenericArguments()[0];
-                    var operations = CrudOperations.All;
-                    try
-                    {
-                        // SHARK-SEC-L019 / L022: only swallow the specific
-                        // exceptions that signal "this endpoint type does
-                        // not implement IAutoCrudEntityMarker" — previously
-                        // the empty catch {} also hid TypeLoadException
-                        // (missing dependency), MemberAccessException
-                        // (visibility mismatch), and even OutOfMemoryException
-                        // under contention. Anything else propagates so the
-                        // startup failure is visible.
-                        if (Activator.CreateInstance(classType) is IAutoCrudEntityMarker marker)
-                            operations = marker.GetOperations();
+                        crudGenerator.GenerateRoutes(targetGroup, entityType, classType, operations);
                     }
-                    catch (TypeLoadException ex)
-                    {
-                        crudLogger?.LogDebug(ex,
-                            "Endpoint type {Type} does not implement IAutoCrudEntityMarker (missing dependency); using CrudOperations.All",
-                            classType.FullName);
-                    }
-                    catch (TargetInvocationException ex) when (ex.InnerException is not null)
-                    {
-                        crudLogger?.LogWarning(ex.InnerException,
-                            "AutoCrud marker construction for {Type} threw; falling back to CrudOperations.All",
-                            classType.FullName);
-                    }
-                    catch (MissingMethodException ex)
-                    {
-                        crudLogger?.LogWarning(ex,
-                            "AutoCrud marker type {Type} has no public parameterless constructor; falling back to CrudOperations.All",
-                            classType.FullName);
-                    }
-
-                    crudGenerator.GenerateRoutes(group, entityType, classType, operations);
                 }
-            }
 
-            // Call AddRoutes for each endpoint in this group
-            endpoints.MyForEach(ep => ep.Item1.BuildAction?.Invoke(group));
+                // Add user-defined routes (after AutoCrud so overrides take precedence)
+                endpoint.BuildAction?.Invoke(targetGroup);
+            }
         }
 
         // health check endpoint
@@ -415,8 +416,8 @@ internal static class SharkEndPointExtension
                 if (endpointAttribute == null)
                     return;
 
-                endpointAttribute.Group ??= t.Name;
-                endpointAttribute.Group = endpointAttribute.Group
+                var groupName = endpointAttribute.Group ?? t.Name;
+                var formattedGroupName = groupName
                     .FormatAsGroupName()
                     .GetCaseFormat(Shark.SharkOption.Format)
                     .GetVersionFormat();
@@ -432,13 +433,13 @@ internal static class SharkEndPointExtension
                 var instance = factory?.CreateInstance(t) ??
                                throw new InvalidOperationException($"error when creating an instance of {t.Name}");
                     
-                var group = app.MapGroup(endpointAttribute.Group!);
+                var group = app.MapGroup(formattedGroupName!);
 
                 // Resolve tags for this endpoint class
                 var tagAttrs = t.GetCustomAttributes<SharkTagAttribute>();
                 var tags = tagAttrs.Any()
                     ? tagAttrs.Select(a => a.Tag).ToArray()
-                    : [endpointAttribute.Group!];
+                    : [formattedGroupName!];
                 ((RouteGroupBuilder)group).WithTags(tags);
 
                 taggedMethods.MyForEach(methodInfo =>
@@ -448,10 +449,8 @@ internal static class SharkEndPointExtension
                     var methodAttribute = attribute ?? new SharkMethodAttribute();
 
                     //setup route address
-                    if (string.IsNullOrWhiteSpace(methodAttribute.Pattern))
-                        methodAttribute.Pattern ??= methodInfo.Name;
-
-                    methodAttribute.Pattern = methodAttribute.Pattern
+                    var methodPattern = methodAttribute.Pattern ?? methodInfo.Name;
+                    var formattedMethodPattern = methodPattern
                         .GetCaseFormat(Shark.SharkOption.Format)
                         .GetVersionFormat()!;
 
@@ -459,7 +458,7 @@ internal static class SharkEndPointExtension
                     if (methodDelegate == null)
                         return;
 
-                    group.MapMethods(methodAttribute.Pattern!, [methodAttribute.Method.ToString()], methodDelegate)
+                    group.MapMethods(formattedMethodPattern!, [methodAttribute.Method.ToString()], methodDelegate)
                          .WithMetadata(new EndpointNameMetadata($"{t.Name}_{methodInfo.Name}"));
                 });
             });
