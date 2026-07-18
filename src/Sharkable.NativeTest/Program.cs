@@ -36,11 +36,12 @@ builder.Services.AddShark([typeof(Program).Assembly], opt =>
     opt.EnableAutoWrap = true;
     opt.ConfigureTracing(t => t.ServiceName = "sharkable-shop");
 
-    // AutoCrud test — SQLite entity
+    // AutoCrud test — SQLite entity (absolute path)
+    var dbPath = Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location)!, "test.db");
     opt.ConfigureAutoCrud(s =>
     {
         s.DbType = Sharkable.DbType.Sqlite;
-        s.ConnectionString = "DataSource=test.db";
+        s.ConnectionString = $"DataSource={dbPath}";
     });
 
     // JWT — self-issued, no OIDC authority

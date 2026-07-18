@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Sharkable;
+using Sharkable.AutoCrud.SqlSugar;
 
 namespace Sharkable.NativeTest;
 
@@ -60,6 +61,9 @@ namespace Sharkable.NativeTest;
 [JsonSerializable(typeof(UnifiedResult<TestItem[]>))]
 [JsonSerializable(typeof(UnifiedResult<List<TestItem>>))]
 [JsonSerializable(typeof(UnifiedResult<object?>))]
+// AutoCrud PagedResult
+[JsonSerializable(typeof(PagedResult<object>))]
+[JsonSerializable(typeof(UnifiedResult<PagedResult<object>>))]
 internal partial class ShoppingJsonContext : JsonSerializerContext
 {
 }
