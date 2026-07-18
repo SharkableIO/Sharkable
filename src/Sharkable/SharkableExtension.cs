@@ -51,6 +51,10 @@ public static class SharkableExtension
     /// <param name="setupOption">Optional callback to configure <see cref="UseSharkOptions"/>.</param>
     public static void UseShark(this WebApplication app, Action<UseSharkOptions>? setupOption = null)
     {
+        // Apply environment-sensitive defaults now that the host is built
+        if (app.Environment.IsDevelopment())
+            Shark.SharkOption.HealthCheckDetailLevel = HealthCheckDetailLevel.Full;
+
         app.UseCommon(setupOption);
 
         // distributed tracing — must be first in pipeline to capture full request

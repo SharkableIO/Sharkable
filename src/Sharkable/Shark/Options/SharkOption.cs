@@ -105,8 +105,7 @@ public sealed class SharkOption : ISharkOption
     /// <c>Fulll</c> includes everything including <c>Exception.Message</c>.
     /// Default in Development is <c>Full</c>; otherwise <c>StatusOnly</c>.
     /// </summary>
-    public HealthCheckDetailLevel HealthCheckDetailLevel { get; set; } =
-        InternalShark.HostEnvironment.IsDevelopment() ? HealthCheckDetailLevel.Full : HealthCheckDetailLevel.StatusOnly;
+    public HealthCheckDetailLevel HealthCheckDetailLevel { get; set; } = HealthCheckDetailLevel.StatusOnly;
     /// <summary>
     /// Optional callback to add custom health checks. Called after
     /// <c>services.AddHealthChecks()</c>. The builder parameter is
