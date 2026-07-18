@@ -10,33 +10,28 @@ namespace Sharkable;
 internal sealed class LoggingAuditSink : IAuditSink
 {
     private readonly ILogger _logger;
+    private readonly AuditTrailOptions _options;
 
     public LoggingAuditSink(ILogger<LoggingAuditSink> logger)
     {
         _logger = logger;
+        _options = Shark.SharkOption.AuditTrailOptions!;
     }
 
     public Task WriteBatchAsync(IReadOnlyList<AuditLogEntry> entries, CancellationToken cancellationToken)
     {
-        var options = Shark.SharkOption.AuditTrailOptions!;
-        var successLevel = options.SuccessLogLevel;
-        var warningLevel = options.WarningLogLevel;
-        var errorLevel = options.ErrorLogLevel;
-        var logFormat = options.LogFormat;
-
         foreach (var entry in entries)
         {
             if (cancellationToken.IsCancellationRequested)
                 break;
-
-            var level = entry.StatusCode >= 500 ? errorLevel
-                       : entry.StatusCode >= 400 ? warningLevel
-                       : successLevel;
+            var level = entry.StatusCode >= 500 ? _options.ErrorLogLevel
+                       : entry.StatusCode >= 400 ? _options.WarningLogLevel
+                       : _options.SuccessLogLevel;
 
             if (!_logger.IsEnabled(level))
                 continue;
 
-            if (logFormat == AuditTrailFormat.Default)
+            if (_options.LogFormat == AuditTrailFormat.Default)
             {
                 _logger.Log(level,
                     "HTTP {Method} {Path}{Query} responded {StatusCode} in {ElapsedMs}ms [CorrelationId: {CorrelationId}] Headers={Headers}",
@@ -44,7 +39,7 @@ internal sealed class LoggingAuditSink : IAuditSink
             }
             else
             {
-                var message = AuditTrailOptions.FormatEntry(entry, logFormat);
+                var message = AuditTrailOptions.FormatEntry(entry, _options.LogFormat);
                 _logger.Log(level, "{Message}", message);
             }
         }

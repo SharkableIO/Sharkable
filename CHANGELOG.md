@@ -2,6 +2,11 @@
 
 All notable changes to Sharkable are documented here.
 
+## [0.7.1] — 2026-07-18
+
+### fix
+- `LoggingAuditSink` constructor no longer injects `AuditTrailOptions` from DI — reads from `Shark.SharkOption` instead. Fixes startup crash when audit trail is configured but `AuditTrailOptions` is not a registered DI service.
+
 ## [0.7.0] — 2026-07-18
 
 ### feat
