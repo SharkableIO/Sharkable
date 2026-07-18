@@ -3,8 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Description>Testing helpers for Sharkable applications — fakes, factory wiring, and assertion utilities.</Description>
-    <AssemblyVersion>0.7.3</AssemblyVersion>
-    <Version>0.7.3</Version>
+    <AssemblyVersion>0.7.5</AssemblyVersion>
+    <Version>0.7.5</Version>
     <PackageIcon>sharkable.jpg</PackageIcon>
     <PackageProjectUrl>https://sharkableio.github.io/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/SharkableIO/Sharkable.git</RepositoryUrl>
