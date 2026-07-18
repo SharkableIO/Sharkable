@@ -2,6 +2,11 @@
 
 All notable changes to Sharkable are documented here.
 
+## [0.7.4] — 2026-07-18
+
+### fix
+- `AddAutoCrud()` uses `Assembly.Load()` as fallback when the AutoCrud.SqlSugar assembly is not yet loaded (lazy NuGet loading). Fixes routes not being generated when the package is referenced but not yet JIT-loaded.
+
 ## [0.7.3] — 2026-07-18
 
 ### fix
