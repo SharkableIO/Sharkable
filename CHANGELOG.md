@@ -2,6 +2,11 @@
 
 All notable changes to Sharkable are documented here.
 
+## [0.7.3] — 2026-07-18
+
+### fix
+- `ISharkEndpoint.AddRoutes` now has a default empty implementation — AutoCrud-only endpoints no longer need to declare an empty `AddRoutes()` method.
+
 ## [0.7.2] — 2026-07-18
 
 ### fix
