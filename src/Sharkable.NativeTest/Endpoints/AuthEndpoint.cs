@@ -4,6 +4,7 @@ namespace Sharkable.NativeTest;
 
 [SharkDescription("Authentication", "Register, login, and profile management")]
 [SharkTag("auth")]
+[SharkTag("UserManager")]
 public class AuthEndpoint : ISharkEndpoint
 {
     public void AddRoutes(IEndpointRouteBuilder app)

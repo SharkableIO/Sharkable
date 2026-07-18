@@ -30,10 +30,6 @@ Tracing exists, but there are no counters. A `Meter("Sharkable")` with counters/
 Audit today goes only to `ILogger`. A sink interface lets users ship entries to Seq/Elastic/Kafka without replacing the middleware.
 **Surface:** `IAuditSink.WriteBatchAsync(IReadOnlyList<AuditLogEntry>, CancellationToken)`; `SharkOption.AuditSinkFactory`; default sink = current logger behavior (structured + formats preserved).
 
-### FEAT-04 — `appsettings.json` binding for `SharkOption`
-**Value:** High · **Effort** M · Same as ARCH-04
-`builder.Services.AddShark([asm], builder.Configuration)` — binds the `"Sharkable"` section, then applies the callback (callback wins), validated by the existing `ConfigurationValidator`.
-
 ### FEAT-05 — Per-endpoint distributed rate-limit policies
 **Value:** High · **Effort** M · Depends on ARCH-10
 ```csharp
