@@ -2,7 +2,7 @@
 namespace Sharkable;
 
 /// <summary>Configuration options for SqlSugar database connection and initialization.</summary>
-public class SqlSugarOptions
+public sealed class SqlSugarOptions
 {
     /// <summary>Key initialization strategy. Defaults to <see cref="InitKeyType.Attribute"/>.</summary>
     public InitKeyType InitKeyType { get; set; } = InitKeyType.Attribute;

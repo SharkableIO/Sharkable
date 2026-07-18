@@ -5,6 +5,45 @@ All notable changes to Sharkable are documented here.
 ## [Unreleased]
 
 ### feat
+- Plugin system: `ISharkPlugin` interface with three lifecycle hooks — `ConfigureServices` (AddShark), `ConfigurePipeline` (UseShark), `ConfigureOpenApi`. Three discovery paths: NuGet/assembly auto-scanning, hot-plug folder scanning (`opt.ConfigurePlugins(p => { p.ScanOnStartup = true; })`), and manual `opt.RegisterPlugin()`. Per-folder AssemblyLoadContext isolation. `opt.DisablePlugin("name")` for opt-out. AOT-safe for NuGet/manual paths; folder scanning is JIT-only.
+
+### fix
+- P1.1 — Dispose `AuditLogBuffer` after `FlushRemaining()` during shutdown — CTS leak eliminated
+- P1.2 — Dispose `CronScheduler` `renewCts` after lock renewal task completes
+- P1.3 — Unify `ResponseSizeExceededException` — single shared type instead of two duplicate inner-class definitions in ETag and Idempotency middleware
+- P1.4 — Move exception handler to end of pipeline (just before `MapEndpoints`) — catches exceptions from ALL middleware, not just auth and beyond
+- P1.5 — Guard `AutoCrudExtension` dynamic assembly loading behind `AotMode` check — prevents reflection-based plugin discovery in AOT
+
+### refactor
+- P2.1 — Extract `ISagaExecutor` interface; register via `TryAddSingleton<ISagaExecutor, SagaExecutor>`; add `SagaExecutorFactory` on `SharkOption`
+- P2.2 — Expose `CronLockTtl` on `ICronScheduler` interface (was only on concrete `CronScheduler`)
+- P2.3 — Normalize `ConfigureJwt` to `ConfigureJwt(Action<JwtOptions>)` pattern (consistent with every other `ConfigureXxx` method). Old `ConfigureJwt(string, string[], Action<JwtBearerOptions>?)` marked `[Obsolete]`.
+- P2.4 — Normalize `ConfigureAuthorization` from property to method `ConfigureAuthorization(Action<AuthorizationOptions>)` (consistent with `ConfigureRateLimiter`, `ConfigureOutputCache`, etc.)
+- P2.5 — `ICronJobStore.RenewJobLockAsync` has default implementation `=> Task.CompletedTask` (matching `ISagaStore.RenewLockAsync` pattern)
+- P2.6 — Seal `SqlSugarOptions`, `Shark`, `AssemblyContext`, `UnifiedResult<T>` — public classes not designed for inheritance
+- P2.7 — Remove dead code: `Utils.SetupModules()` (never called), obsolete `.SharkRequestTimeout(int, string?)` DSL overload
+
+### feat
+- P3.1 — Health checks enabled by default (`EnableHealthChecks = true`) — every deployed app gets `/healthz` out of the box
+- P3.2 — Cron job concurrency default changed to `SkipIfRunning` (was `AllowConcurrent`) — safer default, prevents overlapping runs
+- P3.3 — Startup warning when `UnifiedResultFactory` is set without `WrapSchemaFactory` — prevents OpenAPI schema mismatch
+- P3.4 — `IUnifiedResult` XML docs cross-reference `UnifiedResult<T>` and `IUnifiedResultFactory` with usage guidance and `WrapSchemaFactory` tip
+
+### feat
+- **FEAT-01** — Security headers middleware (`ConfigureSecurityHeaders()`) — opt-in support for `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Content-Security-Policy`, `Permissions-Policy`, `Strict-Transport-Security`, `Cross-Origin-Resource-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Embedder-Policy`
+- **FEAT-02** — Framework metrics via `System.Diagnostics.Metrics` — `ISharkMetrics` interface with `MetricsFactory` on `SharkOption` (consistent with existing `IdempotencyStoreFactory`/`RateLimitStoreFactory` patterns); default `SharkMetrics` uses `Meter("Sharkable")` with counters for requests, rate-limit rejections, idempotency hit/miss/conflict, auth failures, audit drops, cron runs/failures, saga completed/compensated. Configurable via `ConfigureMetrics()`. Zero dependencies, AOT-compatible.
+- **FEAT-03** — `IAuditSink` abstraction — pluggable audit sink for shipping entries to Seq/Elastic/Kafka. `AuditSinkFactory` on `SharkOption`, default `LoggingAuditSink` preserves the current structured-logging behavior. `AuditLogEntry` record made public.
+- **FEAT-05** — Per-endpoint distributed rate-limit policies — `[SharkRateLimit(limit, windowSeconds)]` attribute on `ISharkEndpoint` classes, `.SharkRateLimit(limit, windowSeconds)` DSL, `SharkRateLimitMetadata` read by `SharkRateLimiterMiddleware` overriding global defaults.
+- **FEAT-06** — Per-endpoint idempotency via `[SharkIdempotent(ttlSeconds)]` attribute — opt-in idempotency per endpoint when global is disabled. `[SharkNoIdempotency]` attribute unscoped (already supported per-class). Middleware now checks `SharkIdempotentMetadata`.
+- **FEAT-07** — Response cache profile via `[SharkCacheProfile(durationSeconds, varyByHeader, privateOnly)]` attribute — emits `Cache-Control` and optional `Vary` headers per endpoint group via `SharkCacheProfileFilter`. Composes with ETag and Output Cache.
+- **FEAT-08** — Request-timeout DSL — `opt.RequestTimeoutsConfigure` + `.SharkRequestTimeout(policyName)` + `.SharkRequestTimeout(ms)` DSL. Thin wrapper over ASP.NET Core `AddRequestTimeouts`. `DefaultRequestTimeoutPolicy` for global fallback.
+- **FEAT-09** — Unified validation error shape — `ValidationErrorMode.Messages` (default, joins with `"; "`) and `ValidationErrorMode.ProblemDetails` (RFC 7807 with `errors` object mapping field → messages). Configurable via `SharkOption.ValidationErrorMode`.
+- **FEAT-10** — Parallel warmup services — `ConfigureWarmup<T>()` now callable multiple times; all registered `IWarmupService` instances run in parallel with individual timeouts during startup. Aggregate failures propagated via `AggregateException`.
+- **FEAT-11** — `Sharkable.Testing` NuGet package — `SharkTestFactory<TEntryPoint>` base `WebApplicationFactory`, `FakeIdempotencyStore`, `FakeRateLimitStore`, `UnifiedResultAssertions` for fluent test assertions. Separate package.
+- **FEAT-12** — `SharkOption.GroupConvention` (per-group) + `EndpointConvention` (per-endpoint) — single place for auth policies, filters, `ProducesResponseType` conventions.
+- **FEAT-13** — OpenAPI ergonomics — `AddOpenApiOperationTransformer()` / `AddOpenApiSchemaTransformer()` methods on `SharkOption` (no need to touch `OpenApiOptions` directly). `OpenApiExampleFactory` hook for example generation.
+- **FEAT-15** — `IApiKeyValidator` interface with `ApiKeyValidationResult` — carries claims/roles + optional per-key `RateLimitMultiplier`. `DefaultApiKeyValidator` wraps the existing static-array behavior. `ApiKeyFilter` now accepts the custom validator via DI.
+- **FEAT-14** — Source generator for discovery (tracked as separate RFC; not yet implemented)
 - Add `ISingleton`, `IScoped`, `ITransient` marker interfaces — classes implementing these are auto-registered in DI (same as `[SingletonService]` etc.)
 
 ### perf

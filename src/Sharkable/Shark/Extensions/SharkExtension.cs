@@ -28,6 +28,8 @@ public static class SharkExtension
         services.WireSharkEndpoint();
         //wire service lifetime
         services.AddServicesWithAttributeOfTypeFromAssembly(Shark.Assemblies);
+        //discover and configure plugins
+        DiscoverAndConfigurePlugins(services);
         //setup OpenAPI document generation
         services.AddSharkOpenApi();
         //register fluent validation
@@ -52,12 +54,16 @@ public static class SharkExtension
         //register response compression
         if (Shark.SharkOption.EnableResponseCompression)
             services.AddResponseCompression();
+        //register request timeouts
+        if (Shark.SharkOption.RequestTimeoutsConfigure != null)
+            services.AddRequestTimeouts(Shark.SharkOption.RequestTimeoutsConfigure);
         //register CORS
         if (Shark.SharkOption.CorsConfigure != null)
             services.AddCors(Shark.SharkOption.CorsConfigure);
         //register API key validator (shared across filter, cron admin, profiler gates)
         services.TryAddSingleton<ApiKeyValidator>();
-        if (Shark.SharkOption.EnableIdempotency)
+        services.TryAddSingleton<IApiKeyValidator, DefaultApiKeyValidator>();
+        if (Shark.SharkOption.EnableIdempotency || Shark.SharkOption.IdempotencyOptions != null)
         {
             var idempotencyOptions = Shark.SharkOption.IdempotencyOptions ?? new SharkIdempotencyOptions();
             services.AddSingleton(idempotencyOptions);
@@ -90,8 +96,8 @@ public static class SharkExtension
         //register authorization (default enabled)
         if (Shark.SharkOption.EnableAuthorization)
         {
-            if (Shark.SharkOption.ConfigureAuthorization != null)
-                services.AddAuthorization(Shark.SharkOption.ConfigureAuthorization);
+            if (Shark.SharkOption.ConfigureAuthorizationInternal != null)
+                services.AddAuthorization(Shark.SharkOption.ConfigureAuthorizationInternal);
             else
                 services.AddAuthorization();
         }
@@ -222,10 +228,28 @@ public static class SharkExtension
         {
             services.AddSingleton(Shark.SharkOption.ETagOptions ?? new ETagOptions());
         }
+        //register audit sink
+        if (Shark.SharkOption.AuditTrailOptions != null)
+        {
+            if (Shark.SharkOption.AuditSinkFactory != null)
+                services.AddSingleton<IAuditSink>(sp => Shark.SharkOption.AuditSinkFactory(sp));
+            else
+                services.TryAddSingleton<IAuditSink, LoggingAuditSink>();
+        }
+        //register metrics
+        if (Shark.SharkOption.MetricsOptions?.Enabled == true)
+        {
+            services.AddSingleton(Shark.SharkOption.MetricsOptions);
+
+            if (Shark.SharkOption.MetricsFactory != null)
+                services.AddSingleton<ISharkMetrics>(sp => Shark.SharkOption.MetricsFactory(sp));
+            else
+                services.TryAddSingleton<ISharkMetrics, SharkMetrics>();
+        }
         //register error localizer
         if (Shark.SharkOption.ErrorLocalizerFactory != null)
         {
-            services.AddSingleton(Shark.SharkOption.ErrorLocalizerFactory);
+            services.AddSingleton<IErrorLocalizer>(sp => Shark.SharkOption.ErrorLocalizerFactory(sp));
         }
         else
         {
@@ -241,7 +265,11 @@ public static class SharkExtension
             services.AddSingleton<ISagaStore>(sp => Shark.SharkOption.SagaStoreFactory(sp));
         else
             services.TryAddSingleton<ISagaStore, MemorySagaStore>();
-        services.TryAddSingleton<SagaExecutor>();
+        //register saga executor
+        if (Shark.SharkOption.SagaExecutorFactory != null)
+            services.AddSingleton<ISagaExecutor>(sp => Shark.SharkOption.SagaExecutorFactory(sp));
+        else
+            services.TryAddSingleton<ISagaExecutor, SagaExecutor>();
 
         //register cron job store + scheduler
         if (Shark.SharkOption.CronJobStoreFactory != null)
@@ -280,5 +308,23 @@ public static class SharkExtension
         //setup OpenAPI endpoint + Scalar UI
         app.UseSharkOpenApi();
        // app.MapSharkEndpointsWithAttributes();
+    }
+
+    private static void DiscoverAndConfigurePlugins(IServiceCollection services)
+    {
+        var plugins = PluginLoader.Discover(Shark.SharkOption, logger: null);
+        Shark.SharkOption.DiscoveredPlugins = plugins;
+
+        foreach (var plugin in plugins)
+        {
+            try
+            {
+                plugin.ConfigureServices(services, Shark.SharkOption);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[Sharkable] Plugin '{plugin.Name}' ConfigureServices threw: {ex.Message}");
+            }
+        }
     }
 }

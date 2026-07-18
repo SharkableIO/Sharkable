@@ -16,17 +16,20 @@ internal sealed class SharkIdempotencyMiddleware
     private readonly SharkIdempotencyOptions _options;
     private readonly ILogger<SharkIdempotencyMiddleware> _logger;
     private readonly HashSet<string> _unsafeMethodNames;
+    private readonly ISharkMetrics? _metrics;
 
     public SharkIdempotencyMiddleware(
         RequestDelegate next,
         IIdempotencyStore store,
         SharkIdempotencyOptions options,
-        ILogger<SharkIdempotencyMiddleware> logger)
+        ILogger<SharkIdempotencyMiddleware> logger,
+        ISharkMetrics? metrics = null)
     {
         _next = next;
         _store = store;
         _options = options;
         _logger = logger;
+        _metrics = metrics;
         _unsafeMethodNames = new HashSet<string>(
             options.UnsafeMethods.Select(m => m.Method),
             StringComparer.OrdinalIgnoreCase);
@@ -36,6 +39,21 @@ internal sealed class SharkIdempotencyMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
+        // 0. Check if idempotency applies to this endpoint.
+        // Global enable → all endpoints participate (unless NoIdempotency).
+        // Per-endpoint metadata: collected regardless of global enable state.
+        var perEndpointMeta = context.GetEndpoint()?.Metadata.GetMetadata<SharkIdempotentMetadata>();
+
+        // Global disable → only [SharkIdempotent] endpoints participate.
+        if (!Shark.SharkOption.EnableIdempotency)
+        {
+            if (perEndpointMeta == null)
+            {
+                await _next(context);
+                return;
+            }
+        }
+
         // 1. Header present?
         if (!context.Request.Headers.TryGetValue(_options.HeaderName, out var headerValues)
             || headerValues.Count == 0
@@ -76,9 +94,11 @@ internal sealed class SharkIdempotencyMiddleware
                     return;
 
                 case IdempotencyHit hit:
+                    _metrics?.IdempotencyHit.Add(1);
                     var fingerprint = await ComputeFingerprint(context);
                     if (hit.Record.Fingerprint != fingerprint)
                     {
+                        _metrics?.IdempotencyConflict.Add(1);
                         await WriteUnified(context, 422, "idempotency_key_conflict",
                             "Idempotency-Key was reused with a different request payload.");
                         return;
@@ -95,6 +115,7 @@ internal sealed class SharkIdempotencyMiddleware
         // 5. We own the in-flight slot. Check for streaming / SSE endpoints
         // before buffering — replacing Response.Body with a MemoryStream
         // silently breaks flush-to-client behavior for SSE and long-polling.
+        _metrics?.IdempotencyMiss.Add(1);
         if (context.GetEndpoint()?.Metadata.GetMetadata<NoIdempotencyMetadata>() is not null)
         {
             await _store.ReleaseAsync(key);
@@ -165,7 +186,10 @@ internal sealed class SharkIdempotencyMiddleware
                 context.Response.ContentType ?? "application/octet-stream",
                 bytes,
                 DateTimeOffset.UtcNow);
-            await _store.StoreAsync(key, record, _options.Ttl);
+            var effectiveTtl = perEndpointMeta?.TtlSeconds != null
+                ? TimeSpan.FromSeconds(perEndpointMeta.TtlSeconds.Value)
+                : _options.Ttl;
+            await _store.StoreAsync(key, record, effectiveTtl);
         }
         else
         {
@@ -294,18 +318,5 @@ internal sealed class SharkIdempotencyMiddleware
                 return ValueTask.FromException(new ResponseSizeExceededException());
             return _inner.WriteAsync(buffer, cancellationToken);
         }
-    }
-
-    /// <summary>
-    /// Thrown by <see cref="CountingResponseBody"/> when the idempotency
-    /// response exceeds the configured cap. Caught by
-    /// <see cref="SharkIdempotencyMiddleware"/> to reject the request and
-    /// release the in-flight slot without caching the over-cap body
-    /// (SHARK-SEC-M008).
-    /// </summary>
-    public sealed class ResponseSizeExceededException : Exception
-    {
-        public ResponseSizeExceededException()
-            : base("Idempotency response body exceeded the configured MaxResponseSize cap.") { }
     }
 }

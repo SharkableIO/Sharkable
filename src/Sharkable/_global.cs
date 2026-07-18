@@ -11,4 +11,6 @@ global using Microsoft.IdentityModel.Tokens;
 global using Microsoft.Extensions.Hosting;
 global using Microsoft.AspNetCore.Http;
 global using Microsoft.AspNetCore.Authorization;
+global using Microsoft.AspNetCore.Http.Timeouts;
+global using System.Diagnostics.Metrics;
 global using Sharkable;

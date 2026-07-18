@@ -18,6 +18,12 @@ public sealed record CronJob(
 /// </summary>
 public interface ICronScheduler
 {
+    /// <summary>
+    /// Distributed lock TTL for cron job execution.
+    /// Default is 10 minutes. Set to <see cref="TimeSpan.Zero"/> to disable locking.
+    /// </summary>
+    TimeSpan CronLockTtl { get; set; }
+
     /// <summary>Registers a cron job from configuration.</summary>
     /// <remarks>
     /// Awaits the underlying <see cref="ICronJobStore"/> call so distributed

@@ -21,8 +21,8 @@ public sealed class CronJobOptions
     /// <summary>When true, job is registered but skipped on cron ticks.</summary>
     public bool Paused { get; set; } = false;
 
-    /// <summary>Concurrency behavior. Default: <see cref="CronJobConcurrency.AllowConcurrent"/>.</summary>
-    public CronJobConcurrency Concurrency { get; set; } = CronJobConcurrency.AllowConcurrent;
+    /// <summary>Concurrency behavior. Default: <see cref="CronJobConcurrency.SkipIfRunning"/>.</summary>
+    public CronJobConcurrency Concurrency { get; set; } = CronJobConcurrency.SkipIfRunning;
 }
 
 /// <summary>

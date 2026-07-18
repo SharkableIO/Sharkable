@@ -176,6 +176,7 @@ public sealed class CronScheduler : ICronScheduler
                     catch (OperationCanceledException) { }
                 }
                 await _store.ReleaseJobLockAsync(job.Name);
+                renewCts?.Dispose();
             }
 
             await _store.SaveStateAsync(job.Name, state);

@@ -17,6 +17,22 @@ internal static class OpenApiExtension
             {
                 Shark.SharkOption.OpenApiConfigure?.Invoke(options);
 
+                // Plugin OpenAPI transforms
+                if (Shark.SharkOption.DiscoveredPlugins is { Count: > 0 })
+                {
+                    foreach (var plugin in Shark.SharkOption.DiscoveredPlugins)
+                    {
+                        try
+                        {
+                            plugin.ConfigureOpenApi(options, Shark.SharkOption);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.Error.WriteLine($"[Sharkable] Plugin '{plugin.Name}' OpenAPI registration threw: {ex.Message}");
+                        }
+                    }
+                }
+
                 // SHARK-SEC-L009: install the schema transformer that strips
                 // properties marked [SharkOpenApiIgnore] from every schema
                 // in the generated document. Without this transformer a
@@ -24,6 +40,14 @@ internal static class OpenApiExtension
                 // property would expose those fields in the public
                 // /openapi/v1.json — which any anonymous browser can read.
                 options.AddSchemaTransformer(RemoveSensitiveProperties);
+
+                // User-registered operation transformers
+                foreach (var transformer in Shark.SharkOption.OpenApiOperationTransformers)
+                    options.AddOperationTransformer(transformer);
+
+                // User-registered schema transformers
+                foreach (var transformer in Shark.SharkOption.OpenApiSchemaTransformers)
+                    options.AddSchemaTransformer(transformer);
 
                 // Convert ObsoleteAttribute from endpoint metadata to deprecated: true
                 options.AddOperationTransformer((operation, context, cancellationToken) =>

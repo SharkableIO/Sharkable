@@ -36,14 +36,15 @@ builder.Services.AddShark([typeof(Program).Assembly], opt =>
     opt.ConfigureTracing(t => t.ServiceName = "sharkable-shop");
 
     // JWT — self-issued, no OIDC authority
-    opt.ConfigureJwt(
-        authority: jwtIssuer,
-        audiences: [jwtAudience],
-        configure: jwt =>
+    opt.ConfigureJwt(jwt =>
+    {
+        jwt.Authority = jwtIssuer;
+        jwt.Audiences = [jwtAudience];
+        jwt.BearerConfigure = jwtBearer =>
         {
-            jwt.Authority = null;
-            jwt.ConfigurationManager = null;
-            jwt.TokenValidationParameters = new TokenValidationParameters
+            jwtBearer.Authority = null;
+            jwtBearer.ConfigurationManager = null;
+            jwtBearer.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
                 ValidIssuer = jwtIssuer,
@@ -56,7 +57,8 @@ builder.Services.AddShark([typeof(Program).Assembly], opt =>
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
                 NameClaimType = JwtRegisteredClaimNames.Sub,
             };
-        });
+        };
+    });
 
     opt.ConfigureGracefulShutdown(g => g.DrainTimeout = TimeSpan.FromSeconds(15));
 

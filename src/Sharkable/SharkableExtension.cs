@@ -65,6 +65,14 @@ public static class SharkableExtension
         if (Shark.SharkOption.EnableResponseCompression)
             app.UseResponseCompression();
 
+        // security headers
+        if (Shark.SharkOption.SecurityHeadersOptions != null)
+            app.UseMiddleware<SecurityHeadersMiddleware>();
+
+        // request timeouts
+        if (Shark.SharkOption.RequestTimeoutsConfigure != null)
+            app.UseRequestTimeouts();
+
         // graceful shutdown — must be early in pipeline to reject new requests
         var gsOptions = Shark.SharkOption.GracefulShutdownOptions;
         var auditOptions = Shark.SharkOption.AuditTrailOptions;
@@ -109,6 +117,7 @@ public static class SharkableExtension
                     }
 
                     InternalShark.AuditLogBuffer?.FlushRemaining();
+                    InternalShark.AuditLogBuffer?.Dispose();
                 });
             });
 
@@ -134,6 +143,23 @@ public static class SharkableExtension
 
         // pipeline injection: before auth
         var useOpts = Shark.UseSharkOptions;
+
+        // Plugin pipeline hooks (after framework middleware, before auth)
+        if (Shark.SharkOption.DiscoveredPlugins is { Count: > 0 })
+        {
+            foreach (var plugin in Shark.SharkOption.DiscoveredPlugins)
+            {
+                try
+                {
+                    plugin.ConfigurePipeline(app, Shark.SharkOption);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"[Sharkable] Plugin '{plugin.Name}' ConfigurePipeline threw: {ex.Message}");
+                }
+            }
+        }
+
         if (useOpts != null)
         {
             foreach (var action in useOpts.BeforeAuthActions)
@@ -153,18 +179,14 @@ public static class SharkableExtension
                 action(app);
         }
 
-        if (Shark.UseSharkOptions?.EnableExceptionHandler ?? true)
-        {
-            Shark.SharkOption.ExceptionHandlerOptions.IsDevelopment = app.Environment.IsDevelopment();
-            app.UseSharkExceptionHandler();
-        }
-
         // audit trail
         if (Shark.SharkOption.AuditTrailOptions != null)
             app.UseMiddleware<AuditTrailMiddleware>();
 
-        // idempotency
-        if (Shark.SharkOption.EnableIdempotency)
+        // idempotency — register when global enable is on OR per-endpoint opt-in
+        // is configured (ConfigureIdempotency called). The middleware checks
+        // endpoint metadata for [SharkIdempotent] / [SharkNoIdempotency].
+        if (Shark.SharkOption.EnableIdempotency || Shark.SharkOption.IdempotencyOptions != null)
             app.UseMiddleware<SharkIdempotencyMiddleware>();
 
         // ETag / 304 conditional responses
@@ -181,6 +203,14 @@ public static class SharkableExtension
         // cron jobs admin endpoint
         if (Shark.SharkOption.ConfigureCronJobs != null)
             CronAdminEndpoint.Map(app);
+
+        // exception handler — must be last middleware (just before endpoints)
+        // so it catches exceptions from ALL preceding middleware
+        if (Shark.UseSharkOptions?.EnableExceptionHandler ?? true)
+        {
+            Shark.SharkOption.ExceptionHandlerOptions.IsDevelopment = app.Environment.IsDevelopment();
+            app.UseSharkExceptionHandler();
+        }
 
         app.MapEndpoints();
 
@@ -199,8 +229,40 @@ public static class SharkableExtension
         foreach (var type in Shark.SharkOption.ValidateOnStartTypes)
             app.Services.GetRequiredService(type);
 
-        // warmup
-        if (Shark.SharkOption.WarmupServiceType != null)
+        // warmup — resolve all registered warmup services and run in parallel
+        if (Shark.SharkOption.WarmupServiceTypes.Count > 0)
+        {
+            var warmupTypes = Shark.SharkOption.WarmupServiceTypes;
+            var warmupTimeout = Shark.SharkOption.WarmupTimeout;
+            var tasks = new List<Task>(warmupTypes.Count);
+            var ctsList = new List<CancellationTokenSource>(warmupTypes.Count);
+
+            foreach (var warmupType in warmupTypes)
+            {
+                var warmup = (IWarmupService)app.Services.GetRequiredService(warmupType);
+                var warmupCts = new CancellationTokenSource(warmupTimeout);
+                ctsList.Add(warmupCts);
+                tasks.Add(Task.Run(() => warmup.WarmupAsync(warmupCts.Token), warmupCts.Token));
+            }
+
+            try
+            {
+                var completed = Task.WaitAll([.. tasks], warmupTimeout);
+                if (!completed)
+                    throw new TimeoutException(
+                        $"Warmup did not complete within the configured timeout ({warmupTimeout}).");
+            }
+            catch (AggregateException)
+            {
+                throw;
+            }
+            finally
+            {
+                foreach (var cts in ctsList)
+                    cts.Dispose();
+            }
+        }
+        else if (Shark.SharkOption.WarmupServiceType != null)
         {
             var warmup = (IWarmupService)app.Services.GetRequiredService(Shark.SharkOption.WarmupServiceType);
             using var warmupCts = new CancellationTokenSource(Shark.SharkOption.WarmupTimeout);

@@ -45,12 +45,13 @@ public interface ICronJobStore
     /// by <see cref="CronScheduler"/> while a cron job is executing so that
     /// long-running jobs do not cause the lock to expire and split-brain
     /// execution. Stores that do not support TTL renewal (in-process) should
-    /// return <see cref="Task.CompletedTask"/>.
+    /// override to return <see cref="Task.CompletedTask"/>.
+    /// Default returns <see cref="Task.CompletedTask"/> (no-op).
     /// </summary>
     /// <param name="jobName">The cron job whose lock should be renewed.</param>
     /// <param name="ttl">The new TTL to apply. Typically equal to the original
     /// lock TTL so the renewal cadence is consistent.</param>
-    Task RenewJobLockAsync(string jobName, TimeSpan ttl);
+    Task RenewJobLockAsync(string jobName, TimeSpan ttl) => Task.CompletedTask;
 
     /// <summary>
     /// Releases the distributed lock for the given cron job.

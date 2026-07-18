@@ -2,6 +2,29 @@
 
 .NET 10 minimal API framework collection. NuGet package. Author: CharleyPeng.
 
+## Design principles (every feature must satisfy all three)
+
+Sharkable is a **general-purpose framework** used by many developers in their own services. Every feature, API, and new behavior must be designed from the **user's perspective**:
+
+### 1. Convenience
+- **Discoverable**: Public API surface must be obvious — `ConfigureXxx(Action<XxxOptions>)` pattern, attributes with clear names, DSL extension methods.
+- **Sensible defaults**: Every option defaults to a safe, production-appropriate value. Users should get correct behavior without writing any configuration.
+- **Minimal boilerplate**: One line to enable a feature (e.g., `opt.EnableETag = true`). Complex configuration is opt-in.
+- **Consistent patterns**: Follow existing conventions — `ConfigureXxx()` delegate pattern, `XxxFactory` for DI replacement, attributes on `ISharkEndpoint` classes. Never introduce a new pattern when an existing one already serves the purpose.
+
+### 2. Minimal Intrusion
+- **Opt-in by default**: Adding a new feature must not change any existing behavior unless the user explicitly enables it. `EnableXxx = false` must produce identical output to the feature not existing at all.
+- **No hijacking of shared services**: Never register a framework implementation against a broad interface (e.g., `IMemoryCache`) shared with user code. Own your own abstractions.
+- **No silent response shape changes**: Never modify response bodies, status codes, or headers without explicit user opt-in.
+- **Pipeline discipline**: Middleware must be conditional — registered only when the feature is enabled. An unconfigured feature adds zero overhead to the request path.
+- **Backward compatible**: Existing user code must continue to compile and behave identically after upgrading. Breaking changes are batched into minor versions with migration docs.
+
+### 3. Customizability
+- **Factory pattern for every store/service**: Every built-in implementation (`IIdempotencyStore`, `IDistributedRateLimitStore`, `ISagaStore`, `ICronJobStore`, `ISharkMetrics`, `IErrorLocalizer`, `IAuditSink`, `IAuthorizationInterceptor`) exposes a `Func<IServiceProvider, T>` factory on `SharkOption`. Users replace the default without touching DI directly.
+- **Public interfaces, internal implementations**: Every replaceable component has a public interface. The default implementation is `internal sealed`. Users can `new()` their own without reverse-engineering.
+- **Attributes AND DSL for endpoint-level overrides**: Users who prefer annotations use `[SharkRateLimit(10, 60)]`; users who prefer fluent code use `.SharkRateLimit(10, 60)`. Both produce the same metadata.
+- **Full OpenAPI integration**: Every new middleware that affects response semantics (error shapes, status codes, headers) must be reflected in the generated OpenAPI document or must not silently hide behavior from API consumers.
+
 ## Coding standards
 
 - All public API properties, methods, and classes **must** have XML doc comments (`/// <summary>`, `/// <param>`, `/// <returns>`)
@@ -9,6 +32,43 @@
 - `SuppressMessage` attributes require a comment explaining why
 - Only modify files and lines strictly required by the task — no incidental refactoring, reformatting, or unrelated changes
 - Do not introduce new NuGet packages without justification — if needed, state the reason and ask first; only add after receiving explicit approval
+
+### Security
+
+- Never log or expose secrets, API keys, tokens, or connection strings — use redacted placeholders
+- Validate all user-controllable input (headers, query strings, route parameters, request bodies) — assume hostile
+- All cryptography must use constant-time comparison (`CryptographicOperations.FixedTimeEquals`) and strong algorithms (SHA-256 minimum for hashing, AES-256 for encryption)
+- Header names and values written to `HttpResponse.Headers` must be validated against `[A-Za-z0-9\\-_]+` — block CR/LF injection
+- Regex patterns must compile with a bounded timeout (100ms default) — prevent ReDoS
+- Never trust `Content-Length` or caller-controlled limits — cap allocations to configured maximums
+- Admin endpoints (`/_sharkable/*`) must require API key authentication by default; return 404 when no keys are configured
+
+### Memory & lifetime
+
+- Every `IDisposable` / `IAsyncDisposable` resource must be disposed — use `using` declarations or `try/finally` dispose blocks
+- Stream replacements (e.g., `context.Response.Body = new XxxStream(...)`) must restore the original stream in a `finally` block
+- `MemoryStream` / buffer-based response wrappers must use counting/capped streams — never allow unbounded growth from attacker-controlled input
+- Background services (`CronScheduler`, `AuditLogBuffer`, `AdaptiveLimitMonitor`) must survive exceptions via try/catch in the consumer loop — a single failure must not tear down the service
+- `CancellationTokenSource` instances must be disposed; linked tokens created per-operation must be disposed after use
+- DI-registered singletons that hold `MemoryCache` must own a private cache instance — never hijack the app-wide `IMemoryCache`
+
+### Do no harm
+
+- Never change existing behavior unless the user explicitly opts in — `EnableXxx = false` must be identical to the feature not existing
+- Never modify shared framework services — own your own abstractions, use `TryAddSingleton` so user registrations win
+- Never change response body shape, status codes, or headers silently — all such changes require explicit configuration
+- Before implementing a feature, read all adjacent code paths to understand the full impact — a new middleware must not break existing middleware ordering or assumptions
+- Every behavior change must be reflected in the CHANGELOG in the same commit
+
+### Performance
+
+- Avoid allocations on hot paths — prefer `ArrayPool<byte>`, `StringBuilder` reuse, cached `HashSet<T>` / `ConcurrentDictionary<T>` patterns
+- Check `ILogger.IsEnabled(logLevel)` before building log strings — avoid allocations when the category is filtered
+- Use `Convert.ToHexString` over per-byte `ToString("x2")` string building — one allocation vs many
+- Source-generated JSON serialization over reflection-based — required for AOT, faster for JIT
+- Lazy-initialize expensive resources (counters, caches, compiled regex) — don't allocate what isn't used
+- `IEndpointFilter` implementations must be stateless or share cached state — instantiated once per route group, not per request
+- Prefer `CultureInfo.InvariantCulture` for all internal string formatting — avoid culture-sensitive allocations on the hot path
 
 ## Solution layout
 

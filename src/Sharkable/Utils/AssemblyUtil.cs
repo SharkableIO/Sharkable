@@ -40,16 +40,4 @@ public partial class Utils
 
         return typeList.Count == 0 ? null : [.. typeList];
     }
-
-    internal static void SetupModules(Assembly[]? assemblies, ref IServiceCollection services)
-    {
-        if (assemblies == null)
-            return;
-        foreach(var implType in assemblies.SelectMany(a => a.GetTypes().Where(t => !t.IsAbstract && typeof(ISingleton).IsAssignableFrom(t))))
-        {
-            var obj = Activator.CreateInstance(implType);
-            services.AddSingleton(implType);
-            Utils.WriteDebug($"type is {implType.Name}");
-        }
-    }
 }

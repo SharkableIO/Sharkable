@@ -5,7 +5,7 @@ namespace Sharkable;
 /// Singleton that holds the set of assemblies registered with Sharkable.
 /// Used internally for endpoint discovery, service scanning, and validator registration.
 /// </summary>
-public class AssemblyContext
+public sealed class AssemblyContext
 {
     /// <summary>Assemblies currently registered with Sharkable.</summary>
     public static Assembly[]? Assemblies => Instance?.InternalAssemblies;

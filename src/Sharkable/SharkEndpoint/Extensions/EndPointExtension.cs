@@ -105,6 +105,9 @@ internal static class SharkEndPointExtension
 
             var group = app.MapGroup(basePath).WithDisplayName(groupName);
 
+            // User-defined group convention
+            Shark.SharkOption.GroupConvention?.Invoke(group, groupName);
+
             // Shared filters (once per group)
             var autoWrap = Shark.UseSharkOptions?.EnableAutoWrap ?? Shark.SharkOption.EnableAutoWrap;
             if (autoWrap)
@@ -125,6 +128,11 @@ internal static class SharkEndPointExtension
             var description = ResolveGroupDescription(endpoints);
             var responseTypes = ResolveGroupResponseTypes(endpoints);
             var isDeprecated = ResolveGroupIsDeprecated(endpoints);
+            var cacheProfile = ResolveGroupCacheProfile(endpoints);
+            var rateLimitMetadata = ResolveGroupRateLimit(endpoints);
+
+            if (cacheProfile != null)
+                group.AddEndpointFilter<SharkCacheProfileFilter>();
 
             // Auto-Tags + OperationId + class-level metadata via Add() convention
             var capturedGroupName = !string.IsNullOrWhiteSpace(version) ? $"{version}_{groupName}" : groupName;
@@ -189,6 +197,12 @@ internal static class SharkEndPointExtension
                 if (capturedIsDeprecated && !builder.Metadata.Any(m => m is ObsoleteAttribute))
                     builder.Metadata.Add(new ObsoleteAttribute("This endpoint is deprecated."));
 
+                if (cacheProfile != null && !builder.Metadata.Any(m => m is SharkCacheProfileAttribute))
+                    builder.Metadata.Add(cacheProfile);
+
+                if (rateLimitMetadata != null && !builder.Metadata.Any(m => m is SharkRateLimitMetadata))
+                    builder.Metadata.Add(rateLimitMetadata);
+
                 if (!builder.Metadata.Any(m => m is EndpointNameMetadata))
                 {
                     var routePattern = (builder as RouteEndpointBuilder)?.RoutePattern?.RawText ?? string.Empty;
@@ -219,10 +233,16 @@ internal static class SharkEndPointExtension
             {
                 var hasDontWrap = autoWrap && classType.GetCustomAttribute<SharkDontWrapAttribute>() != null;
                 var hasNoIdempotency = classType.GetCustomAttribute<SharkNoIdempotencyAttribute>() != null;
+                var hasIdempotent = classType.GetCustomAttribute<SharkIdempotentAttribute>();
                 var needsSubGroup = hasDontWrap || hasNoIdempotency;
                 var targetGroup = needsSubGroup ? group.MapGroup("") : group;
                 if (hasNoIdempotency)
                     targetGroup.WithMetadata(new NoIdempotencyMetadata());
+                if (hasIdempotent != null)
+                    targetGroup.WithMetadata(new SharkIdempotentMetadata(hasIdempotent.TtlSeconds));
+
+                // User-defined endpoint convention
+                Shark.SharkOption.EndpointConvention?.Invoke(targetGroup, classType);
 
                 if (crudGenerator != null)
                 {
@@ -320,6 +340,25 @@ internal static class SharkEndPointExtension
     {
         return endpoints.Any(ep =>
             ep.Item2.GetCustomAttribute<SharkDeprecatedAttribute>() != null);
+    }
+
+    private static SharkCacheProfileAttribute? ResolveGroupCacheProfile(List<(SharkEndpoint, Type)> endpoints)
+    {
+        return endpoints
+            .Select(ep => ep.Item2.GetCustomAttribute<SharkCacheProfileAttribute>())
+            .FirstOrDefault(a => a != null);
+    }
+
+    private static SharkRateLimitMetadata? ResolveGroupRateLimit(List<(SharkEndpoint, Type)> endpoints)
+    {
+        var attr = endpoints
+            .Select(ep => ep.Item2.GetCustomAttribute<SharkRateLimitAttribute>())
+            .FirstOrDefault(a => a != null);
+
+        if (attr == null)
+            return null;
+
+        return new SharkRateLimitMetadata(attr.Limit, TimeSpan.FromSeconds(attr.WindowSeconds));
     }
 
     internal static void WireSharkEndpoint(this IServiceCollection services)

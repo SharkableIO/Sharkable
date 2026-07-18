@@ -9,6 +9,7 @@ internal sealed class AuditLogBuffer : IDisposable
     private readonly int _batchSize;
     private readonly TimeSpan _flushInterval;
     private readonly ILogger _logger;
+    private readonly IAuditSink? _auditSink;
     private readonly LogLevel _successLevel;
     private readonly LogLevel _warningLevel;
     private readonly LogLevel _errorLevel;
@@ -19,7 +20,7 @@ internal sealed class AuditLogBuffer : IDisposable
     private int _errorLogged;
     private bool _disposed;
 
-    internal AuditLogBuffer(AuditTrailOptions options, ILogger logger)
+    internal AuditLogBuffer(AuditTrailOptions options, ILogger logger, IAuditSink? auditSink = null)
     {
         _channel = options.AsyncWrite
             ? Channel.CreateBounded<AuditLogEntry>(new BoundedChannelOptions(4096)
@@ -31,6 +32,7 @@ internal sealed class AuditLogBuffer : IDisposable
         _batchSize = options.BatchSize;
         _flushInterval = options.FlushInterval;
         _logger = logger;
+        _auditSink = auditSink;
         _successLevel = options.SuccessLogLevel;
         _warningLevel = options.WarningLogLevel;
         _errorLevel = options.ErrorLogLevel;
@@ -103,6 +105,20 @@ internal sealed class AuditLogBuffer : IDisposable
 
     private void FlushBatch(List<AuditLogEntry> batch)
     {
+        if (_auditSink != null)
+        {
+            try
+            {
+                _ = _auditSink.WriteBatchAsync(batch, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                if (Interlocked.CompareExchange(ref _errorLogged, 1, 0) == 0)
+                    _logger.LogWarning(ex, "AuditLogBuffer sink flush failed");
+            }
+            return;
+        }
+
         foreach (var entry in batch)
         {
             try
@@ -143,7 +159,11 @@ internal sealed class AuditLogBuffer : IDisposable
     }
 }
 
-internal readonly record struct AuditLogEntry(
+/// <summary>
+/// Represents a single audit-trail log entry captured by
+/// <see cref="AuditTrailMiddleware"/>.
+/// </summary>
+public readonly record struct AuditLogEntry(
     string Method,
     string Path,
     string? Query,

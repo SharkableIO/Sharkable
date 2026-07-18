@@ -227,17 +227,4 @@ internal sealed class ETagMiddleware
             return ValueTask.CompletedTask;
         }
     }
-
-    /// <summary>
-    /// Thrown when the buffered response body exceeds
-    /// <see cref="ETagOptions.MaxResponseSize"/>. Caught by
-    /// <see cref="ETagMiddleware"/> to skip ETag generation and pass the
-    /// response through unchanged.
-    /// </summary>
-    [Serializable]
-    public sealed class ResponseSizeExceededException : Exception
-    {
-        public ResponseSizeExceededException()
-            : base("Response body exceeded the configured ETag MaxResponseSize cap.") { }
-    }
 }

@@ -60,6 +60,14 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public bool EnableValidation { get; set; } = false;
     /// <summary>
+    /// Controls the shape of validation error responses.
+    /// <see cref="ValidationErrorMode.Messages"/> (default) joins messages
+    /// with <c>"; "</c> in the unified result envelope.
+    /// <see cref="ValidationErrorMode.ProblemDetails"/> emits RFC 7807
+    /// ProblemDetails with an <c>errors</c> object.
+    /// </summary>
+    public ValidationErrorMode ValidationErrorMode { get; set; } = ValidationErrorMode.Messages;
+    /// <summary>
     /// Factory for creating unified result responses.
     /// Set this to use a custom result format.
     /// Defaults to <see cref="DefaultUnifiedResultFactory"/> producing <see cref="UnifiedResult{T}"/>.
@@ -94,10 +102,10 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public Action<OutputCacheOptions>? OutputCacheConfigure { get; set; }
     /// <summary>
-    /// When <c>true</c>, registers health check services and maps <c>/healthz</c> endpoint.
-    /// Default is <c>false</c>.
+    /// When <c>true</c> (default), registers health check services and maps <c>/healthz</c> endpoint.
+    /// Set to <c>false</c> to disable built-in health checks.
     /// </summary>
-    public bool EnableHealthChecks { get; set; } = false;
+    public bool EnableHealthChecks { get; set; } = true;
     /// <summary>
     /// Controls how much detail <c>/healthz</c> exposes per check.
     /// <c>StatusOnly</c> (default in non-Development) hides exception messages
@@ -147,6 +155,7 @@ public sealed class SharkOption : ISharkOption
     /// minted for any audience (SHARK-SEC-007 follow-up).
     /// </param>
     /// <param name="configure">Optional additional <see cref="JwtBearerOptions"/> configuration.</param>
+    [Obsolete("Use ConfigureJwt(Action<JwtOptions>) instead. This overload will be removed in v0.8.0.")]
     public void ConfigureJwt(string authority, string[] audiences, Action<JwtBearerOptions>? configure = null)
     {
         if (string.IsNullOrWhiteSpace(authority))
@@ -166,6 +175,35 @@ public sealed class SharkOption : ISharkOption
         JwtAudiences = audiences;
         JwtConfigure = configure;
     }
+
+    /// <summary>
+    /// Configures JWT Bearer authentication with opinionated defaults.
+    /// Calls <c>services.AddAuthentication().AddJwtBearer()</c> with the given options.
+    /// </summary>
+    /// <param name="configure">Callback to configure <see cref="JwtOptions"/>.</param>
+    public void ConfigureJwt(Action<JwtOptions> configure)
+    {
+        var opt = new JwtOptions();
+        configure(opt);
+
+        if (string.IsNullOrWhiteSpace(opt.Authority))
+            throw new ArgumentException("JwtOptions.Authority cannot be null or whitespace.", nameof(configure));
+        if (opt.Audiences is null || opt.Audiences.Length == 0)
+            throw new InvalidOperationException(
+                "JWT audience list cannot be empty. Audiences cannot be empty when JWT auth is enabled " +
+                "(SHARK-SEC-007). Specify at least one audience, e.g. " +
+                "opt.ConfigureJwt(jwt => { jwt.Authority = \"https://issuer\"; jwt.Audiences = [\"api://default\"]; }).");
+        for (var i = 0; i < opt.Audiences.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(opt.Audiences[i]))
+                throw new InvalidOperationException(
+                    $"JWT audience at index {i} is null or whitespace (SHARK-SEC-007). All audience entries must be non-empty.");
+        }
+
+        JwtAuthority = opt.Authority;
+        JwtAudiences = opt.Audiences;
+        JwtConfigure = opt.BearerConfigure;
+    }
     internal string? JwtAuthority { get; set; }
     internal string[]? JwtAudiences { get; set; }
     internal Action<JwtBearerOptions>? JwtConfigure { get; set; }
@@ -175,11 +213,16 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public bool EnableAuthorization { get; set; } = true;
     /// <summary>
-    /// Optional callback to configure <see cref="Microsoft.AspNetCore.Authorization.AuthorizationOptions"/>.
+    /// Configures <see cref="Microsoft.AspNetCore.Authorization.AuthorizationOptions"/>.
     /// For example: add custom policies, default authorization policy, fallback policy, etc.
     /// Ignored when <see cref="EnableAuthorization"/> is <c>false</c>.
     /// </summary>
-    public Action<AuthorizationOptions>? ConfigureAuthorization { get; set; }
+    public void ConfigureAuthorization(Action<AuthorizationOptions> configure)
+    {
+        ConfigureAuthorizationInternal = configure;
+    }
+
+    internal Action<AuthorizationOptions>? ConfigureAuthorizationInternal { get; set; }
     /// <summary>
     /// When <c>true</c>, automatically adds <see cref="AuthorizeAttribute"/> metadata
     /// to every Sharkable endpoint (equivalent to calling <c>.RequireAuthorization()</c>
@@ -196,6 +239,38 @@ public sealed class SharkOption : ISharkOption
     {
         OpenApiConfigure = options;
     }
+
+    /// <summary>
+    /// Registers an OpenAPI operation transformer without requiring direct
+    /// access to <see cref="OpenApiOptions"/>. Equivalent to calling
+    /// <c>options.AddOperationTransformer(...)</c>.
+    /// Safe to call multiple times; each transformer is added to the pipeline.
+    /// </summary>
+    public void AddOpenApiOperationTransformer(Func<OpenApiOperation, OpenApiOperationTransformerContext, CancellationToken, Task> transformer)
+    {
+        OpenApiOperationTransformers.Add(transformer);
+    }
+
+    /// <summary>
+    /// Registers an OpenAPI schema transformer without requiring direct
+    /// access to <see cref="OpenApiOptions"/>. Equivalent to calling
+    /// <c>options.AddSchemaTransformer(...)</c>.
+    /// Safe to call multiple times; each transformer is added to the pipeline.
+    /// </summary>
+    public void AddOpenApiSchemaTransformer(Func<OpenApiSchema, OpenApiSchemaTransformerContext, CancellationToken, Task<OpenApiSchema>> transformer)
+    {
+        OpenApiSchemaTransformers.Add(transformer);
+    }
+
+    /// <summary>
+    /// OpenAPI example generation hook. Receives a type and returns an example
+    /// object of that type to include in the generated schema.
+    /// Set once; the last registration wins.
+    /// </summary>
+    public Func<Type, object?>? OpenApiExampleFactory { get; set; }
+
+    internal List<Func<OpenApiOperation, OpenApiOperationTransformerContext, CancellationToken, Task>> OpenApiOperationTransformers { get; } = [];
+    internal List<Func<OpenApiSchema, OpenApiSchemaTransformerContext, CancellationToken, Task<OpenApiSchema>>> OpenApiSchemaTransformers { get; } = [];
     /// <summary>
     /// Configures the Scalar API reference UI.
     /// </summary>
@@ -224,6 +299,15 @@ public sealed class SharkOption : ISharkOption
         AuditTrailOptions = opt;
     }
     internal AuditTrailOptions? AuditTrailOptions { get; set; }
+    /// <summary>
+    /// Pluggable audit sink factory. When set, the factory is invoked with
+    /// <see cref="IServiceProvider"/> to create an <see cref="IAuditSink"/> instance.
+    /// Use this to ship audit entries to Seq, Elasticsearch, Kafka, etc.
+    /// Default (<c>null</c>) uses <see cref="LoggingAuditSink"/> which preserves
+    /// the current structured-logging behavior.
+    /// </summary>
+    public Func<IServiceProvider, IAuditSink>? AuditSinkFactory { get; set; }
+
     /// <summary>
     /// Stores the idempotency options provided via <see cref="ConfigureIdempotency"/>.
     /// </summary>
@@ -283,6 +367,66 @@ public sealed class SharkOption : ISharkOption
         RedactingLogOptions = opt;
     }
     internal RedactingLogOptions? RedactingLogOptions { get; set; }
+    /// <summary>
+    /// Configures ASP.NET Core request timeouts. Calls <c>services.AddRequestTimeouts()</c>
+    /// when set. Apply to endpoints via <c>.SharkRequestTimeout(ms)</c>.
+    /// </summary>
+    public Action<RequestTimeoutOptions>? RequestTimeoutsConfigure { get; set; }
+
+    /// <summary>
+    /// Default request timeout policy name applied when no per-endpoint timeout
+    /// is specified via <c>.SharkRequestTimeout()</c>.
+    /// Set via <c>o.AddPolicy(name, builder => ...); o.DefaultPolicy = name;</c>
+    /// inside the <see cref="RequestTimeoutsConfigure"/> callback.
+    /// Null means no default.
+    /// </summary>
+    public string? DefaultRequestTimeoutPolicy { get; set; }
+
+    /// <summary>
+    /// Configures framework metrics via <see cref="System.Diagnostics.Metrics"/>.
+    /// When enabled, counters and histograms flow into OpenTelemetry
+    /// automatically. Default is off.
+    /// </summary>
+    public void ConfigureMetrics(Action<MetricsOptions> configure)
+    {
+        var opt = new MetricsOptions();
+        configure(opt);
+        MetricsOptions = opt;
+    }
+
+    /// <summary>
+    /// Stores the metrics options provided via <see cref="ConfigureMetrics"/>.
+    /// </summary>
+    internal MetricsOptions? MetricsOptions { get; set; }
+
+    /// <summary>
+    /// Overrides the default <see cref="ISharkMetrics"/> registration.
+    /// When set, the factory is invoked with <see cref="IServiceProvider"/> to
+    /// create the metrics instance. Use this to customize counter names, add
+    /// tags/dimensions, or push to external systems.
+    /// If <c>null</c>, <see cref="SharkMetrics"/> is used as the default
+    /// unless a custom implementation was already registered.
+    /// </summary>
+    public Func<IServiceProvider, ISharkMetrics>? MetricsFactory { get; set; }
+
+    /// <summary>
+    /// Configures security headers middleware (X-Content-Type-Options, X-Frame-Options,
+    /// Referrer-Policy, Content-Security-Policy, etc.). When set, a security headers
+    /// middleware is wired into the pipeline. All headers are opt-in; no headers are
+    /// added unless explicitly enabled.
+    /// </summary>
+    public void ConfigureSecurityHeaders(Action<SecurityHeadersOptions> configure)
+    {
+        var opt = new SecurityHeadersOptions();
+        configure(opt);
+        SecurityHeadersOptions = opt;
+    }
+
+    /// <summary>
+    /// Stores the security headers options provided via <see cref="ConfigureSecurityHeaders"/>.
+    /// </summary>
+    internal SecurityHeadersOptions? SecurityHeadersOptions { get; set; }
+
     /// <summary>
     /// Configures multi-tenant support.
     /// When set, the <see cref="ITenant"/> scoped service and resolution middleware are registered.
@@ -409,6 +553,15 @@ public sealed class SharkOption : ISharkOption
     /// </summary>
     public Func<IServiceProvider, ISagaStore>? SagaStoreFactory { get; set; }
     /// <summary>
+    /// Overrides the default <see cref="ISagaExecutor"/> registration.
+    /// When set, the factory is invoked with <see cref="IServiceProvider"/>
+    /// to create the executor instance. Use this to customize lock TTL,
+    /// compensation behavior, or replace the entire saga orchestration.
+    /// If <c>null</c>, <see cref="SagaExecutor"/> is used as the default
+    /// unless a custom implementation was already registered.
+    /// </summary>
+    public Func<IServiceProvider, ISagaExecutor>? SagaExecutorFactory { get; set; }
+    /// <summary>
     /// Overrides the default <see cref="ICronJobStore"/> registration.
     /// Same factory pattern as <see cref="SagaStoreFactory"/>.
     /// </summary>
@@ -476,13 +629,14 @@ public sealed class SharkOption : ISharkOption
     /// Registers a warmup service type that implements <see cref="IWarmupService"/>.
     /// The service is resolved from DI and its <see cref="IWarmupService.WarmupAsync"/>
     /// runs synchronously during startup, before the readiness gate opens.
-    /// Throw to fail startup.
+    /// Throw to fail startup. Multiple warmup services run in parallel.
     /// </summary>
     public void ConfigureWarmup<T>() where T : class, IWarmupService
     {
-        WarmupServiceType = typeof(T);
+        WarmupServiceTypes.Add(typeof(T));
     }
-    internal Type? WarmupServiceType { get; set; }
+    internal List<Type> WarmupServiceTypes { get; set; } = [];
+    internal Type? WarmupServiceType => WarmupServiceTypes.Count > 0 ? WarmupServiceTypes[0] : null;
 
     /// <summary>
     /// Timeout for warmup execution. Default is 30 seconds.
@@ -516,4 +670,66 @@ public sealed class SharkOption : ISharkOption
     /// Default is <c>@$1</c>.
     /// </summary>
     public string VersionFormatReplacement { get; set; } = @"@$1";
+
+    /// <summary>
+    /// Callback invoked for each endpoint group during registration.
+    /// Receives the <see cref="RouteGroupBuilder"/> and the group name so
+    /// callers can add shared filters, auth policies, or response type
+    /// conventions in a single place.
+    /// </summary>
+    public Action<RouteGroupBuilder, string>? GroupConvention { get; set; }
+
+    /// <summary>
+    /// Callback invoked for each individual endpoint route group during registration.
+    /// Receives the <see cref="RouteGroupBuilder"/> for the endpoint and the
+    /// endpoint class <see cref="Type"/>. Use for per-endpoint
+    /// <c>ProducesResponseType</c>, authorization, or metadata conventions.
+    /// </summary>
+    public Action<RouteGroupBuilder, Type>? EndpointConvention { get; set; }
+
+    /// <summary>
+    /// When <c>true</c> (default), automatically discovers <see cref="ISharkPlugin"/>
+    /// implementations in all scanned assemblies (NuGet references + project assemblies).
+    /// Set to <c>false</c> to disable assembly scanning — use
+    /// <see cref="RegisterPlugin"/> or <see cref="ConfigurePlugins"/> instead.
+    /// </summary>
+    public bool AutoDiscoverPlugins { get; set; } = true;
+
+    /// <summary>
+    /// Configures the plugin hot-plug folder scanning system.
+    /// When <see cref="PluginOptions.ScanOnStartup"/> is <c>true</c>,
+    /// each subfolder under the configured directory is scanned for
+    /// a <c>.dll</c> containing an <see cref="ISharkPlugin"/> implementation.
+    /// Requires JIT (not AOT). Default is off.
+    /// </summary>
+    public void ConfigurePlugins(Action<PluginOptions> configure)
+    {
+        var opt = new PluginOptions();
+        configure(opt);
+        PluginOptionsInternal = opt;
+    }
+
+    /// <summary>
+    /// Registers a plugin instance manually. Use in AOT mode or for in-app plugins.
+    /// Deduplicated by <see cref="ISharkPlugin.Name"/>.
+    /// </summary>
+    public void RegisterPlugin(ISharkPlugin plugin)
+    {
+        ManualPlugins.Add(plugin);
+    }
+
+    /// <summary>
+    /// Prevents a plugin from loading. Use the plugin's <see cref="ISharkPlugin.Name"/>.
+    /// Effective across all three discovery paths.
+    /// </summary>
+    public void DisablePlugin(string pluginName)
+    {
+        DisabledPlugins.Add(pluginName);
+    }
+
+    internal PluginOptions? PluginOptions => PluginOptionsInternal;
+    internal PluginOptions? PluginOptionsInternal { get; set; }
+    internal List<ISharkPlugin> ManualPlugins { get; set; } = [];
+    internal HashSet<string> DisabledPlugins { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    internal List<ISharkPlugin>? DiscoveredPlugins { get; set; }
 }

@@ -1,7 +1,9 @@
 
 using System.Collections.Concurrent;
+using System.Text.Json;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Sharkable;
 
@@ -13,6 +15,8 @@ internal sealed class ValidationFilter : IEndpointFilter
         EndpointFilterInvocationContext context,
         EndpointFilterDelegate next)
     {
+        var allErrors = new List<(string PropertyName, string ErrorMessage)>();
+
         foreach (var arg in context.Arguments)
         {
             if (arg is null)
@@ -35,17 +39,47 @@ internal sealed class ValidationFilter : IEndpointFilter
             if (result.IsValid)
                 continue;
 
-            var errorMessage = string.Join("; ", result.Errors.Select(e => e.ErrorMessage));
-            var factory = UnifiedResultFactoryHelper.ResolveFactory();
-            var body = factory.Create(null, errorMessage, 400);
+            foreach (var error in result.Errors)
+            {
+                allErrors.Add((error.PropertyName, error.ErrorMessage));
+            }
+        }
+
+        if (allErrors.Count == 0)
+            return await next(context);
+
+        var mode = Shark.SharkOption.ValidationErrorMode;
+
+        if (mode == ValidationErrorMode.ProblemDetails)
+        {
+            var errorsDict = allErrors
+                .GroupBy(e => e.PropertyName)
+                .ToDictionary(
+                    g => string.IsNullOrEmpty(g.Key) ? "general" : g.Key,
+                    g => g.Select(e => e.ErrorMessage).ToArray());
+
+            var problemDetails = new ValidationProblemDetails(errorsDict)
+            {
+                Status = 400,
+                Title = "Validation failed",
+                Type = "https://tools.ietf.org/html/rfc7807",
+                Detail = "One or more validation errors occurred."
+            };
 
             context.HttpContext.Response.StatusCode = 400;
-            context.HttpContext.Response.ContentType = "application/json";
-            await context.HttpContext.Response.WriteAsJsonAsync(body, body.GetType());
+            context.HttpContext.Response.ContentType = "application/problem+json";
+            await context.HttpContext.Response.WriteAsJsonAsync(problemDetails, problemDetails.GetType());
             return new ValidationShortCircuit();
         }
 
-        return await next(context);
+        var errorMessage = string.Join("; ", allErrors.Select(e => e.ErrorMessage));
+        var factory = UnifiedResultFactoryHelper.ResolveFactory();
+        var body = factory.Create(null, errorMessage, 400);
+
+        context.HttpContext.Response.StatusCode = 400;
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsJsonAsync(body, body.GetType());
+        return new ValidationShortCircuit();
     }
 
     /// <summary>

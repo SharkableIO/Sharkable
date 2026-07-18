@@ -1,13 +1,13 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Options;
 
 namespace Sharkable;
 
 internal sealed class ApiKeyFilter : IEndpointFilter
 {
-    private readonly ApiKeyValidator _validator;
+    private readonly IApiKeyValidator _validator;
 
-    public ApiKeyFilter(ApiKeyValidator validator)
+    public ApiKeyFilter(IApiKeyValidator validator)
     {
         _validator = validator;
     }
@@ -26,12 +26,21 @@ internal sealed class ApiKeyFilter : IEndpointFilter
             return Results.Empty;
         }
 
-        if (!_validator.Validate(apiKey.ToString()))
+        var validationResult = _validator.Validate(apiKey.ToString());
+        if (!validationResult.IsValid)
         {
             context.HttpContext.Response.StatusCode = 401;
             await ProblemDetailsResult.WriteAsync(context.HttpContext, 401, "Missing or invalid API key");
             return Results.Empty;
         }
+
+        if (validationResult.Claims is { Count: > 0 })
+        {
+            var identity = new ClaimsIdentity(validationResult.Claims, "ApiKey");
+            context.HttpContext.User = new ClaimsPrincipal(identity);
+        }
+
+        context.HttpContext.Items["Sharkable.RateLimitMultiplier"] = validationResult.RateLimitMultiplier;
 
         return await next(context);
     }

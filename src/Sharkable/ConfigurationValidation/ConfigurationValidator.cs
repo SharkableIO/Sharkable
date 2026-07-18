@@ -43,6 +43,9 @@ internal static class ConfigurationValidator
         ValidateRateLimiting(opt, errors, warnings);
         ValidateEtag(opt, errors);
         ValidateAuditTrail(opt, errors);
+        ValidateSecurityHeaders(opt, errors, warnings);
+        ValidateUnifiedResultFactory(opt, warnings);
+        ValidatePlugins(opt, errors, warnings);
         ValidateHeaderNames(opt, errors);
         ValidateRegexPatterns(opt, errors);
 
@@ -53,6 +56,42 @@ internal static class ConfigurationValidator
         }
 
         return errors;
+    }
+
+    private static void ValidateSecurityHeaders(SharkOption opt, List<string> errors, List<string> warnings)
+    {
+        if (opt.SecurityHeadersOptions == null)
+            return;
+
+        var s = opt.SecurityHeadersOptions;
+
+        var anyEnabled = s.ContentTypeOptions
+            || s.FrameOptions != null
+            || s.ReferrerPolicy != null
+            || s.ContentSecurityPolicy != null
+            || s.PermissionsPolicy != null
+            || s.StrictTransportSecurity
+            || s.CrossOriginResourcePolicy != null
+            || s.CrossOriginOpenerPolicy != null
+            || s.CrossOriginEmbedderPolicy != null;
+
+        if (!anyEnabled)
+            warnings.Add(
+                "Security headers are configured but no headers are enabled. " +
+                "Enable at least one header via the SecurityHeadersOptions callback.");
+
+        if (s.StrictTransportSecurity && s.HstsMaxAge <= 0)
+            errors.Add(
+                "StrictTransportSecurity is enabled but HstsMaxAge must be > 0. " +
+                "Set it via: opt.ConfigureSecurityHeaders(h => { h.StrictTransportSecurity = true; h.HstsMaxAge = 31536000; }).");
+
+        ValidateHeaderValue(s.FrameOptions, nameof(SecurityHeadersOptions.FrameOptions), errors);
+        ValidateHeaderValue(s.ReferrerPolicy, nameof(SecurityHeadersOptions.ReferrerPolicy), errors);
+        ValidateHeaderValue(s.ContentSecurityPolicy, nameof(SecurityHeadersOptions.ContentSecurityPolicy), errors);
+        ValidateHeaderValue(s.PermissionsPolicy, nameof(SecurityHeadersOptions.PermissionsPolicy), errors);
+        ValidateHeaderValue(s.CrossOriginResourcePolicy, nameof(SecurityHeadersOptions.CrossOriginResourcePolicy), errors);
+        ValidateHeaderValue(s.CrossOriginOpenerPolicy, nameof(SecurityHeadersOptions.CrossOriginOpenerPolicy), errors);
+        ValidateHeaderValue(s.CrossOriginEmbedderPolicy, nameof(SecurityHeadersOptions.CrossOriginEmbedderPolicy), errors);
     }
 
     private static void ValidateJwt(SharkOption opt, List<string> errors)
@@ -129,14 +168,20 @@ internal static class ConfigurationValidator
         // (the framework's MemorySagaStore defaults are already safe). For other
         // configurations, LockTtl / LockRenewalInterval default to 5 min and
         // LockTtl / 3 respectively and pass validation automatically.
-        if (opt.SagaStoreFactory == null)
+        if (opt.SagaStoreFactory == null && opt.SagaExecutorFactory == null)
             return;
 
         try
         {
-            var probe = new SagaExecutor(
-                opt.SagaStoreFactory(new EmptyServiceProvider()),
-                NullLogger<SagaExecutor>.Instance);
+            ISagaExecutor probe;
+            if (opt.SagaExecutorFactory != null)
+                probe = opt.SagaExecutorFactory(new EmptyServiceProvider());
+            else
+            {
+                var store = opt.SagaStoreFactory?.Invoke(new EmptyServiceProvider())
+                    ?? new MemorySagaStore();
+                probe = new SagaExecutor(store, NullLogger<SagaExecutor>.Instance);
+            }
 
             if (probe.LockTtl <= TimeSpan.Zero)
                 errors.Add(
@@ -285,6 +330,52 @@ internal static class ConfigurationValidator
             nameof(SharkOption.HealthCheckPath), errors);
     }
 
+    private static void ValidateUnifiedResultFactory(SharkOption opt, List<string> warnings)
+    {
+        if (opt.UnifiedResultFactory != null && opt.EnableAutoWrap && opt.WrapSchemaFactory == null)
+            warnings.Add(
+                "A custom IUnifiedResultFactory is set but WrapSchemaFactory is null. " +
+                "The generated OpenAPI document will use the default UnifiedResult<T> schema, " +
+                "which may not match your custom response shape. Set WrapSchemaFactory to keep " +
+                "the OpenAPI document in sync with your actual responses.");
+    }
+
+    private static void ValidatePlugins(SharkOption opt, List<string> errors, List<string> warnings)
+    {
+        if (opt.PluginOptionsInternal == null)
+            return;
+
+        var p = opt.PluginOptionsInternal;
+
+        if (p.ScanOnStartup)
+        {
+            if (opt.AotMode)
+                errors.Add(
+                    "PluginOptions.ScanOnStartup is enabled but the application is running in AOT mode. " +
+                    "Folder scanning requires JIT (AssemblyLoadContext). Disable ScanOnStartup and use " +
+                    "RegisterPlugin() or NuGet references instead.");
+
+            if (string.IsNullOrWhiteSpace(p.Directory))
+                errors.Add("PluginOptions.Directory must not be empty when ScanOnStartup is enabled.");
+
+            if (p.Directory != null && (p.Directory.Contains('\r') || p.Directory.Contains('\n') || p.Directory.Contains('\0')))
+                errors.Add("PluginOptions.Directory contains CR/LF/NUL characters which are unsafe in file paths.");
+        }
+
+        if (opt.DiscoveredPlugins is { Count: > 0 })
+        {
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var plugin in opt.DiscoveredPlugins)
+            {
+                if (string.IsNullOrWhiteSpace(plugin.Name))
+                    errors.Add("Plugin name must not be null or whitespace.");
+
+                if (plugin.Name != null && !names.Add(plugin.Name))
+                    warnings.Add($"Duplicate plugin name '{plugin.Name}' — only the first registration is active.");
+            }
+        }
+    }
+
     private static void ValidatePath(string? value, string optionName, List<string> errors)
     {
         if (string.IsNullOrEmpty(value)) return;
@@ -292,6 +383,18 @@ internal static class ConfigurationValidator
         {
             errors.Add(
                 $"{optionName} = '{value}' contains CR/LF/NUL characters that are unsafe in HTTP path values.");
+        }
+    }
+
+    private static void ValidateHeaderValue(string? value, string optionName, List<string> errors)
+    {
+        if (string.IsNullOrEmpty(value)) return;
+        if (value.Contains('\r') || value.Contains('\n') || value.Contains('\0'))
+        {
+            errors.Add(
+                $"Security headers: {optionName} = \"{value}\" contains CR/LF/NUL characters " +
+                "that are unsafe in HTTP header values. CR/LF injection can be used to " +
+                "smuggle additional headers or split responses.");
         }
     }
 

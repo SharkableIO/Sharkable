@@ -8,7 +8,7 @@ namespace Sharkable;
 /// and extension methods like <c>AsOkResult()</c>. Pluggable via <see cref="IUnifiedResultFactory"/>.
 /// </summary>
 /// <typeparam name="T">Type of the response payload.</typeparam>
-public class UnifiedResult<T> : IUnifiedResult
+public sealed class UnifiedResult<T> : IUnifiedResult
 {
     /// <summary>HTTP status code for the response.</summary>
     public HttpStatusCode StatusCode { get; init; } = HttpStatusCode.OK;

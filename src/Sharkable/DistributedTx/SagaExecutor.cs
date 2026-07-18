@@ -8,7 +8,7 @@ namespace Sharkable;
 /// and persists progress for durability.
 /// Use via DI: inject <c>SagaExecutor</c> and call <c>ExecuteAsync</c>.
 /// </summary>
-public sealed class SagaExecutor
+public sealed class SagaExecutor : ISagaExecutor
 {
     private readonly ISagaStore _store;
     private readonly ILogger<SagaExecutor> _logger;

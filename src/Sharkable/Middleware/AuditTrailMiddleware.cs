@@ -10,18 +10,20 @@ internal sealed class AuditTrailMiddleware
     private readonly ILogger<AuditTrailMiddleware> _logger;
     private readonly AuditTrailOptions _options;
     private readonly AuditLogBuffer? _buffer;
+    private readonly IAuditSink? _auditSink;
     private readonly HashSet<string> _redactHeaders;
     private readonly HashSet<string> _redactQueryParams;
 
-    public AuditTrailMiddleware(RequestDelegate next, ILogger<AuditTrailMiddleware> logger)
+    public AuditTrailMiddleware(RequestDelegate next, ILogger<AuditTrailMiddleware> logger, IAuditSink? auditSink = null)
     {
         _next = next;
         _logger = logger;
+        _auditSink = auditSink;
         _options = Shark.SharkOption.AuditTrailOptions!;
         _redactHeaders = new HashSet<string>(_options.RedactHeaders, StringComparer.OrdinalIgnoreCase);
         _redactQueryParams = new HashSet<string>(_options.RedactQueryParams, StringComparer.OrdinalIgnoreCase);
         _buffer = _options.AsyncWrite
-            ? new AuditLogBuffer(_options, _logger)
+            ? new AuditLogBuffer(_options, _logger, _auditSink)
             : null;
         if (_buffer != null)
             InternalShark.AuditLogBuffer = _buffer;
@@ -53,7 +55,7 @@ internal sealed class AuditTrailMiddleware
                          : statusCode >= 400 ? _options.WarningLogLevel
                          : _options.SuccessLogLevel;
 
-            if (_logger.IsEnabled(logLevel))
+            if (_logger.IsEnabled(logLevel) || _auditSink != null)
             {
                 var query = _options.IncludeQueryString
                     ? RedactQueryString(context.Request.QueryString.Value)
@@ -70,6 +72,19 @@ internal sealed class AuditTrailMiddleware
                         statusCode,
                         stopwatch.ElapsedMilliseconds,
                         correlationId));
+                }
+                else if (_auditSink != null)
+                {
+                    var entry = new AuditLogEntry(
+                        context.Request.Method,
+                        path,
+                        query,
+                        headers,
+                        statusCode,
+                        stopwatch.ElapsedMilliseconds,
+                        correlationId);
+                    try { _ = _auditSink.WriteBatchAsync([entry], CancellationToken.None); }
+                    catch { }
                 }
                 else
                 {
