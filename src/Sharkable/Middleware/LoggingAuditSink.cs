@@ -10,34 +10,33 @@ namespace Sharkable;
 internal sealed class LoggingAuditSink : IAuditSink
 {
     private readonly ILogger _logger;
-    private readonly LogLevel _successLevel;
-    private readonly LogLevel _warningLevel;
-    private readonly LogLevel _errorLevel;
-    private readonly AuditTrailFormat _logFormat;
 
-    public LoggingAuditSink(ILogger<LoggingAuditSink> logger, AuditTrailOptions options)
+    public LoggingAuditSink(ILogger<LoggingAuditSink> logger)
     {
         _logger = logger;
-        _successLevel = options.SuccessLogLevel;
-        _warningLevel = options.WarningLogLevel;
-        _errorLevel = options.ErrorLogLevel;
-        _logFormat = options.LogFormat;
     }
 
     public Task WriteBatchAsync(IReadOnlyList<AuditLogEntry> entries, CancellationToken cancellationToken)
     {
+        var options = Shark.SharkOption.AuditTrailOptions!;
+        var successLevel = options.SuccessLogLevel;
+        var warningLevel = options.WarningLogLevel;
+        var errorLevel = options.ErrorLogLevel;
+        var logFormat = options.LogFormat;
+
         foreach (var entry in entries)
         {
             if (cancellationToken.IsCancellationRequested)
                 break;
-            var level = entry.StatusCode >= 500 ? _errorLevel
-                       : entry.StatusCode >= 400 ? _warningLevel
-                       : _successLevel;
+
+            var level = entry.StatusCode >= 500 ? errorLevel
+                       : entry.StatusCode >= 400 ? warningLevel
+                       : successLevel;
 
             if (!_logger.IsEnabled(level))
                 continue;
 
-            if (_logFormat == AuditTrailFormat.Default)
+            if (logFormat == AuditTrailFormat.Default)
             {
                 _logger.Log(level,
                     "HTTP {Method} {Path}{Query} responded {StatusCode} in {ElapsedMs}ms [CorrelationId: {CorrelationId}] Headers={Headers}",
@@ -45,7 +44,7 @@ internal sealed class LoggingAuditSink : IAuditSink
             }
             else
             {
-                var message = AuditTrailOptions.FormatEntry(entry, _logFormat);
+                var message = AuditTrailOptions.FormatEntry(entry, logFormat);
                 _logger.Log(level, "{Message}", message);
             }
         }
