@@ -264,3 +264,18 @@ When an API is marked `[Obsolete]`, the corresponding doc page MUST include a pr
 **NEVER run `dotnet nuget push` without explicit user permission.** This applies to ALL packages: Sharkable, Sharkable.Cache.Redis, Sharkable.AutoCrud.SqlSugar, and any future plugin packages.
 
 A "release" or "publish" instruction means: bump version numbers, update CHANGELOG, tag git, push code, update docs site. It does **NOT** include `dotnet nuget push` unless the user explicitly says so.
+
+### Pre-publish gate
+
+Before publishing ANY package to NuGet, the agent **must** run the `Sharkable.NativeTest` project and verify it starts without errors or warnings:
+
+```bash
+cd src/Sharkable.NativeTest && dotnet run &
+sleep 5
+curl -sf http://localhost:5245/healthz
+# Must return HTTP 200 or 503 (unhealthy is OK — startup failed is NOT)
+# Must NOT contain "Application startup exception" in stderr
+kill %1
+```
+
+If NativeTest has ANY build error, runtime exception, or startup crash, the publish **must be blocked** until the issue is resolved. This gate applies to all packages — companion packages (AutoCrud.SqlSugar, Cache.Redis, Testing) as well as the core Sharkable package.
