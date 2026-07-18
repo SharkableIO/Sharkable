@@ -269,7 +269,10 @@ public static class SharkExtension
         if (Shark.SharkOption.SagaExecutorFactory != null)
             services.AddSingleton<ISagaExecutor>(sp => Shark.SharkOption.SagaExecutorFactory(sp));
         else
-            services.TryAddSingleton<ISagaExecutor, SagaExecutor>();
+        {
+            services.TryAddSingleton<SagaExecutor>();
+            services.TryAddSingleton<ISagaExecutor>(sp => sp.GetRequiredService<SagaExecutor>());
+        }
 
         //register cron job store + scheduler
         if (Shark.SharkOption.CronJobStoreFactory != null)

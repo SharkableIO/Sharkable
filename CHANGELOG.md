@@ -2,6 +2,11 @@
 
 All notable changes to Sharkable are documented here.
 
+## [0.7.2] — 2026-07-18
+
+### fix
+- Register `SagaExecutor` as both concrete type AND `ISagaExecutor` interface in DI. Previously only `ISagaExecutor` was registered, causing `RequestDelegateGenerator` to treat `SagaExecutor` route parameters as JSON body (requiring `JsonTypeInfo` metadata). NativeTest now starts successfully.
+
 ## [0.7.1] — 2026-07-18
 
 ### fix
