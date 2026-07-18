@@ -10,6 +10,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Sharkable\Sharkable.csproj" />
+      <ProjectReference Include="..\..\..\Sharkable.AutoCrud.SqlSugar\Sharkable.AutoCrud.SqlSugar.csproj" />
     </ItemGroup>
     <ItemGroup>
         <RdXmlFile Include="rd.xml" />
@@ -22,5 +23,9 @@
         <Content Include="rd.xml">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="SqlSugarCore" Version="5.1.4.216" />
     </ItemGroup>
 </Project>

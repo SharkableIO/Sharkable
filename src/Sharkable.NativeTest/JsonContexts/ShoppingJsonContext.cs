@@ -52,6 +52,14 @@ namespace Sharkable.NativeTest;
 [JsonSerializable(typeof(UnifiedResult<AdminStats>))]
 [JsonSerializable(typeof(UnifiedResult<ErrorResponse>))]
 [JsonSerializable(typeof(UnifiedResult<string>))]
+// AutoCrud test types
+[JsonSerializable(typeof(TestItem))]
+[JsonSerializable(typeof(TestItem[]))]
+[JsonSerializable(typeof(List<TestItem>))]
+[JsonSerializable(typeof(UnifiedResult<TestItem>))]
+[JsonSerializable(typeof(UnifiedResult<TestItem[]>))]
+[JsonSerializable(typeof(UnifiedResult<List<TestItem>>))]
+[JsonSerializable(typeof(UnifiedResult<object?>))]
 internal partial class ShoppingJsonContext : JsonSerializerContext
 {
 }

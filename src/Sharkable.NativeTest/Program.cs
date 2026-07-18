@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using Sharkable;
 using Sharkable.NativeTest;
+using SqlSugar;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -34,6 +35,13 @@ builder.Services.AddShark([typeof(Program).Assembly], opt =>
     opt.EnableIdempotency = true;
     opt.EnableAutoWrap = true;
     opt.ConfigureTracing(t => t.ServiceName = "sharkable-shop");
+
+    // AutoCrud test — SQLite entity
+    opt.ConfigureAutoCrud(s =>
+    {
+        s.DbType = Sharkable.DbType.Sqlite;
+        s.ConnectionString = "DataSource=test.db";
+    });
 
     // JWT — self-issued, no OIDC authority
     opt.ConfigureJwt(jwt =>
@@ -105,6 +113,13 @@ builder.Services.AddShark([typeof(Program).Assembly], opt =>
             },
             new CronJobOptions { RetryCount = 1, Timeout = TimeSpan.FromSeconds(30) }));
     };
+
+    // AutoCrud: init tables at startup
+    opt.ConfigureOnStarted(sp =>
+    {
+        var sqlSugar = sp.GetRequiredService<ISqlSugarClient>();
+        sqlSugar.CodeFirst.InitTables(typeof(TestItem));
+    });
 });
 
 // ── Build ─────────────────────────────────────────────────
