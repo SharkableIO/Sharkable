@@ -2,7 +2,7 @@
 
 All notable changes to Sharkable are documented here.
 
-## [Unreleased]
+## [0.7.0] — 2026-07-18
 
 ### feat
 - Plugin system: `ISharkPlugin` interface with three lifecycle hooks — `ConfigureServices` (AddShark), `ConfigurePipeline` (UseShark), `ConfigureOpenApi`. Three discovery paths: NuGet/assembly auto-scanning, hot-plug folder scanning (`opt.ConfigurePlugins(p => { p.ScanOnStartup = true; })`), and manual `opt.RegisterPlugin()`. Per-folder AssemblyLoadContext isolation. `opt.DisablePlugin("name")` for opt-out. AOT-safe for NuGet/manual paths; folder scanning is JIT-only.
